@@ -1,0 +1,291 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+    :root {
+        --radius: 0.5rem;
+        --primary-rgb: 68, 78, 187;
+
+        /* Your custom shadows (Light) */
+        --shadow-color: rgba(79, 90, 199, 0.1);
+        --card-shadow: 0 8px 20px var(--shadow-color), 0 4px 8px rgba(0, 0, 0, 0.05);
+        --hover-shadow: 0 12px 24px var(--shadow-color),
+            0 6px 12px rgba(0, 0, 0, 0.08);
+        --btn-shadow: 0 4px 8px rgba(84, 97, 232, 0.3);
+        --glow: 0 0 15px rgba(84, 97, 232, 0.3);
+
+        /* Shadcn variables - MAPPED TO YOUR BLUE THEME */
+        --background: #ebf4ff;
+        /* Your light background */
+        --foreground: #030407;
+        /* Your light text */
+
+        --card: #ebf4ff;
+        /* Based on your background */
+        --card-foreground: #030407;
+        /* Based on your text */
+
+        --popover: #ebf4ff;
+        /* Based on your background */
+        --popover-foreground: #030407;
+        /* Based on your text */
+
+        --primary: #444ebb;
+        /* Your light primary */
+        --primary-foreground: #f8f9fc;
+        /* Light text for dark blue button */
+
+        --secondary: #7d86e8;
+        /* Your light secondary */
+        --secondary-foreground: #030407;
+        /* Dark text for light blue button */
+
+        --muted: #ddeaff;
+        /* A muted version of your background */
+        --muted-foreground: #444ebb;
+        /* Muted text can use your primary */
+
+        --accent: #5461e8;
+        /* Your light accent */
+        --accent-foreground: #f8f9fc;
+        /* Light text for dark blue button */
+
+        --destructive: oklch(0.577 0.245 27.325);
+        /* Kept shadcn default red */
+        --destructive-foreground: #f8f9fc;
+        /* Added safe default */
+        --border: #c8dfff;
+        /* A border based on your background */
+        --input: #c8dfff;
+        /* An input border based on your background */
+        --ring: #444ebb;
+        /* Ring color should be your primary */
+
+        /* Shadcn's other variables (can be left default) */
+        --chart-1: oklch(0.646 0.222 41.116);
+        --chart-2: oklch(0.6 0.118 184.704);
+        --chart-3: oklch(0.398 0.07 227.392);
+        --chart-4: oklch(0.828 0.189 84.429);
+        --chart-5: oklch(0.769 0.188 70.08);
+        --sidebar: oklch(0.985 0 0);
+        --sidebar-foreground: oklch(0.145 0 0);
+        --sidebar-primary: oklch(0.205 0 0);
+        --sidebar-primary-foreground: oklch(0.985 0 0);
+        --sidebar-accent: oklch(0.97 0 0);
+        --sidebar-accent-foreground: oklch(0.205 0 0);
+        --sidebar-border: oklch(0.922 0 0);
+        --sidebar-ring: oklch(0.708 0 0);
+    }
+
+    .dark {
+        --primary-rgb: 68, 78, 187;
+
+        /* Your custom shadows (Dark) */
+        --shadow-color: rgba(68, 78, 187, 0.3);
+        --card-shadow: 0 8px 20px var(--shadow-color),
+            0 2px 8px rgba(84, 97, 232, 0.2);
+        --hover-shadow: 0 12px 28px var(--shadow-color),
+            0 4px 10px rgba(84, 97, 232, 0.4);
+        --btn-shadow: 0 6px 12px rgba(68, 78, 187, 0.5);
+        --glow: 0 0 25px rgba(68, 78, 187, 0.4);
+
+        /* Shadcn variables - MAPPED TO YOUR BLUE THEME */
+        --background: #000914;
+        /* Your dark background */
+        --foreground: #f8f9fc;
+        /* Your dark text */
+
+        --card: #000f24;
+        /* Slightly lighter than your dark bg */
+        --card-foreground: #f8f9fc;
+        /* Your dark text */
+
+        --popover: #000f24;
+        /* Slightly lighter than your dark bg */
+        --popover-foreground: #f8f9fc;
+        /* Your dark text */
+
+        --primary: #444ebb;
+        /* Your dark primary */
+        --primary-foreground: #f8f9fc;
+        /* Light text for dark blue button */
+
+        --secondary: #172082;
+        /* Your dark secondary */
+        --secondary-foreground: #f8f9fc;
+        /* Light text for dark blue button */
+
+        --muted: #172082;
+        /* Can use your secondary */
+        --muted-foreground: #c8dfff;
+        /* A muted light blue */
+
+        --accent: #1724ab;
+        /* Your dark accent */
+        --accent-foreground: #f8f9fc;
+        /* Light text for dark blue button */
+
+        --destructive: oklch(0.704 0.191 22.216);
+        /* Kept shadcn default red */
+        --destructive-foreground: #f8f9fc;
+        /* Added safe default */
+        --border: oklch(1 0 0 / 10%);
+        /* Kept shadcn default */
+        --input: oklch(1 0 0 / 15%);
+        /* Kept shadcn default */
+        --ring: #444ebb;
+        /* Ring color should be your primary */
+
+        /* Shadcn's other variables (can be left default) */
+        --chart-1: oklch(0.488 0.243 264.376);
+        --chart-2: oklch(0.696 0.17 162.48);
+        --chart-3: oklch(0.769 0.188 70.08);
+        --chart-4: oklch(0.627 0.265 303.9);
+        --chart-5: oklch(0.645 0.246 16.439);
+        --sidebar: oklch(0.205 0 0);
+        --sidebar-foreground: oklch(0.985 0 0);
+        --sidebar-primary: oklch(0.488 0.243 264.376);
+        --sidebar-primary-foreground: oklch(0.985 0 0);
+        --sidebar-accent: oklch(0.269 0 0);
+        --sidebar-accent-foreground: oklch(0.985 0 0);
+        --sidebar-border: oklch(1 0 0 / 10%);
+        --sidebar-ring: oklch(0.556 0 0);
+    }
+
+    * {
+        @apply border-border;
+    }
+}
+
+@layer components {
+    .card-3d {
+        background: linear-gradient(145deg,
+                rgba(var(--primary-rgb), 0.05) 0%,
+                rgba(var(--primary-rgb), 0.1) 100%);
+        border: 1px solid rgba(var(--primary-rgb), 0.1);
+        backdrop-filter: blur(10px);
+        transition: all 0.4s ease;
+    }
+
+    .card-3d:hover {
+        box-shadow: var(--hover-shadow);
+        transform: translateY(-5px);
+    }
+
+    .card {
+        background: linear-gradient(145deg,
+                rgba(var(--primary-rgb), 0.05) 0%,
+                rgba(var(--primary-rgb), 0.1) 100%);
+        border: 1px solid rgba(var(--primary-rgb), 0.1);
+        backdrop-filter: blur(10px);
+        transition: all 0.4s ease;
+    }
+
+    .btn-3d {
+        box-shadow: var(--btn-shadow);
+        transition: all 0.3s ease;
+    }
+
+    .btn-3d:hover {
+        transform: translateY(-3px);
+        box-shadow: var(--hover-shadow);
+    }
+
+    .glow-effect {
+        position: relative;
+    }
+
+    .glow-effect::after {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        border-radius: inherit;
+        box-shadow: var(--glow);
+        opacity: 0;
+        transition: opacity 0.3s ease;
+        z-index: -1;
+    }
+
+    .glow-effect:hover::after {
+        opacity: 1;
+    }
+
+    .shad {
+        box-shadow: var(--hover-shadow);
+    }
+
+    /* Your logo styles */
+    .logo-text {
+        text-transform: none;
+        font-size: 1.5rem;
+        line-height: 2rem;
+        font-weight: 700;
+        text-align: center;
+        background-clip: text;
+        -webkit-background-clip: text;
+        color: transparent;
+        /* Improved gradient for light mode - stronger contrast */
+        background-image: linear-gradient(to right, var(--foreground), var(--accent));
+    }
+
+    /* Dark mode override if needed */
+    .dark .logo-text {
+        background-image: linear-gradient(to right, var(--foreground), var(--primary));
+    }
+}
+
+@layer utilities {
+    .hide-scrollbar {
+        -ms-overflow-style: none;
+        /* IE and Edge */
+        scrollbar-width: none;
+        /* Firefox */
+    }
+
+    .hide-scrollbar::-webkit-scrollbar {
+        display: none;
+        /* Chrome, Safari and Opera */
+    }
+
+    /* Christmas snowfall animation */
+    @keyframes snowfall {
+        0% {
+            transform: translateY(-10vh) rotate(0deg);
+            opacity: 1;
+        }
+
+        100% {
+            transform: translateY(110vh) rotate(360deg);
+            opacity: 0.3;
+        }
+    }
+
+    .animate-snowfall {
+        animation: snowfall linear infinite;
+    }
+
+    /* Bounce-in animation for modal */
+    @keyframes bounce-in {
+        0% {
+            transform: scale(0.5);
+            opacity: 0;
+        }
+
+        50% {
+            transform: scale(1.05);
+        }
+
+        100% {
+            transform: scale(1);
+            opacity: 1;
+        }
+    }
+
+    .animate-bounce-in {
+        animation: bounce-in 0.5s ease-out forwards;
+    }
+}
