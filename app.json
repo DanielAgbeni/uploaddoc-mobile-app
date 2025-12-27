@@ -53,7 +53,8 @@
             "./src/assets/app-images"
           ]
         }
-      ]
+      ],
+      ["expo-system-ui"]
     ]
   }
 }
