@@ -2,30 +2,58 @@
   "expo": {
     "name": "uploaddoc-mobile-app",
     "slug": "uploaddoc-mobile-app",
-    "version": "1.0.0",
+    "version": "2.0.0",
     "orientation": "portrait",
-    "icon": "./assets/icon.png",
-    "userInterfaceStyle": "light",
+    "icon": "./src/assets/app-images/icon.png",
+    "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
-    "splash": {
-      "image": "./assets/splash-icon.png",
-      "resizeMode": "contain",
-      "backgroundColor": "#ffffff"
-    },
+
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.uploaddoc.app",
+      "splash": {
+        "backgroundColor": "#1724ab",
+        "image": "./src/assets/app-images/splash_icon_light.png",
+        "dark": {
+          "backgroundColor": "#141314",
+          "image": "./src/assets/app-images/splash_icon_dark.png"
+        }
+      },
+      "entitlements": {
+        "aps-environment": "production"
+      }
     },
+
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#ffffff"
+        "foregroundImage": "./src/assets/app-images/adaptive-icon.png",
+        "backgroundColor": "#1724ab"
       },
       "edgeToEdgeEnabled": true,
+      "supportsTablet": true,
       "predictiveBackGestureEnabled": false,
-      "package": "com.danielagbeni.uploaddocmobileapp"
+      "package": "com.uploaddoc.app"
     },
+
     "web": {
-      "favicon": "./assets/favicon.png"
-    }
+      "favicon": "./src/assets/app-images/favicon.png"
+    },
+
+    "splash": {
+      "image": "./src/assets/app-images/splash_icon_light.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#1724ab"
+    },
+
+    "plugins": [
+      [
+        "expo-asset",
+        {
+          "assets": [
+            "./src/assets/app-images"
+          ]
+        }
+      ]
+    ]
   }
 }
