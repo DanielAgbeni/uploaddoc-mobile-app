@@ -3,21 +3,17 @@ import { View, Text, Pressable, ScrollView, Switch, Alert } from 'react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { AccountStackParamList } from '../../types/navigation.types';
 import { useColorScheme } from 'nativewind';
+import { useUserStore } from '../../shared/user-store/useUserStore';
 
 type Props = NativeStackScreenProps<AccountStackParamList, 'Profile'>;
 
-// Mock user data - replace with actual user state
-const mockUserData = {
-  name: 'John Doe',
-  email: 'john.doe@example.com',
-  accountType: 'vendor', // 'vendor' or 'user'
-  notificationsEnabled: true,
-};
-
 export default function ProfileScreen({ navigation }: Props) {
   const { colorScheme, toggleColorScheme } = useColorScheme();
-  const [notifications, setNotifications] = React.useState(mockUserData.notificationsEnabled);
-  const isVendor = mockUserData.accountType === 'vendor';
+  const user = useUserStore((state) => state.user);
+  const logout = useUserStore((state) => state.logout);
+  const [notifications, setNotifications] = React.useState(true);
+
+  const isVendor = user?.isAdmin || false;
 
   const handleToggleNotifications = () => {
     setNotifications(!notifications);
@@ -37,8 +33,8 @@ export default function ProfileScreen({ navigation }: Props) {
           text: 'Logout',
           style: 'destructive',
           onPress: () => {
-            // TODO: Implement logout logic
-            console.log('User logged out');
+            logout();
+            // Navigation will be handled automatically by RootNavigator
           },
         },
       ]
@@ -50,6 +46,10 @@ export default function ProfileScreen({ navigation }: Props) {
     Alert.alert('Info', `Opening: ${url}`);
   };
 
+  if (!user) {
+    return null; // Should never happen if authenticated
+  }
+
   return (
     <ScrollView className="flex-1 bg-background">
       <View className="p-6">
@@ -57,11 +57,11 @@ export default function ProfileScreen({ navigation }: Props) {
         <View className="card-3d rounded-xl p-6 items-center mb-6">
           <View className="w-20 h-20 bg-primary rounded-full items-center justify-center mb-3">
             <Text className="text-3xl text-primary-foreground font-bold">
-              {mockUserData.name.charAt(0)}
+              {user.name.charAt(0).toUpperCase()}
             </Text>
           </View>
-          <Text className="text-foreground font-bold text-xl mb-1">{mockUserData.name}</Text>
-          <Text className="text-muted-foreground mb-3">{mockUserData.email}</Text>
+          <Text className="text-foreground font-bold text-xl mb-1">{user.name}</Text>
+          <Text className="text-muted-foreground mb-3">{user.email}</Text>
           
           <View className="bg-primary/20 px-4 py-1 rounded-full">
             <Text className="text-primary font-semibold capitalize">

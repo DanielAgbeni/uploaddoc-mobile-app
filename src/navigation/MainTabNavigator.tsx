@@ -2,6 +2,7 @@ import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { MainTabParamList } from '../types/navigation.types';
 import { Text } from 'react-native';
+import { useUserStore } from '../shared/user-store/useUserStore';
 
 // Stack Navigators
 import DocumentsStack from './stacks/DocumentsStack';
@@ -11,12 +12,10 @@ import DashboardScreen from '../screens/dashboard/DashboardScreen';
 
 const Tab = createBottomTabNavigator<MainTabParamList>();
 
-// Mock user data - replace with actual user state/context
-const mockUserData = {
-  isVendor: true, // Set to false to hide Dashboard tab
-};
-
 export default function MainTabNavigator() {
+  const user = useUserStore((state) => state.user);
+  const isVendor = user?.isAdmin || false;
+
   return (
     <Tab.Navigator
       screenOptions={{
@@ -57,7 +56,7 @@ export default function MainTabNavigator() {
       />
 
       {/* Conditionally render Dashboard tab only for vendors */}
-      {mockUserData.isVendor && (
+      {isVendor && (
         <Tab.Screen
           name="DashboardTab"
           component={DashboardScreen}
@@ -83,3 +82,4 @@ export default function MainTabNavigator() {
     </Tab.Navigator>
   );
 }
+
