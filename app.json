@@ -55,6 +55,11 @@
         }
       ],
       ["expo-system-ui"]
-    ]
+    ],
+
+    "scheme": "uploaddoc",
+    "experiments": {
+      "typedRoutes": false
+    }
   }
 }
