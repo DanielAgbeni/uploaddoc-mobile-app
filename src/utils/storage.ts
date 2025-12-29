@@ -15,7 +15,7 @@ const USER_TOKEN_STORE_KEY = "USER_TOKEN_STORE_KEY",
   USER_DETAILS_STORE = "USER_DETAILS_STORE",
   USER_THEME_STORE_KEY = "USER_THEME_STORE_KEY";
 
-const userTokenStorage = new (MMKV as any)({
+const userTokenStorage = new MMKV({
   id: USER_AUTH_STORAGE_ID,
   encryptionKey: USER_AUTH_STORAGE_KEY || DEFAULT_STORAGE_ENCRYPTION_KEY, 
 });

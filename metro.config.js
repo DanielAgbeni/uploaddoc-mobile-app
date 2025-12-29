@@ -47,6 +47,4 @@ const config = (() => {
   return config;
 })();
 
-const path = require("path");
-
-module.exports = withNativeWind(config, { input: path.resolve(__dirname, "./src/styles/global.css") });
+module.exports = withNativeWind(config, { input: "./src/styles/global.css" });
