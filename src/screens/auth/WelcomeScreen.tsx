@@ -6,7 +6,6 @@ import CustomImage from '../../components/common/CustomImage';
 import { LinearGradient } from 'expo-linear-gradient';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { useTheme } from '../../providers/ThemeProvider';
-import { icon } from 'src/assets/icons';
 import LoginIcon from 'src/assets/icons/login.icon';
 
 type Props = NativeStackScreenProps<AuthStackParamList, 'Welcome'>;
@@ -31,17 +30,10 @@ export default function WelcomeScreen({ navigation }: Props) {
 				<View className="items-center mb-16">
 					<View className="mb-6 items-center">
 						<CustomImage
-							source={icon}
-							className="w-24 h-24 rounded-3xl mb-4"
+							source={require('../../assets/app-images/icon.png')}
+							className="w-40 h-40 rounded-3xl mb-4"
 							contentFit="cover"
 						/>
-						<View className="absolute -bottom-2 -right-2 bg-primary rounded-full p-2">
-							<Icon
-								name="checkmark-circle"
-								size={24}
-								color="#fff"
-							/>
-						</View>
 					</View>
 
 					<Text className="text-4xl font-bold text-foreground mb-3 text-center">

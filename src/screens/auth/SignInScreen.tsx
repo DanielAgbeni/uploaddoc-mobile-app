@@ -99,10 +99,8 @@ export default function SignInScreen({ navigation }: Props) {
 					<View className="mb-10">
 						<CustomImage
 							source={require('../../assets/app-images/icon.png')}
-							width={64}
-							height={64}
-							borderRadius={16}
-							className="mb-6"
+							className="w-16 h-16 rounded-2xl mb-6"
+							contentFit="cover"
 						/>
 						<Text className="text-4xl font-bold text-foreground mb-3">
 							Welcome Back
