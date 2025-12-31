@@ -5,15 +5,17 @@ type ApiRequestResponseType<T> = Promise<AxiosResponse<T>>;
 
 const controller = new AbortController();
 
-const baseURL = process.env.NEXT_PUBLIC_BACKEND_URL || '';
+const baseURL = 'https://uploaddoc-backend.onrender.com';
+
+console.log('Base URL: ', baseURL);
 
 const api = axios.create({
 	baseURL,
 	signal: controller.signal,
 });
 
-api.interceptors.request.use((config) => {
-	const { userToken } = getAppNeededDetails();
+api.interceptors.request.use(async (config) => {
+	const { userToken } = await getAppNeededDetails();
 	if (userToken) {
 		config.headers.Authorization = `Bearer ${userToken}`;
 	}
@@ -59,7 +61,7 @@ api.interceptors.response.use(
 			originalRequest._retry = true;
 			isRefreshing = true;
 
-			const { refreshToken } = getAppNeededDetails();
+			const { refreshToken } = await getAppNeededDetails();
 
 			if (!refreshToken) {
 				isRefreshing = false;
@@ -67,15 +69,16 @@ api.interceptors.response.use(
 			}
 
 			try {
-                // Circular dependency avoidance: Call endpoint directly
-				const response = await api.post('/api/auth/refresh-token', { refreshToken });
+				// Circular dependency avoidance: Call endpoint directly
+				const response = await api.post('/api/auth/refresh-token', {
+					refreshToken,
+				});
 
-				const {
-					token,
-				} = response.data.data;
+				const { token } = response.data.data;
 
 				// Update Store and Storage
-				const { useUserStore } = await import('../shared/user-store/useUserStore');
+				const { useUserStore } =
+					await import('../shared/user-store/useUserStore');
 				useUserStore.getState().setLoginData(response.data.data);
 
 				setHeaderAuthorization(token);
@@ -89,14 +92,15 @@ api.interceptors.response.use(
 				processQueue(err, null);
 				isRefreshing = false;
 
-				const { useUserStore } = await import('../shared/user-store/useUserStore');
+				const { useUserStore } =
+					await import('../shared/user-store/useUserStore');
 				useUserStore.getState().logout();
 				return Promise.reject(err);
 			}
 		}
 
 		return Promise.reject(error);
-	}
+	},
 );
 
 export const setHeaderAuthorization: (token?: string) => void = (token) => {
@@ -110,14 +114,14 @@ export const setHeaderAuthorization: (token?: string) => void = (token) => {
 export const postData = <T, D>(
 	url: string,
 	data?: T | undefined,
-	options?: AxiosRequestConfig
+	options?: AxiosRequestConfig,
 ): ApiRequestResponseType<D> => {
 	return api.post(url, data, options);
 };
 
 export const getData = <T>(
 	url: string,
-	options?: AxiosRequestConfig
+	options?: AxiosRequestConfig,
 ): ApiRequestResponseType<T> => {
 	return api.get(url, options);
 };
@@ -125,7 +129,7 @@ export const getData = <T>(
 export const putData = <T, D>(
 	url: string,
 	data: T | undefined,
-	options?: AxiosRequestConfig
+	options?: AxiosRequestConfig,
 ): ApiRequestResponseType<D> => {
 	return api.put(url, data, options);
 };
@@ -133,14 +137,14 @@ export const putData = <T, D>(
 export const patchData = <T, D>(
 	url: string,
 	data: T | undefined,
-	options?: AxiosRequestConfig
+	options?: AxiosRequestConfig,
 ): ApiRequestResponseType<D> => {
 	return api.patch(url, data, options);
 };
 
 export const deleteData = <T>(
 	url: string,
-	options?: AxiosRequestConfig
+	options?: AxiosRequestConfig,
 ): ApiRequestResponseType<T | undefined> => {
 	return api.delete(url, options);
 };

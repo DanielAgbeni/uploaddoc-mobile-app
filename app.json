@@ -7,7 +7,6 @@
     "icon": "./src/assets/app-images/icon.png",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
-
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.uploaddoc.app",
@@ -23,7 +22,6 @@
         "aps-environment": "production"
       }
     },
-
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./src/assets/app-images/adaptive_icon.png",
@@ -34,17 +32,14 @@
       "predictiveBackGestureEnabled": false,
       "package": "com.uploaddoc.app"
     },
-
     "web": {
       "favicon": "./src/assets/app-images/favicon.png"
     },
-
     "splash": {
       "image": "./src/assets/app-images/splash_icon_light.png",
       "resizeMode": "contain",
       "backgroundColor": "#1724ab"
     },
-
     "plugins": [
       [
         "expo-asset",
@@ -54,9 +49,11 @@
           ]
         }
       ],
-      ["expo-system-ui"]
+      [
+        "expo-system-ui"
+      ],
+      "expo-secure-store"
     ],
-
     "scheme": "uploaddoc",
     "experiments": {
       "typedRoutes": false
