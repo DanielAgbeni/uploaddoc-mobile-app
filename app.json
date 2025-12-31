@@ -1,62 +1,58 @@
 {
-  "expo": {
-    "name": "uploaddoc-mobile-app",
-    "slug": "uploaddoc-mobile-app",
-    "version": "2.0.0",
-    "orientation": "portrait",
-    "icon": "./src/assets/app-images/icon.png",
-    "userInterfaceStyle": "automatic",
-    "newArchEnabled": true,
-    "ios": {
-      "supportsTablet": true,
-      "bundleIdentifier": "com.uploaddoc.app",
-      "splash": {
-        "backgroundColor": "#1724ab",
-        "image": "./src/assets/app-images/splash_icon_light.png",
-        "dark": {
-          "backgroundColor": "#141314",
-          "image": "./src/assets/app-images/splash_icon_dark.png"
-        }
-      },
-      "entitlements": {
-        "aps-environment": "production"
-      }
-    },
-    "android": {
-      "adaptiveIcon": {
-        "foregroundImage": "./src/assets/app-images/adaptive_icon.png",
-        "backgroundColor": "#1724ab"
-      },
-      "edgeToEdgeEnabled": true,
-      "supportsTablet": true,
-      "predictiveBackGestureEnabled": false,
-      "package": "com.uploaddoc.app"
-    },
-    "web": {
-      "favicon": "./src/assets/app-images/favicon.png"
-    },
-    "splash": {
-      "image": "./src/assets/app-images/splash_icon_light.png",
-      "resizeMode": "contain",
-      "backgroundColor": "#1724ab"
-    },
-    "plugins": [
-      [
-        "expo-asset",
-        {
-          "assets": [
-            "./src/assets/app-images"
-          ]
-        }
-      ],
-      [
-        "expo-system-ui"
-      ],
-      "expo-secure-store"
-    ],
-    "scheme": "uploaddoc",
-    "experiments": {
-      "typedRoutes": false
-    }
-  }
+	"expo": {
+		"name": "UploadDoc",
+		"slug": "uploaddoc-mobile-app",
+		"version": "2.0.0",
+		"orientation": "portrait",
+		"icon": "./src/assets/app-images/icon.png",
+		"userInterfaceStyle": "automatic",
+		"newArchEnabled": true,
+		"ios": {
+			"supportsTablet": true,
+			"bundleIdentifier": "com.uploaddoc.app",
+			"splash": {
+				"backgroundColor": "#1724ab",
+				"image": "./src/assets/app-images/splash_icon_light.png",
+				"dark": {
+					"backgroundColor": "#141314",
+					"image": "./src/assets/app-images/splash_icon_dark.png"
+				}
+			},
+			"entitlements": {
+				"aps-environment": "production"
+			}
+		},
+		"android": {
+			"adaptiveIcon": {
+				"foregroundImage": "./src/assets/app-images/adaptive_icon.png",
+				"backgroundColor": "#1724ab"
+			},
+			"edgeToEdgeEnabled": true,
+			"supportsTablet": true,
+			"predictiveBackGestureEnabled": false,
+			"package": "com.uploaddoc.app"
+		},
+		"web": {
+			"favicon": "./src/assets/app-images/favicon.png"
+		},
+		"splash": {
+			"image": "./src/assets/app-images/splash_icon_light.png",
+			"resizeMode": "contain",
+			"backgroundColor": "#1724ab"
+		},
+		"plugins": [
+			[
+				"expo-asset",
+				{
+					"assets": ["./src/assets/app-images"]
+				}
+			],
+			["expo-system-ui"],
+			"expo-secure-store"
+		],
+		"scheme": "uploaddoc",
+		"experiments": {
+			"typedRoutes": false
+		}
+	}
 }

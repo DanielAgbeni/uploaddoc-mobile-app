@@ -65,6 +65,7 @@
     "react-native-get-random-values": "~1.11.0",
     "react-native-gifted-charts": "^1.4.64",
     "react-native-mmkv": "^3.3.3",
+    "react-native-modal": "^14.0.0-rc.1",
     "react-native-nitro-modules": "^0.31.9",
     "react-native-pager-view": "6.7.1",
     "react-native-paper": "^5.14.5",

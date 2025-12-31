@@ -1,7 +1,7 @@
 import React, { memo } from 'react';
 import { Path, Svg } from 'react-native-svg';
 
-const LoginIcon: React.FC<{ size?: number; color?: string }> = ({
+const ArrowForwardIcon: React.FC<{ size?: number; color?: string }> = ({
 	size = 24,
 	color,
 }) => {
@@ -11,14 +11,14 @@ const LoginIcon: React.FC<{ size?: number; color?: string }> = ({
 		<Svg
 			width={size}
 			height={size}
-			viewBox="0 0 24 24"
+			viewBox="0 -960 960 960"
 			fill="none">
 			<Path
-				d="M11 7L9.6 8.4L12.2 11H2V13H12.2L9.6 15.6L11 17L16 12L11 7ZM20 19H12V21H20C21.1 21 22 20.1 22 19V5C22 3.9 21.1 3 20 3H12V5H20V19Z"
+				d="M647-440H160v-80h487L423-744l57-56 320 320-320 320-57-56 224-224Z"
 				fill={iconColor}
 			/>
 		</Svg>
 	);
 };
 
-export default memo(LoginIcon);
+export default memo(ArrowForwardIcon);
