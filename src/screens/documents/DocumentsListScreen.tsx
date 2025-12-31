@@ -1,115 +1,268 @@
-import React from 'react';
-import { View, Text, FlatList, Pressable } from 'react-native';
+import React, { useState, useMemo, useCallback } from 'react';
+import {
+	View,
+	Text,
+	ActivityIndicator,
+	TextInput,
+	RefreshControl,
+} from 'react-native';
+import { showMessage } from 'react-native-flash-message';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { DocumentsStackParamList } from '../../types/navigation.types';
+import {
+	useInfiniteQuery,
+	useMutation,
+	useQueryClient,
+} from '@tanstack/react-query';
+import { getStudentProjects, deleteProject } from '../../api/projects';
+import DocumentsHeader from './components/DocumentsHeader';
+import DocumentCard from './components/DocumentCard';
+import { useDebounce } from 'use-debounce';
+import * as Linking from 'expo-linking';
+import { FlashList } from '@shopify/flash-list';
+import SearchIcon from '../../assets/icons/search.icon';
+import CloseCircleIcon from '../../assets/icons/close-circle.icon';
+import AlertCircleIcon from '../../assets/icons/alert-circle.icon';
+import DocumentTextIcon from '../../assets/icons/document-text.icon';
+import AddIcon from '../../assets/icons/add.icon';
+import { AlertModal } from '../../components/ui/AlertModal';
+import { Pressable } from 'react-native';
 
 type Props = NativeStackScreenProps<DocumentsStackParamList, 'DocumentsList'>;
 
-// Mock data - replace with actual API data
-const mockDocuments = [
-  {
-    id: '1',
-    title: 'Invoice #1234',
-    vendorName: 'Acme Corp',
-    status: 'pending',
-    timestamp: '2025-12-29T10:30:00Z',
-  },
-  {
-    id: '2',
-    title: 'Receipt - Office Supplies',
-    vendorName: 'Office Depot',
-    status: 'accepted',
-    timestamp: '2025-12-28T14:20:00Z',
-  },
-  {
-    id: '3',
-    title: 'Purchase Order #5678',
-    vendorName: 'Tech Supplies Inc',
-    status: 'rejected',
-    timestamp: '2025-12-27T09:15:00Z',
-  },
-];
-
 export default function DocumentsListScreen({ navigation }: Props) {
-  const renderDocument = ({ item }: { item: typeof mockDocuments[0] }) => {
-    const statusColors = {
-      pending: 'bg-yellow-500/20 border-yellow-500',
-      accepted: 'bg-green-500/20 border-green-500',
-      rejected: 'bg-red-500/20 border-red-500',
-    };
+	const [searchQuery, setSearchQuery] = useState('');
+	const [debouncedSearch] = useDebounce(searchQuery, 500);
+	const [deleteModalVisible, setDeleteModalVisible] = useState(false);
+	const [projectToDelete, setProjectToDelete] = useState<string | null>(null);
+	const queryClient = useQueryClient();
 
-    const statusTextColors = {
-      pending: 'text-yellow-600',
-      accepted: 'text-green-600',
-      rejected: 'text-red-600',
-    };
+	const {
+		data,
+		isLoading,
+		isError,
+		fetchNextPage,
+		hasNextPage,
+		isFetchingNextPage,
+		refetch,
+		isRefetching,
+	} = useInfiniteQuery({
+		queryKey: ['studentProjects', debouncedSearch],
+		queryFn: ({ pageParam = 1 }) =>
+			getStudentProjects(pageParam, 10, debouncedSearch),
+		initialPageParam: 1,
+		getNextPageParam: (lastPage) => {
+			const { currentPage, totalPages } = lastPage.data.data.pagination;
+			return currentPage < totalPages ? currentPage + 1 : undefined;
+		},
+	});
 
-    return (
-      <Pressable className="card-3d rounded-xl p-4 mb-3 active:opacity-80">
-        <View className="flex-row justify-between items-start mb-2">
-          <Text className="text-foreground font-semibold text-lg flex-1" numberOfLines={1}>
-            {item.title}
-          </Text>
-          <View className={`px-3 py-1 rounded-full border ${statusColors[item.status as keyof typeof statusColors]}`}>
-            <Text className={`text-xs font-semibold capitalize ${statusTextColors[item.status as keyof typeof statusTextColors]}`}>
-              {item.status}
-            </Text>
-          </View>
-        </View>
-        
-        <Text className="text-muted-foreground mb-1">
-          Vendor: {item.vendorName}
-        </Text>
-        
-        <Text className="text-muted-foreground text-xs">
-          {new Date(item.timestamp).toLocaleDateString('en-US', {
-            year: 'numeric',
-            month: 'short',
-            day: 'numeric',
-            hour: '2-digit',
-            minute: '2-digit',
-          })}
-        </Text>
-      </Pressable>
-    );
-  };
+	const deleteMutation = useMutation({
+		mutationFn: deleteProject,
+		onSuccess: (data) => {
+			queryClient.invalidateQueries({ queryKey: ['studentProjects'] });
+			setDeleteModalVisible(false);
+			setProjectToDelete(null);
+			showMessage({
+				message: 'Success',
+				description: 'Document deleted successfully',
+				type: 'success',
+				icon: 'success',
+			});
+		},
+		onError: (error: any) => {
+			console.error('Delete error:', error);
+			setDeleteModalVisible(false); // Close invalid modal
+			showMessage({
+				message: 'Error',
+				description:
+					error.response?.data?.message || 'Failed to delete document',
+				type: 'danger',
+				icon: 'danger',
+			});
+		},
+	});
 
-  return (
-    <View className="flex-1 bg-background">
-      {/* Header */}
-      <View className="bg-primary p-6 pb-8">
-        <Text className="text-2xl font-bold text-primary-foreground">Documents</Text>
-        <Text className="text-primary-foreground/80 mt-1">Your submitted documents</Text>
-      </View>
+	const handleDelete = useCallback((id: string) => {
+		setProjectToDelete(id);
+		setDeleteModalVisible(true);
+	}, []);
 
-      {/* Documents List */}
-      <View className="flex-1 px-4 -mt-4">
-        <FlatList
-          data={mockDocuments}
-          renderItem={renderDocument}
-          keyExtractor={(item) => item.id}
-          contentContainerStyle={{ paddingBottom: 100 }}
-          showsVerticalScrollIndicator={false}
-          ListEmptyComponent={
-            <View className="card-3d rounded-xl p-8 items-center justify-center mt-4">
-              <Text className="text-muted-foreground text-center text-lg mb-2">
-                No documents yet
-              </Text>
-              <Text className="text-muted-foreground text-center">
-                Submit your first document to get started
-              </Text>
-            </View>
-          }
-        />
-      </View>
+	const confirmDelete = () => {
+		if (projectToDelete) {
+			deleteMutation.mutate(projectToDelete);
+		} else {
+			console.error('No project to delete found in state');
+		}
+	};
 
-      {/* Floating Action Button */}
-      <Pressable
-        className="absolute bottom-6 right-6 btn-3d bg-primary w-16 h-16 rounded-full items-center justify-center shadow-lg active:opacity-80"
-        onPress={() => navigation.navigate('SubmitDocument', {})}
-      >
-        <Text className="text-primary-foreground text-3xl font-bold">+</Text>
-      </Pressable>
-    </View>
-  );
+	const handleDownload = useCallback((url: string) => {
+		Linking.openURL(url);
+	}, []);
+
+	const projects = useMemo(() => {
+		return data?.pages.flatMap((page) => page.data.data.projects) || [];
+	}, [data]);
+
+	const renderItem = useCallback(
+		({ item }: any) => (
+			<DocumentCard
+				project={item}
+				onDelete={handleDelete}
+				onDownload={handleDownload}
+			/>
+		),
+		[handleDelete, handleDownload],
+	);
+
+	const renderFooter = () => {
+		if (isFetchingNextPage) {
+			return (
+				<View className="py-4">
+					<ActivityIndicator
+						size="small"
+						color="#4F46E5"
+					/>
+				</View>
+			);
+		}
+		return <View className="h-20" />; // Spacer
+	};
+
+	const renderEmpty = () => {
+		if (isLoading) {
+			return (
+				<View className="flex-1 items-center justify-center py-20">
+					<ActivityIndicator
+						size="large"
+						color="#4F46E5"
+					/>
+					<Text className="text-muted-foreground mt-4">
+						Loading documents...
+					</Text>
+				</View>
+			);
+		}
+
+		if (isError) {
+			return (
+				<View className="flex-1 items-center justify-center py-20 px-4">
+					<AlertCircleIcon
+						size={48}
+						color="#ef4444"
+					/>
+					<Text className="text-destructive font-medium mt-4 text-center">
+						Failed to load documents
+					</Text>
+					<Text
+						className="text-sm text-muted-foreground mt-2 text-center"
+						onPress={() => refetch()}>
+						Tap to retry
+					</Text>
+				</View>
+			);
+		}
+
+		return (
+			<View className="flex-1 items-center justify-center py-20 px-4">
+				<View className="bg-muted p-4 rounded-full mb-4">
+					<DocumentTextIcon
+						size={32}
+						color="#94a3b8"
+					/>
+				</View>
+				<Text className="text-lg font-semibold text-foreground">
+					No documents found
+				</Text>
+				<Text className="text-muted-foreground text-center mt-2 max-w-xs">
+					{searchQuery
+						? 'No documents match your search criteria.'
+						: "You haven't submitted any projects yet."}
+				</Text>
+			</View>
+		);
+	};
+
+	return (
+		<View className="flex-1 bg-background">
+			<DocumentsHeader />
+
+			<View className="flex-1 -mt-6">
+				<View className="px-4 mb-4 z-20">
+					<View className="bg-card border border-border rounded-xl flex-row items-center px-4 h-12 shadow-md">
+						<View className="mr-2">
+							<SearchIcon
+								size={20}
+								color="#94a3b8"
+							/>
+						</View>
+						<TextInput
+							placeholder="Search documents..."
+							value={searchQuery}
+							onChangeText={setSearchQuery}
+							className="flex-1 text-foreground h-full font-medium"
+							placeholderTextColor="#94a3b8"
+						/>
+						{searchQuery.length > 0 && (
+							<Pressable onPress={() => setSearchQuery('')}>
+								<CloseCircleIcon
+									size={20}
+									color="#94a3b8"
+								/>
+							</Pressable>
+						)}
+					</View>
+				</View>
+
+				<View className="flex-1 h-full min-h-0">
+					<FlashList
+						data={projects}
+						renderItem={renderItem}
+						estimatedItemSize={150}
+						keyExtractor={(item) => item._id}
+						onEndReached={() => {
+							if (hasNextPage && !isFetchingNextPage) {
+								fetchNextPage();
+							}
+						}}
+						onEndReachedThreshold={0.5}
+						ListFooterComponent={renderFooter}
+						ListEmptyComponent={renderEmpty}
+						refreshControl={
+							<RefreshControl
+								refreshing={isRefetching && !isFetchingNextPage}
+								onRefresh={refetch}
+								tintColor="#4F46E5"
+							/>
+						}
+						contentContainerStyle={{ paddingBottom: 100, paddingTop: 8 }}
+					/>
+				</View>
+			</View>
+
+			{/* FAB */}
+			<View className="absolute bottom-6 right-6">
+				<Pressable
+					className="shadow-lg shadow-primary/40 rounded-full w-[60px] h-[60px] bg-primary items-center justify-center active:opacity-90"
+					onPress={() => navigation.navigate('SubmitDocument', {})}>
+					<AddIcon
+						size={30}
+						color="#FFFFFF"
+					/>
+				</Pressable>
+			</View>
+
+			<AlertModal
+				isVisible={deleteModalVisible}
+				onClose={() => setDeleteModalVisible(false)}
+				title="Delete Document"
+				message="Are you sure you want to delete this document? This action cannot be undone."
+				type="confirm"
+				isDestructive={true}
+				onConfirm={confirmDelete}
+				confirmText={deleteMutation.isPending ? 'Deleting...' : 'Delete'}
+				cancelText="Cancel"
+			/>
+		</View>
+	);
 }

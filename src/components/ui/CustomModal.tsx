@@ -1,68 +1,88 @@
-import React, { ReactNode } from 'react';
-import { View, StyleSheet, Platform, ViewStyle } from 'react-native';
-import Modal from 'react-native-modal';
-import { useTheme } from '../../providers/ThemeProvider';
+import React, { useEffect } from 'react';
+import {
+	View,
+	Modal,
+	Pressable,
+	TouchableWithoutFeedback,
+	KeyboardAvoidingView,
+	Platform,
+} from 'react-native';
+import Animated, {
+	useAnimatedStyle,
+	useSharedValue,
+	withSpring,
+	withTiming,
+	runOnJS,
+} from 'react-native-reanimated';
 
 interface CustomModalProps {
 	isVisible: boolean;
 	onClose: () => void;
-	children: ReactNode;
-	style?: ViewStyle;
-	animationIn?: 'fadeIn' | 'slideInUp' | 'zoomIn';
-	animationOut?: 'fadeOut' | 'slideOutDown' | 'zoomOut';
+	children: React.ReactNode;
+	width?: number | string;
 }
 
 export const CustomModal: React.FC<CustomModalProps> = ({
 	isVisible,
 	onClose,
 	children,
-	style,
-	animationIn = 'zoomIn',
-	animationOut = 'zoomOut',
+	width = '90%',
 }) => {
-	const { colorScheme } = useTheme();
-	const isDark = colorScheme === 'dark';
+	const handleClose = () => {
+		console.log('CustomModal: Backdrop pressed or RequestClose');
+		onClose();
+	};
+
+	const opacity = useSharedValue(0);
+	const scale = useSharedValue(0.9);
+
+	useEffect(() => {
+		if (isVisible) {
+			opacity.value = withTiming(1, { duration: 200 });
+			scale.value = withSpring(1, { damping: 12 });
+		} else {
+			opacity.value = withTiming(0, { duration: 200 });
+			scale.value = withTiming(0.9, { duration: 200 });
+		}
+	}, [isVisible]);
+
+	const backdropStyle = useAnimatedStyle(() => ({
+		opacity: opacity.value,
+	}));
+
+	const modalStyle = useAnimatedStyle(() => ({
+		transform: [{ scale: scale.value }],
+		opacity: opacity.value,
+	}));
+
+	if (!isVisible) return null;
 
 	return (
 		<Modal
-			isVisible={isVisible}
-			onBackdropPress={onClose}
-			onBackButtonPress={onClose}
-			useNativeDriver
-			useNativeDriverForBackdrop
-			animationIn={animationIn}
-			animationOut={animationOut}
-			hideModalContentWhileAnimating
-			backdropOpacity={0.5}
-			backdropColor={isDark ? '#000' : '#000'}
-			style={styles.modal}>
-			<View
-				style={[
-					styles.container,
-					{ backgroundColor: isDark ? '#1F2937' : '#FFFFFF' },
-					style,
-				]}>
-				{children}
+			transparent
+			visible={isVisible}
+			animationType="none"
+			onRequestClose={handleClose}
+			statusBarTranslucent>
+			<View className="flex-1 justify-center items-center">
+				<TouchableWithoutFeedback onPress={handleClose}>
+					<Animated.View
+						className="absolute inset-0 bg-black/50"
+						style={backdropStyle}
+					/>
+				</TouchableWithoutFeedback>
+
+				<KeyboardAvoidingView
+					behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+					className="w-full items-center justify-center"
+					pointerEvents="box-none">
+					<Animated.View
+						style={[modalStyle]}
+						className="bg-card rounded-2xl p-6 shadow-xl border border-border">
+						{children}
+					</Animated.View>
+				</KeyboardAvoidingView>
 			</View>
 		</Modal>
 	);
 };
-
-const styles = StyleSheet.create({
-	modal: {
-		justifyContent: 'center',
-		margin: 20,
-	},
-	container: {
-		borderRadius: 24,
-		padding: 24,
-		shadowColor: '#000',
-		shadowOffset: {
-			width: 0,
-			height: 4,
-		},
-		shadowOpacity: 0.25,
-		shadowRadius: 8,
-		elevation: 10,
-	},
-});
