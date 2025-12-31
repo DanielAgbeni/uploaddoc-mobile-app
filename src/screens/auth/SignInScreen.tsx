@@ -20,6 +20,7 @@ import AuthButton from '../../components/auth/AuthButton';
 import { LinearGradient } from 'expo-linear-gradient';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { useTheme } from '../../providers/ThemeProvider';
+import GoogleIcon from 'src/assets/icons/google.icon';
 
 type Props = NativeStackScreenProps<AuthStackParamList, 'SignIn'>;
 
@@ -79,14 +80,22 @@ export default function SignInScreen({ navigation }: Props) {
 		<KeyboardAvoidingView
 			behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
 			className="flex-1 bg-background">
-			{/* Background Gradient */}
+			{/* Enhanced Background Gradient */}
 			<LinearGradient
 				colors={
 					colorScheme === 'dark'
-						? ['rgba(68, 78, 187, 0.15)', 'transparent']
-						: ['rgba(68, 78, 187, 0.08)', 'transparent']
+						? [
+								'rgba(68, 78, 187, 0.2)',
+								'rgba(68, 78, 187, 0.05)',
+								'transparent',
+							]
+						: [
+								'rgba(68, 78, 187, 0.12)',
+								'rgba(68, 78, 187, 0.04)',
+								'transparent',
+							]
 				}
-				className="absolute top-0 left-0 right-0 h-96"
+				className="absolute top-0 left-0 right-0 h-[500px]"
 			/>
 
 			<ScrollView
@@ -94,30 +103,54 @@ export default function SignInScreen({ navigation }: Props) {
 				contentContainerClassName="flex-grow"
 				showsVerticalScrollIndicator={false}
 				keyboardShouldPersistTaps="handled">
-				<MainContainer className="flex-1 px-6 pt-16 pb-8">
-					{/* Hero Section */}
-					<View className="mb-10">
-						<CustomImage
-							source={require('../../assets/app-images/icon.png')}
-							className="w-16 h-16 rounded-2xl mb-6"
-							contentFit="cover"
-						/>
-						<Text className="text-4xl font-bold text-foreground mb-3">
+				<MainContainer className="flex-1 px-6 pt-20 pb-8">
+					{/* Hero Section with Enhanced Spacing */}
+					<View className="mb-12">
+						<View className="mb-8">
+							<CustomImage
+								source={require('../../assets/app-images/icon.png')}
+								className="w-20 h-20 rounded-3xl shadow-lg"
+								contentFit="cover"
+							/>
+						</View>
+						<Text className="text-[40px] font-bold text-foreground mb-2 leading-tight">
 							Welcome Back
 						</Text>
-						<Text className="text-lg text-muted-foreground">
-							Sign in to continue to your account
+						<Text className="text-base text-muted-foreground leading-relaxed">
+							Sign in to continue your journey
 						</Text>
 					</View>
 
-					{/* Form Container */}
+					{/* Form Card */}
 					<View className="flex-1">
+						{/* Social Login Section - Moved to Top */}
+						<Pressable
+							className="flex-row items-center justify-center border-2 border-border rounded-2xl py-4 mb-8 bg-card active:bg-muted"
+							style={({ pressed }) => ({
+								transform: [{ scale: pressed ? 0.98 : 1 }],
+							})}
+							disabled={loginMutation.isPending}>
+							<GoogleIcon />
+							<Text className="text-foreground font-semibold ml-3 text-base">
+								Continue with Google
+							</Text>
+						</Pressable>
+
+						{/* Divider */}
+						<View className="flex-row items-center mb-8">
+							<View className="flex-1 h-px bg-border" />
+							<Text className="px-4 text-muted-foreground text-sm font-medium">
+								Or sign in with email
+							</Text>
+							<View className="flex-1 h-px bg-border" />
+						</View>
+
 						{/* Email Field */}
 						<FormInput
 							name="email"
 							control={control}
 							label="Email Address"
-							placeholder="Enter your email"
+							placeholder="you@example.com"
 							icon="mail-outline"
 							keyboardType="email-address"
 							autoCapitalize="none"
@@ -133,7 +166,7 @@ export default function SignInScreen({ navigation }: Props) {
 						/>
 
 						{/* Password Field */}
-						<View className="mb-3">
+						<View className="mb-6">
 							<View className="flex-row justify-between items-center mb-2">
 								<Text className="text-foreground font-semibold text-base">
 									Password
@@ -141,9 +174,9 @@ export default function SignInScreen({ navigation }: Props) {
 								<Pressable
 									onPress={() => navigation.navigate('ForgotPassword')}
 									disabled={loginMutation.isPending}
-									className="active:opacity-70">
-									<Text className="text-primary font-medium text-sm">
-										Forgot?
+									className="active:opacity-70 py-1">
+									<Text className="text-primary font-semibold text-sm">
+										Forgot Password?
 									</Text>
 								</Pressable>
 							</View>
@@ -172,59 +205,24 @@ export default function SignInScreen({ navigation }: Props) {
 							title="Sign In"
 							onPress={handleSubmit(onSubmit)}
 							loading={loginMutation.isPending}
-							icon="log-in-outline"
-							className="mt-8"
+							className="mb-8"
 						/>
 
-						{/* Divider */}
-						<View className="flex-row items-center my-8">
-							<View className="flex-1 h-px bg-border" />
-							<Text className="px-4 text-muted-foreground text-sm">
-								or continue with
-							</Text>
-							<View className="flex-1 h-px bg-border" />
-						</View>
-
-						{/* Social Login Buttons (Placeholder) */}
-						<View className="flex-row gap-4 mb-8">
-							<Pressable
-								className="flex-1 flex-row items-center justify-center border border-border rounded-xl py-4 bg-card active:opacity-70"
-								style={({ pressed }) => ({
-									transform: [{ scale: pressed ? 0.98 : 1 }],
-								})}>
-								<Icon
-									name="logo-google"
-									size={20}
-									color="#EA4335"
-								/>
-								<Text className="text-foreground font-medium ml-2">Google</Text>
-							</Pressable>
-							<Pressable
-								className="flex-1 flex-row items-center justify-center border border-border rounded-xl py-4 bg-card active:opacity-70"
-								style={({ pressed }) => ({
-									transform: [{ scale: pressed ? 0.98 : 1 }],
-								})}>
-								<Icon
-									name="logo-apple"
-									size={20}
-									color={colorScheme === 'dark' ? '#fff' : '#000'}
-								/>
-								<Text className="text-foreground font-medium ml-2">Apple</Text>
-							</Pressable>
-						</View>
-
-						{/* Sign Up Section */}
-						<View className="items-center pb-4">
-							<Text className="text-muted-foreground text-base mb-4">
-								Don't have an account?
-							</Text>
-							<AuthButton
-								title="Create Account"
-								onPress={() => navigation.navigate('SignUp')}
-								variant="outline"
-								icon="person-add-outline"
-								disabled={loginMutation.isPending}
-							/>
+						{/* Sign Up Section - Enhanced */}
+						<View className="items-center pt-4 pb-4">
+							<View className="flex-row items-center mb-4">
+								<Text className="text-muted-foreground text-base mr-2">
+									Don't have an account?
+								</Text>
+								<Pressable
+									onPress={() => navigation.navigate('SignUp')}
+									disabled={loginMutation.isPending}
+									className="active:opacity-70 py-1">
+									<Text className="text-primary font-bold text-base">
+										Sign Up
+									</Text>
+								</Pressable>
+							</View>
 						</View>
 					</View>
 				</MainContainer>
