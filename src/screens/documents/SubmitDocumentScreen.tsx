@@ -11,12 +11,15 @@ import {
 } from 'react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import * as DocumentPicker from 'expo-document-picker';
+import * as FileSystem from 'expo-file-system';
+import { PDFDocument } from 'pdf-lib';
 import { LinearGradient } from 'expo-linear-gradient';
 import { DocumentsStackParamList } from '../../types/navigation.types';
 import { uploadProject, searchAdmins } from '../../api/projects';
 import { useUserStore } from '../../shared/user-store/useUserStore';
 import { onError, onSuccess } from '../../utils/toast';
 import { useDebouncedCallback } from 'use-debounce';
+import { useQueryClient } from '@tanstack/react-query';
 import { useTheme } from '../../providers/ThemeProvider';
 import { TextComponent } from 'src/components';
 import {
@@ -43,6 +46,7 @@ export default function SubmitDocumentScreen({ navigation, route }: Props) {
 	const { vendorId, vendorName, isVendorLocked } = route.params || {};
 	const { colors } = useTheme();
 	const { user } = useUserStore();
+	const queryClient = useQueryClient();
 
 	// Form state
 	const [selectedVendor, setSelectedVendor] = useState<AdminInfo | null>(
@@ -53,6 +57,7 @@ export default function SubmitDocumentScreen({ navigation, route }: Props) {
 	const [selectedFile, setSelectedFile] = useState<SelectedFile | null>(null);
 	const [title, setTitle] = useState('');
 	const [description, setDescription] = useState('');
+	const [pageCount, setPageCount] = useState<number | undefined>(undefined);
 	const [loading, setLoading] = useState(false);
 
 	// Vendor search state (inline dropdown like web version)
@@ -90,6 +95,35 @@ export default function SubmitDocumentScreen({ navigation, route }: Props) {
 		debouncedSearch(vendorSearchQuery);
 	}, [vendorSearchQuery]);
 
+	// Function to get PDF page count using pdf-lib
+	const getPdfPageCount = async (
+		fileUri: string,
+	): Promise<number | undefined> => {
+		try {
+			// Read the file as base64
+			const base64 = await FileSystem.readAsStringAsync(fileUri, {
+				encoding: FileSystem.EncodingType.Base64,
+			});
+
+			// Convert base64 to Uint8Array
+			const binaryString = atob(base64);
+			const bytes = new Uint8Array(binaryString.length);
+			for (let i = 0; i < binaryString.length; i++) {
+				bytes[i] = binaryString.charCodeAt(i);
+			}
+
+			// Load the PDF document
+			const pdfDoc = await PDFDocument.load(bytes, {
+				ignoreEncryption: true,
+			});
+
+			return pdfDoc.getPageCount();
+		} catch (error) {
+			console.error('Error getting PDF page count:', error);
+			return undefined;
+		}
+	};
+
 	const handleSelectFile = async () => {
 		try {
 			const result = await DocumentPicker.getDocumentAsync({
@@ -116,6 +150,15 @@ export default function SubmitDocumentScreen({ navigation, route }: Props) {
 					const fileName =
 						file.name.substring(0, file.name.lastIndexOf('.')) || file.name;
 					setTitle(fileName);
+				}
+
+				// Get page count if it's a PDF
+				if (file.mimeType?.includes('pdf')) {
+					const pages = await getPdfPageCount(file.uri);
+					setPageCount(pages);
+				} else {
+					// For non-PDF files (images), set page count to 1
+					setPageCount(1);
 				}
 			}
 		} catch (error) {
@@ -156,6 +199,11 @@ export default function SubmitDocumentScreen({ navigation, route }: Props) {
 				formData.append('description', description.trim());
 			}
 
+			// Include page count in payload if available
+			if (pageCount !== undefined) {
+				formData.append('pageCount', pageCount.toString());
+			}
+
 			formData.append('file', {
 				uri: selectedFile.uri,
 				name: selectedFile.name,
@@ -170,14 +218,11 @@ export default function SubmitDocumentScreen({ navigation, route }: Props) {
 				fileName: selectedFile.name,
 			});
 
-			const response = await uploadProject(formData);
-
-			if (response.data?.success) {
-				onSuccess('Success', 'Document submitted successfully!');
-				navigation.goBack();
-			} else {
-				throw new Error(response.data?.message || 'Failed to submit document');
-			}
+			await uploadProject(formData);
+			// Invalidate the student projects query so the list refreshes when navigating back
+			queryClient.invalidateQueries({ queryKey: ['studentProjects'] });
+			// Navigate back after successful upload
+			navigation.goBack();
 		} catch (error: any) {
 			console.error('Submit error:', error);
 			const message =
@@ -451,7 +496,10 @@ export default function SubmitDocumentScreen({ navigation, route }: Props) {
 										</View>
 									</View>
 									<Pressable
-										onPress={() => setSelectedFile(null)}
+										onPress={() => {
+											setSelectedFile(null);
+											setPageCount(undefined);
+										}}
 										className="bg-destructive/10 p-2.5 rounded-xl active:opacity-70">
 										<CloseIcon
 											size={18}
