@@ -15,6 +15,14 @@ import ExternalLinkIcon from './external-link.icon';
 import MonitorIcon from './monitor.icon';
 import EditIcon from './edit.icon';
 import HistoryIcon from './history.icon';
+import SearchIcon from './search.icon';
+import UploadIcon from './upload.icon';
+import FilePdfIcon from './file-pdf.icon';
+import FileWordIcon from './file-word.icon';
+import FileImageIcon from './file-image.icon';
+import LightbulbIcon from './lightbulb.icon';
+import CloseIcon from './close.icon';
+import DocumentTextIcon from './document-text.icon';
 
 export {
 	icon,
@@ -34,4 +42,12 @@ export {
 	MonitorIcon,
 	EditIcon,
 	HistoryIcon,
+	SearchIcon,
+	UploadIcon,
+	FilePdfIcon,
+	FileWordIcon,
+	FileImageIcon,
+	LightbulbIcon,
+	CloseIcon,
+	DocumentTextIcon,
 };

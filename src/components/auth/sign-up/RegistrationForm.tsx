@@ -8,6 +8,7 @@ import GoogleIcon from 'src/assets/icons/google.icon';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { AuthStackParamList } from 'src/types/navigation.types';
+import TextComponent from 'src/components/ui/TextComponent';
 
 type SignUpFormData = {
 	name: string;
@@ -53,18 +54,18 @@ const RegistrationForm = ({ onSubmit, isLoading }: RegistrationFormProps) => {
 						transform: [{ scale: pressed ? 0.98 : 1 }],
 					})}>
 					<GoogleIcon />
-					<Text className="text-foreground font-semibold ml-2 text-sm">
+					<TextComponent className="text-foreground font-semibold ml-2 text-sm">
 						Google
-					</Text>
+					</TextComponent>
 				</Pressable>
 			</View>
 
 			{/* Divider */}
 			<View className="flex-row items-center mb-8">
 				<View className="flex-1 h-px bg-border" />
-				<Text className="px-4 text-muted-foreground text-sm font-medium">
+				<TextComponent className="px-4 text-muted-foreground text-sm font-medium">
 					Or sign up with email
-				</Text>
+				</TextComponent>
 				<View className="flex-1 h-px bg-border" />
 			</View>
 
@@ -157,11 +158,16 @@ const RegistrationForm = ({ onSubmit, isLoading }: RegistrationFormProps) => {
 			/>
 
 			<View className="mb-6">
-				<Text className="text-muted-foreground text-sm text-center leading-5">
+				<TextComponent className="text-muted-foreground text-sm text-center leading-5">
 					By signing up, you agree to our{' '}
-					<Text className="text-primary font-semibold">Terms of Service</Text>{' '}
-					and <Text className="text-primary font-semibold">Privacy Policy</Text>
-				</Text>
+					<TextComponent className="text-primary font-semibold">
+						Terms of Service
+					</TextComponent>{' '}
+					and{' '}
+					<TextComponent className="text-primary font-semibold">
+						Privacy Policy
+					</TextComponent>
+				</TextComponent>
 			</View>
 
 			<AuthButton
@@ -173,13 +179,15 @@ const RegistrationForm = ({ onSubmit, isLoading }: RegistrationFormProps) => {
 
 			<View className="items-center pt-4 pb-4">
 				<View className="flex-row items-center">
-					<Text className="text-muted-foreground text-base mr-2">
+					<TextComponent className="text-muted-foreground text-base mr-2">
 						Already have an account?
-					</Text>
+					</TextComponent>
 					<Pressable
 						onPress={() => navigation.navigate('SignIn')}
 						className="active:opacity-70 py-1">
-						<Text className="text-primary font-bold text-base">Sign In</Text>
+						<TextComponent className="text-primary font-bold text-base">
+							Sign In
+						</TextComponent>
 					</Pressable>
 				</View>
 			</View>

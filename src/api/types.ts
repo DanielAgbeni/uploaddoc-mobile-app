@@ -149,7 +149,13 @@ declare global {
 		rejectedAt: string | null;
 		filePreview: string | null;
 		previewPublicId: string | null;
-		fileCategory: 'document' | 'image' | 'spreadsheet' | 'presentation' | 'design' | 'other';
+		fileCategory:
+			| 'document'
+			| 'image'
+			| 'spreadsheet'
+			| 'presentation'
+			| 'design'
+			| 'other';
 		pendingExpiry: string;
 		createdAt: string;
 		updatedAt: string;
@@ -297,6 +303,35 @@ declare global {
 		price: number;
 		tokens: number;
 		durationDays: number;
+	};
+
+	export type UploadProjectResponse = {
+		success: boolean;
+		message: string;
+		data: {
+			project: Project;
+		};
+	};
+
+	export type AdminInfo = {
+		_id: string;
+		name: string;
+		email: string;
+		profilePicture?: string;
+		printingLocation?: string;
+		printingCost?: number;
+		openingHours?: string;
+		rating?: number;
+		adminStatus?: string;
+		slug?: string;
+	};
+
+	export type AdminSearchResponse = {
+		success: boolean;
+		message: string;
+		data: {
+			admins: AdminInfo[];
+		};
 	};
 }
 

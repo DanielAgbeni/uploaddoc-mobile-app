@@ -18,6 +18,7 @@ import {
 	EditIcon,
 	HistoryIcon,
 } from 'src/assets/icons';
+import { CustomImage, TextComponent } from 'src/components';
 
 type Props = NativeStackScreenProps<AccountStackParamList, 'Profile'>;
 
@@ -181,23 +182,26 @@ export default function ProfileScreen({ navigation }: Props) {
 				className="pt-14 pb-8 px-6 rounded-b-3xl">
 				<View className="items-center">
 					{/* Avatar */}
-					<View className="w-24 h-24 bg-white/20 rounded-full items-center justify-center mb-4 border-4 border-white/30">
-						<Text className="text-4xl text-white font-bold">
-							{user.name.charAt(0).toUpperCase()}
-						</Text>
+					<View className="w-24 h-24 bg-white/20 rounded-full items-center justify-center mb-4 border-4 border-white/30 overflow-hidden">
+						<CustomImage
+							source={user?.profilePicture}
+							className="w-full h-full"
+						/>
 					</View>
 
 					{/* User Info */}
-					<Text className="text-white font-bold text-2xl mb-1">
-						{user.name}
-					</Text>
-					<Text className="text-white/80 text-base mb-3">{user.email}</Text>
+					<TextComponent className="text-white font-bold text-2xl mb-1">
+						{user?.name}
+					</TextComponent>
+					<TextComponent className="text-white/80 text-base mb-3">
+						{user?.email}
+					</TextComponent>
 
 					{/* Account Badge */}
 					<View className="bg-white/20 px-4 py-1.5 rounded-full">
-						<Text className="text-white font-semibold text-sm">
+						<TextComponent className="text-white font-semibold text-sm">
 							{isVendor ? '✓ Vendor Account' : 'User Account'}
-						</Text>
+						</TextComponent>
 					</View>
 				</View>
 			</LinearGradient>
@@ -206,9 +210,9 @@ export default function ProfileScreen({ navigation }: Props) {
 				{/* Vendor-Only Options */}
 				{isVendor && (
 					<View className="mb-6">
-						<Text className="text-muted-foreground text-xs font-semibold uppercase tracking-wider mb-3 px-1">
+						<TextComponent className="text-muted-foreground text-xs font-semibold uppercase tracking-wider mb-3 px-1">
 							Vendor Options
-						</Text>
+						</TextComponent>
 
 						<View className="card-3d rounded-2xl px-4">
 							<SettingRow
@@ -240,9 +244,9 @@ export default function ProfileScreen({ navigation }: Props) {
 
 				{/* Preferences Section */}
 				<View className="mb-6">
-					<Text className="text-muted-foreground text-xs font-semibold uppercase tracking-wider mb-3 px-1">
+					<TextComponent className="text-muted-foreground text-xs font-semibold uppercase tracking-wider mb-3 px-1">
 						Preferences
-					</Text>
+					</TextComponent>
 
 					<View className="card-3d rounded-2xl px-4">
 						{/* Notifications */}
@@ -287,12 +291,12 @@ export default function ProfileScreen({ navigation }: Props) {
 									)}
 								</View>
 								<View className="flex-1 ml-3">
-									<Text className="text-foreground font-semibold text-base">
+									<TextComponent className="text-foreground font-semibold text-base">
 										Appearance
-									</Text>
-									<Text className="text-muted-foreground text-sm mt-0.5">
+									</TextComponent>
+									<TextComponent className="text-muted-foreground text-sm mt-0.5">
 										Choose your preferred theme
-									</Text>
+									</TextComponent>
 								</View>
 							</View>
 
@@ -309,14 +313,14 @@ export default function ProfileScreen({ navigation }: Props) {
 											opacity: pressed ? 0.8 : 1,
 										})}>
 										<View className="mr-1.5">{option.icon}</View>
-										<Text
+										<TextComponent
 											className={`font-semibold text-sm ${
 												theme === option.value
 													? 'text-primary-foreground'
 													: 'text-foreground'
 											}`}>
 											{option.label}
-										</Text>
+										</TextComponent>
 									</Pressable>
 								))}
 							</View>
@@ -326,9 +330,9 @@ export default function ProfileScreen({ navigation }: Props) {
 
 				{/* Legal Section */}
 				<View className="mb-6">
-					<Text className="text-muted-foreground text-xs font-semibold uppercase tracking-wider mb-3 px-1">
+					<TextComponent className="text-muted-foreground text-xs font-semibold uppercase tracking-wider mb-3 px-1">
 						Legal
-					</Text>
+					</TextComponent>
 
 					<View className="card-3d rounded-2xl px-4">
 						<SettingRow
@@ -367,9 +371,9 @@ export default function ProfileScreen({ navigation }: Props) {
 
 				{/* Danger Zone */}
 				<View className="mb-6">
-					<Text className="text-muted-foreground text-xs font-semibold uppercase tracking-wider mb-3 px-1">
+					<TextComponent className="text-muted-foreground text-xs font-semibold uppercase tracking-wider mb-3 px-1">
 						Account
-					</Text>
+					</TextComponent>
 
 					<View className="card-3d rounded-2xl px-4">
 						<SettingRow
@@ -388,9 +392,9 @@ export default function ProfileScreen({ navigation }: Props) {
 				</View>
 
 				{/* App Version */}
-				<Text className="text-center text-muted-foreground text-xs mt-4">
-					UploadDoc v1.0.0
-				</Text>
+				<TextComponent className="text-center text-muted-foreground text-xs mt-4">
+					UploadDoc v2.0.0
+				</TextComponent>
 			</View>
 		</ScrollView>
 	);

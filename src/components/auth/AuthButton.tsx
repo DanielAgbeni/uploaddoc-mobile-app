@@ -1,7 +1,6 @@
 import React from 'react';
 import {
 	Pressable,
-	Text,
 	ActivityIndicator,
 	View,
 	PressableProps,
@@ -9,6 +8,7 @@ import {
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import Icon from 'react-native-vector-icons/Ionicons';
+import TextComponent from '../ui/TextComponent';
 
 interface AuthButtonProps extends PressableProps {
 	title: string;
@@ -43,12 +43,12 @@ export default function AuthButton({
 						color="#fff"
 						size="small"
 					/>
-					<Text
+					<TextComponent
 						className={`font-bold text-lg ${
 							variant === 'outline' ? 'text-primary' : 'text-primary-foreground'
 						}`}>
 						Please wait...
-					</Text>
+					</TextComponent>
 				</>
 			) : (
 				<>
@@ -59,12 +59,12 @@ export default function AuthButton({
 							color={variant === 'outline' ? '#444ebb' : '#fff'}
 						/>
 					)}
-					<Text
+					<TextComponent
 						className={`font-bold text-lg ${
 							variant === 'outline' ? 'text-primary' : 'text-primary-foreground'
 						}`}>
 						{title}
-					</Text>
+					</TextComponent>
 					{icon && iconPosition === 'right' && (
 						<Icon
 							name={icon}
