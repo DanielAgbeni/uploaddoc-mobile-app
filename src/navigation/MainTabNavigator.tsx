@@ -24,27 +24,28 @@ export default function MainTabNavigator() {
 	const user = useUserStore((state) => state.user);
 	const isVendor = user?.isAdmin || false; // Using isAdmin as proxy; adjust as needed
 	const insets = useSafeAreaInsets();
+	const { colors, colorScheme } = useTheme();
 
 	return (
 		<Tab.Navigator
 			screenOptions={{
 				headerShown: false,
-				tabBarActiveTintColor: '#1724ab', // Primary Blue
-				tabBarInactiveTintColor: '#6B7280',
+				tabBarActiveTintColor: colors.primary,
+				tabBarInactiveTintColor: colors.mutedForeground,
 				tabBarShowLabel: true,
 				// @ts-ignore: 'animation' is a valid option in v7 but might not be in the types yet if mismatch
 				animation: 'shift', // Adds transition animation between tabs
 				tabBarStyle: {
-					backgroundColor: '#FFFFFF',
+					backgroundColor: colors.background,
 					borderTopWidth: 1,
-					borderTopColor: '#E5E7EB',
+					borderTopColor: colors.border,
 					height: Platform.OS === 'ios' ? 60 + insets.bottom : 70,
 					paddingBottom: Platform.OS === 'ios' ? insets.bottom : 12,
 					paddingTop: 8,
 					elevation: 0, // Android shadow
-					shadowColor: '#000', // iOS shadow
+					shadowColor: colorScheme === 'dark' ? '#000' : '#000',
 					shadowOffset: { width: 0, height: -2 },
-					shadowOpacity: 0.05,
+					shadowOpacity: colorScheme === 'dark' ? 0.2 : 0.05,
 					shadowRadius: 4,
 				},
 				tabBarLabelStyle: {

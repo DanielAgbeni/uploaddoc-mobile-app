@@ -7,6 +7,14 @@ import ShieldIcon from './shield.icon';
 import ArrowForwardIcon from './arrow-forward.icon';
 import MoonIcon from './moon.icon';
 import SunIcon from './sun.icon';
+import BellIcon from './bell.icon';
+import UserIcon from './user.icon';
+import LogOutIcon from './log-out.icon';
+import ChevronRightIcon from './chevron-right.icon';
+import ExternalLinkIcon from './external-link.icon';
+import MonitorIcon from './monitor.icon';
+import EditIcon from './edit.icon';
+import HistoryIcon from './history.icon';
 
 export {
 	icon,
@@ -18,4 +26,12 @@ export {
 	ArrowForwardIcon,
 	MoonIcon,
 	SunIcon,
+	BellIcon,
+	UserIcon,
+	LogOutIcon,
+	ChevronRightIcon,
+	ExternalLinkIcon,
+	MonitorIcon,
+	EditIcon,
+	HistoryIcon,
 };

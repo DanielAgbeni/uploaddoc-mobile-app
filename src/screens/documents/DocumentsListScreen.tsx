@@ -27,6 +27,7 @@ import DocumentTextIcon from '../../assets/icons/document-text.icon';
 import AddIcon from '../../assets/icons/add.icon';
 import { AlertModal } from '../../components/ui/AlertModal';
 import { Pressable } from 'react-native';
+import { TextComponent } from 'src/components';
 
 type Props = NativeStackScreenProps<DocumentsStackParamList, 'DocumentsList'>;
 
@@ -137,9 +138,9 @@ export default function DocumentsListScreen({ navigation }: Props) {
 						size="large"
 						color="#4F46E5"
 					/>
-					<Text className="text-muted-foreground mt-4">
+					<TextComponent className="text-muted-foreground mt-4 font-medium">
 						Loading documents...
-					</Text>
+					</TextComponent>
 				</View>
 			);
 		}

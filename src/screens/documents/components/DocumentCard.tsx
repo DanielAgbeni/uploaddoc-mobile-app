@@ -1,9 +1,6 @@
 import React, { memo } from 'react';
 import { View, Text, Pressable } from 'react-native';
 import DocumentTextIcon from '../../../assets/icons/document-text.icon';
-import CheckmarkCircleIcon from '../../../assets/icons/checkmark-circle.icon';
-import CloseCircleIcon from '../../../assets/icons/close-circle.icon';
-import TimeIcon from '../../../assets/icons/time.icon';
 import DownloadIcon from '../../../assets/icons/download.icon';
 import TrashIcon from '../../../assets/icons/trash.icon';
 import { format } from 'date-fns';
@@ -128,7 +125,7 @@ const DocumentCard = ({ project, onDelete, onDownload }: DocumentCardProps) => {
 				<Text className="text-xs text-muted-foreground uppercase tracking-wider font-medium">
 					Assigned To
 				</Text>
-				<Text className="text-sm font-medium text-foreground/80">
+				<Text className="text-sm font-normal text-muted-foreground">
 					{project.assignedAdminName || 'UploadDoc'}
 				</Text>
 			</View>

@@ -1,15 +1,89 @@
 import React from 'react';
-import { View, Text, Pressable, ScrollView, Switch, Alert } from 'react-native';
+import { View, Text, Pressable, ScrollView, Switch } from 'react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
+import { LinearGradient } from 'expo-linear-gradient';
 import { AccountStackParamList } from '../../types/navigation.types';
 import { useUserStore } from '../../shared/user-store/useUserStore';
 import { useTheme, ThemeMode } from '../../providers/ThemeProvider';
-import { MoonIcon, SunIcon } from 'src/assets/icons';
+import { useModal } from '../../providers/ModalProvider';
+import {
+	MoonIcon,
+	SunIcon,
+	MonitorIcon,
+	BellIcon,
+	UserIcon,
+	LogOutIcon,
+	ChevronRightIcon,
+	ExternalLinkIcon,
+	EditIcon,
+	HistoryIcon,
+} from 'src/assets/icons';
 
 type Props = NativeStackScreenProps<AccountStackParamList, 'Profile'>;
 
+// Reusable setting row component
+interface SettingRowProps {
+	icon: React.ReactNode;
+	title: string;
+	subtitle?: string;
+	onPress?: () => void;
+	rightElement?: React.ReactNode;
+	showChevron?: boolean;
+	isDestructive?: boolean;
+}
+
+const SettingRow: React.FC<SettingRowProps> = ({
+	icon,
+	title,
+	subtitle,
+	onPress,
+	rightElement,
+	showChevron = true,
+	isDestructive = false,
+}) => {
+	const { colors } = useTheme();
+
+	return (
+		<Pressable
+			className="flex-row items-center py-4 active:opacity-70"
+			onPress={onPress}
+			disabled={!onPress}>
+			<View
+				className={`w-10 h-10 rounded-xl items-center justify-center ${
+					isDestructive ? 'bg-destructive/15' : 'bg-primary/10'
+				}`}>
+				{icon}
+			</View>
+			<View className="flex-1 ml-3">
+				<Text
+					className={`font-semibold text-base ${
+						isDestructive ? 'text-destructive' : 'text-foreground'
+					}`}>
+					{title}
+				</Text>
+				{subtitle && (
+					<Text className="text-muted-foreground text-sm mt-0.5">
+						{subtitle}
+					</Text>
+				)}
+			</View>
+			{rightElement}
+			{showChevron && onPress && (
+				<ChevronRightIcon
+					size={20}
+					color={isDestructive ? colors.destructive : colors.mutedForeground}
+				/>
+			)}
+		</Pressable>
+	);
+};
+
+// Separator component
+const Separator = () => <View className="h-px bg-border" />;
+
 export default function ProfileScreen({ navigation }: Props) {
-	const { theme, setTheme, colors } = useTheme();
+	const { theme, setTheme, colors, colorScheme } = useTheme();
+	const { showAlert } = useModal();
 	const user = useUserStore((state) => state.user);
 	const logout = useUserStore((state) => state.logout);
 	const [notifications, setNotifications] = React.useState(true);
@@ -22,38 +96,43 @@ export default function ProfileScreen({ navigation }: Props) {
 	};
 
 	const handleLogout = () => {
-		Alert.alert('Logout', 'Are you sure you want to logout?', [
-			{
-				text: 'Cancel',
-				style: 'cancel',
+		showAlert({
+			title: 'Logout',
+			message: 'Are you sure you want to logout?',
+			type: 'confirm',
+			isDestructive: true,
+			confirmText: 'Logout',
+			cancelText: 'Cancel',
+			onConfirm: () => {
+				logout();
+				// Navigation will be handled automatically by RootNavigator
 			},
-			{
-				text: 'Logout',
-				style: 'destructive',
-				onPress: () => {
-					logout();
-					// Navigation will be handled automatically by RootNavigator
-				},
-			},
-		]);
+		});
 	};
 
-	const handleOpenLink = (url: string) => {
-		// TODO: Open external link for Privacy Policy / Terms of Service
-		Alert.alert('Info', `Opening: ${url}`);
+	const handleOpenLink = (url: string, title: string) => {
+		showAlert({
+			title: title,
+			message: `This will open ${url} in your browser.`,
+			type: 'info',
+			confirmText: 'Open',
+			onConfirm: () => {
+				// TODO: Implement linking with Linking.openURL(url)
+			},
+		});
 	};
 
 	const themeOptions: {
 		value: ThemeMode;
 		label: string;
-		icon?: React.ReactNode;
+		icon: React.ReactNode;
 	}[] = [
 		{
 			value: 'light',
 			label: 'Light',
 			icon: (
 				<SunIcon
-					size={16}
+					size={18}
 					color={
 						theme === 'light' ? colors.primaryForeground : colors.foreground
 					}
@@ -65,7 +144,7 @@ export default function ProfileScreen({ navigation }: Props) {
 			label: 'Dark',
 			icon: (
 				<MoonIcon
-					size={16}
+					size={18}
 					color={
 						theme === 'dark' ? colors.primaryForeground : colors.foreground
 					}
@@ -74,7 +153,15 @@ export default function ProfileScreen({ navigation }: Props) {
 		},
 		{
 			value: 'system',
-			label: 'System',
+			label: 'Auto',
+			icon: (
+				<MonitorIcon
+					size={18}
+					color={
+						theme === 'system' ? colors.primaryForeground : colors.foreground
+					}
+				/>
+			),
 		},
 	];
 
@@ -83,103 +170,145 @@ export default function ProfileScreen({ navigation }: Props) {
 	}
 
 	return (
-		<ScrollView className="flex-1 bg-background">
-			<View className="p-6">
-				{/* Profile Header */}
-				<View className="card-3d rounded-xl p-6 items-center mb-6">
-					<View className="w-20 h-20 bg-primary rounded-full items-center justify-center mb-3">
-						<Text className="text-3xl text-primary-foreground font-bold">
+		<ScrollView
+			className="flex-1 bg-background"
+			showsVerticalScrollIndicator={false}>
+			{/* Gradient Header with Avatar */}
+			<LinearGradient
+				colors={[colors.primary, colors.accent]}
+				start={{ x: 0, y: 0 }}
+				end={{ x: 1, y: 1 }}
+				className="pt-14 pb-8 px-6 rounded-b-3xl">
+				<View className="items-center">
+					{/* Avatar */}
+					<View className="w-24 h-24 bg-white/20 rounded-full items-center justify-center mb-4 border-4 border-white/30">
+						<Text className="text-4xl text-white font-bold">
 							{user.name.charAt(0).toUpperCase()}
 						</Text>
 					</View>
-					<Text className="text-foreground font-bold text-xl mb-1">
+
+					{/* User Info */}
+					<Text className="text-white font-bold text-2xl mb-1">
 						{user.name}
 					</Text>
-					<Text className="text-muted-foreground mb-3">{user.email}</Text>
+					<Text className="text-white/80 text-base mb-3">{user.email}</Text>
 
-					<View className="bg-primary/20 px-4 py-1 rounded-full">
-						<Text className="text-primary font-semibold capitalize">
+					{/* Account Badge */}
+					<View className="bg-white/20 px-4 py-1.5 rounded-full">
+						<Text className="text-white font-semibold text-sm">
 							{isVendor ? '✓ Vendor Account' : 'User Account'}
 						</Text>
 					</View>
 				</View>
+			</LinearGradient>
 
+			<View className="px-5 pt-6 pb-8">
 				{/* Vendor-Only Options */}
 				{isVendor && (
 					<View className="mb-6">
-						<Text className="text-foreground font-bold text-lg mb-3">
+						<Text className="text-muted-foreground text-xs font-semibold uppercase tracking-wider mb-3 px-1">
 							Vendor Options
 						</Text>
 
-						<Pressable
-							className="card-3d rounded-xl p-4 mb-3 flex-row justify-between items-center active:opacity-80"
-							onPress={() => navigation.navigate('EditProfile')}>
-							<View>
-								<Text className="text-foreground font-semibold">
-									Edit Profile
-								</Text>
-								<Text className="text-muted-foreground text-sm">
-									Update vendor information
-								</Text>
-							</View>
-							<Text className="text-primary">→</Text>
-						</Pressable>
-
-						<Pressable
-							className="card-3d rounded-xl p-4 flex-row justify-between items-center active:opacity-80"
-							onPress={() => navigation.navigate('TransactionHistory')}>
-							<View>
-								<Text className="text-foreground font-semibold">
-									Transaction History
-								</Text>
-								<Text className="text-muted-foreground text-sm">
-									View token purchases & usage
-								</Text>
-							</View>
-							<Text className="text-primary">→</Text>
-						</Pressable>
+						<View className="card-3d rounded-2xl px-4">
+							<SettingRow
+								icon={
+									<EditIcon
+										size={20}
+										color={colors.primary}
+									/>
+								}
+								title="Edit Profile"
+								subtitle="Update vendor information"
+								onPress={() => navigation.navigate('EditProfile')}
+							/>
+							<Separator />
+							<SettingRow
+								icon={
+									<HistoryIcon
+										size={20}
+										color={colors.primary}
+									/>
+								}
+								title="Transaction History"
+								subtitle="View token purchases & usage"
+								onPress={() => navigation.navigate('TransactionHistory')}
+							/>
+						</View>
 					</View>
 				)}
 
-				{/* Settings Section */}
+				{/* Preferences Section */}
 				<View className="mb-6">
-					<Text className="text-foreground font-bold text-lg mb-3">
-						Settings
+					<Text className="text-muted-foreground text-xs font-semibold uppercase tracking-wider mb-3 px-1">
+						Preferences
 					</Text>
 
-					<View className="card-3d rounded-xl p-4 mb-3">
-						<View className="flex-row justify-between items-center mb-4 pb-4 border-b border-border">
-							<View className="flex-1">
-								<Text className="text-foreground font-semibold">
-									Push Notifications
-								</Text>
-								<Text className="text-muted-foreground text-sm">
-									Receive updates about your documents
-								</Text>
-							</View>
-							<Switch
-								value={notifications}
-								onValueChange={handleToggleNotifications}
-							/>
-						</View>
+					<View className="card-3d rounded-2xl px-4">
+						{/* Notifications */}
+						<SettingRow
+							icon={
+								<BellIcon
+									size={20}
+									color={colors.primary}
+								/>
+							}
+							title="Push Notifications"
+							subtitle="Receive updates about your documents"
+							showChevron={false}
+							rightElement={
+								<Switch
+									value={notifications}
+									onValueChange={handleToggleNotifications}
+									trackColor={{
+										false: colors.muted,
+										true: colors.primary + '60',
+									}}
+									thumbColor={notifications ? colors.primary : colors.border}
+								/>
+							}
+						/>
+						<Separator />
 
 						{/* Theme Selector */}
-						<View>
-							<Text className="text-foreground font-semibold mb-3">Theme</Text>
-							<View className="flex-row bg-muted rounded-full p-1">
+						<View className="py-4">
+							<View className="flex-row items-center mb-4">
+								<View className="w-10 h-10 rounded-xl items-center justify-center bg-primary/10">
+									{colorScheme === 'dark' ? (
+										<MoonIcon
+											size={20}
+											color={colors.primary}
+										/>
+									) : (
+										<SunIcon
+											size={20}
+											color={colors.primary}
+										/>
+									)}
+								</View>
+								<View className="flex-1 ml-3">
+									<Text className="text-foreground font-semibold text-base">
+										Appearance
+									</Text>
+									<Text className="text-muted-foreground text-sm mt-0.5">
+										Choose your preferred theme
+									</Text>
+								</View>
+							</View>
+
+							{/* Theme Toggle Buttons */}
+							<View className="flex-row bg-muted rounded-xl p-1">
 								{themeOptions.map((option) => (
 									<Pressable
 										key={option.value}
 										onPress={() => setTheme(option.value)}
-										className={`flex-1 flex-row items-center justify-center py-2.5 px-3 rounded-full ${
+										className={`flex-1 flex-row items-center justify-center py-2.5 px-2 rounded-lg ${
 											theme === option.value ? 'bg-primary' : ''
 										}`}
 										style={({ pressed }) => ({
 											opacity: pressed ? 0.8 : 1,
 										})}>
-										{option.icon && (
-											<View className="mr-1.5">{option.icon}</View>
-										)}
+										<View className="mr-1.5">{option.icon}</View>
 										<Text
 											className={`font-semibold text-sm ${
 												theme === option.value
@@ -197,35 +326,71 @@ export default function ProfileScreen({ navigation }: Props) {
 
 				{/* Legal Section */}
 				<View className="mb-6">
-					<Text className="text-foreground font-bold text-lg mb-3">Legal</Text>
+					<Text className="text-muted-foreground text-xs font-semibold uppercase tracking-wider mb-3 px-1">
+						Legal
+					</Text>
 
-					<Pressable
-						className="card-3d rounded-xl p-4 mb-3 flex-row justify-between items-center active:opacity-80"
-						onPress={() => handleOpenLink('https://uploaddoc.app/privacy')}>
-						<Text className="text-foreground font-semibold">
-							Privacy Policy
-						</Text>
-						<Text className="text-primary">→</Text>
-					</Pressable>
-
-					<Pressable
-						className="card-3d rounded-xl p-4 flex-row justify-between items-center active:opacity-80"
-						onPress={() => handleOpenLink('https://uploaddoc.app/terms')}>
-						<Text className="text-foreground font-semibold">
-							Terms of Service
-						</Text>
-						<Text className="text-primary">→</Text>
-					</Pressable>
+					<View className="card-3d rounded-2xl px-4">
+						<SettingRow
+							icon={
+								<ExternalLinkIcon
+									size={20}
+									color={colors.primary}
+								/>
+							}
+							title="Privacy Policy"
+							onPress={() =>
+								handleOpenLink(
+									'https://uploaddoc.app/privacy',
+									'Privacy Policy',
+								)
+							}
+						/>
+						<Separator />
+						<SettingRow
+							icon={
+								<ExternalLinkIcon
+									size={20}
+									color={colors.primary}
+								/>
+							}
+							title="Terms of Service"
+							onPress={() =>
+								handleOpenLink(
+									'https://uploaddoc.app/terms',
+									'Terms of Service',
+								)
+							}
+						/>
+					</View>
 				</View>
 
-				{/* Logout Button */}
-				<Pressable
-					className="bg-destructive p-4 rounded-lg items-center active:opacity-80 mb-8"
-					onPress={handleLogout}>
-					<Text className="text-destructive-foreground font-bold text-lg">
-						Logout
+				{/* Danger Zone */}
+				<View className="mb-6">
+					<Text className="text-muted-foreground text-xs font-semibold uppercase tracking-wider mb-3 px-1">
+						Account
 					</Text>
-				</Pressable>
+
+					<View className="card-3d rounded-2xl px-4">
+						<SettingRow
+							icon={
+								<LogOutIcon
+									size={20}
+									color={colors.destructive}
+								/>
+							}
+							title="Logout"
+							subtitle="Sign out of your account"
+							onPress={handleLogout}
+							isDestructive
+						/>
+					</View>
+				</View>
+
+				{/* App Version */}
+				<Text className="text-center text-muted-foreground text-xs mt-4">
+					UploadDoc v1.0.0
+				</Text>
 			</View>
 		</ScrollView>
 	);

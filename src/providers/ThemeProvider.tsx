@@ -9,7 +9,8 @@ import { useColorScheme } from 'react-native';
 import { storage } from '../utils/storage';
 import { getColorsForScheme, type ThemeColors } from '../theme/colors';
 
-type Theme = 'light' | 'dark' | 'system';
+export type ThemeMode = 'light' | 'dark' | 'system';
+type Theme = ThemeMode;
 
 interface ThemeContextType {
 	theme: Theme;
