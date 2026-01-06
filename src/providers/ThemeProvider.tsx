@@ -7,12 +7,14 @@ import React, {
 } from 'react';
 import { useColorScheme } from 'react-native';
 import { storage } from '../utils/storage';
+import { getColorsForScheme, type ThemeColors } from '../theme/colors';
 
 type Theme = 'light' | 'dark' | 'system';
 
 interface ThemeContextType {
 	theme: Theme;
 	colorScheme: 'light' | 'dark';
+	colors: ThemeColors;
 	setTheme: (theme: Theme) => void;
 	toggleTheme: () => void;
 }
@@ -51,9 +53,12 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
 	const colorScheme: 'light' | 'dark' =
 		theme === 'system' ? systemColorScheme : theme;
 
+	// Get colors for the current scheme
+	const colors = getColorsForScheme(colorScheme);
+
 	return (
 		<ThemeContext.Provider
-			value={{ theme, colorScheme, setTheme, toggleTheme }}>
+			value={{ theme, colorScheme, colors, setTheme, toggleTheme }}>
 			{children}
 		</ThemeContext.Provider>
 	);

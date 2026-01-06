@@ -1,5 +1,6 @@
 import './src/styles/global.css';
 import { StatusBar } from 'expo-status-bar';
+import { View } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { queryClient } from './src/config/queryClient';
@@ -12,7 +13,7 @@ function AppContent() {
 	const { colorScheme } = useTheme();
 
 	return (
-		<>
+		<View className={`flex-1 ${colorScheme === 'dark' ? 'dark' : ''}`}>
 			<RootNavigator />
 			<StatusBar style={colorScheme === 'dark' ? 'light' : 'dark'} />
 			<FlashMessage
@@ -22,7 +23,7 @@ function AppContent() {
 				titleStyle={{ fontSize: 16, fontWeight: '600' }}
 				textStyle={{ fontSize: 14 }}
 			/>
-		</>
+		</View>
 	);
 }
 

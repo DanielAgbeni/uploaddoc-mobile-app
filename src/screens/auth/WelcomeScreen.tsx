@@ -1,18 +1,11 @@
-import React, { useEffect } from 'react';
-import { View, Text, Pressable, StatusBar as RNStatusBar } from 'react-native';
+import React, { memo, useEffect } from 'react';
+import { View, Text, Pressable } from 'react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { AuthStackParamList } from '../../types/navigation.types';
 import CustomImage from '../../components/common/CustomImage';
 import { LinearGradient } from 'expo-linear-gradient';
-import Icon from 'react-native-vector-icons/Ionicons';
 import { useTheme } from '../../providers/ThemeProvider';
-import LoginIcon from 'src/assets/icons/login.icon';
-import {
-	ShieldIcon,
-	MoonIcon,
-	SunIcon,
-	ArrowForwardIcon,
-} from 'src/assets/icons'; // Using index export for new ones to test it
+import { MoonIcon, SunIcon } from 'src/assets/icons';
 import Animated, {
 	FadeInDown,
 	FadeInUp,
@@ -20,61 +13,61 @@ import Animated, {
 	useSharedValue,
 	withRepeat,
 	withSequence,
-	withSpring,
 	withTiming,
 } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
+import GoogleIcon from 'src/assets/icons/google.icon';
+import MaskedView from '@react-native-masked-view/masked-view';
 
 type Props = NativeStackScreenProps<AuthStackParamList, 'Welcome'>;
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
-export default function WelcomeScreen({ navigation }: Props) {
-	const { colorScheme, theme, setTheme, toggleTheme } = useTheme();
+const WelcomeScreen = memo(function WelcomeScreen({ navigation }: Props) {
+	const { colorScheme, theme, setTheme, colors } = useTheme();
 	const insets = useSafeAreaInsets();
 
-	// Floating animation for the logo
+	// Floating animation for the icon/logo
 	const translateY = useSharedValue(0);
 
 	useEffect(() => {
 		translateY.value = withRepeat(
 			withSequence(
-				withTiming(-10, { duration: 1500 }),
-				withTiming(0, { duration: 1500 }),
+				withTiming(-12, { duration: 2000 }),
+				withTiming(0, { duration: 2000 }),
 			),
 			-1,
 			true,
 		);
 	}, []);
 
-	const logoStyle = useAnimatedStyle(() => {
-		return {
-			transform: [{ translateY: translateY.value }],
-		};
-	});
+	const logoStyle = useAnimatedStyle(() => ({
+		transform: [{ translateY: translateY.value }],
+	}));
 
 	const getThemeIcon = () => {
+		const iconColor = colors.foreground;
 		if (theme === 'light')
 			return (
 				<SunIcon
 					size={20}
-					color={colorScheme === 'dark' ? '#fff' : '#000'}
+					color={iconColor}
 				/>
 			);
 		if (theme === 'dark')
 			return (
 				<MoonIcon
 					size={20}
-					color={colorScheme === 'dark' ? '#fff' : '#000'}
+					color={iconColor}
 				/>
 			);
 		return (
 			<SunIcon
 				size={20}
-				color={colorScheme === 'dark' ? '#fff' : '#000'}
+				color={iconColor}
 			/>
-		); // Fallback/System
+		);
 	};
 
 	const cycleTheme = () => {
@@ -87,117 +80,140 @@ export default function WelcomeScreen({ navigation }: Props) {
 		<View className="flex-1 bg-background">
 			<StatusBar style={colorScheme === 'dark' ? 'light' : 'dark'} />
 
-			{/* Dynamic Background Gradient */}
+			{/* Top Progress Bar */}
+			<View
+				className="bg-primary/90"
+				style={{
+					height: 4,
+					marginTop: insets.top,
+					width: '100%',
+				}}
+			/>
+
+			{/* Subtle gradient overlay */}
 			<LinearGradient
 				colors={
 					colorScheme === 'dark'
-						? ['rgba(68, 78, 187, 0.2)', 'transparent', 'transparent']
-						: [
-								'rgba(68, 78, 187, 0.1)',
-								'rgba(68, 78, 187, 0.05)',
-								'transparent',
-							]
+						? ['transparent', `${colors.primary}15`, 'transparent']
+						: ['transparent', `${colors.primary}08`, 'transparent']
 				}
 				className="absolute inset-0"
 				start={{ x: 0.5, y: 0 }}
 				end={{ x: 0.5, y: 1 }}
 			/>
 
-			{/* Top Bar with Theme Toggle */}
+			{/* Top Bar - Theme Toggle */}
 			<Animated.View
 				entering={FadeInUp.delay(200).springify()}
-				style={{ paddingTop: insets.top + 16 }}
-				className="flex-row justify-end px-6 z-10">
+				style={{ paddingTop: 16 }}
+				className="flex-row justify-end px-5 z-10">
 				<Pressable
 					onPress={cycleTheme}
-					className="w-10 h-10 rounded-full bg-card border border-border items-center justify-center active:bg-muted">
+					className="w-9 h-9 rounded-full bg-card/80 backdrop-blur border border-border/40 items-center justify-center active:bg-muted">
 					{getThemeIcon()}
 				</Pressable>
 			</Animated.View>
 
-			<View className="flex-1 justify-center items-center px-6">
-				{/* Logo/Brand Section */}
-				<View className="items-center mb-16 w-full">
-					<Animated.View
-						entering={FadeInDown.delay(300).springify()}
-						style={logoStyle}
-						className="mb-8 items-center">
-						<View className="shadow-2xl shadow-primary/30">
-							<CustomImage
-								source={require('../../assets/app-images/icon.png')}
-								className="w-40 h-40 rounded-3xl"
-								contentFit="cover"
-							/>
-						</View>
-						<View className="absolute -bottom-4 bg-card border border-border rounded-full px-4 py-1.5 flex-row items-center shadow-sm">
-							<ShieldIcon
-								size={14}
-								color="#4F46E5"
-							/>
-							<Text className="text-foreground text-xs font-semibold ml-1.5">
-								Trusted by Pros
-							</Text>
-						</View>
-					</Animated.View>
+			{/* Main Content */}
+			<View className="flex-1 justify-center items-center px-6 -mt-8">
+				{/* App Icon/Logo with rounded gradient container */}
+				<Animated.View
+					entering={FadeInDown.delay(300).springify()}
+					style={logoStyle}
+					className="mb-16">
+					<View className="bg-background rounded-[60px] overflow-hidden">
+						<CustomImage
+							source={require('../../assets/app-images/icon.png')}
+							className="w-48 h-48"
+							contentFit="contain"
+						/>
+					</View>
+				</Animated.View>
 
-					<Animated.View
-						entering={FadeInDown.delay(400).springify()}
-						className="items-center">
-						<Text className="text-4xl font-bold text-foreground mb-4 text-center tracking-tight">
-							UploadDoc
-						</Text>
-						<Text className="text-muted-foreground text-center text-lg px-4 leading-7">
-							Simplify document submission and{'\n'}management with{' '}
-							<Text className="text-primary font-semibold">ease</Text>
-						</Text>
-					</Animated.View>
-				</View>
+				{/* Headline with gradient text */}
+				<Animated.View
+					entering={FadeInDown.delay(500).springify()}
+					className="items-center mb-16 px-4">
+					{/* Gradient "UploadDoc:" text */}
+					<MaskedView
+						maskElement={
+							<Text
+								className="font-black text-center"
+								style={{ fontSize: 38, letterSpacing: -0.5 }}>
+								UploadDoc:
+							</Text>
+						}>
+						<LinearGradient
+							colors={[colors.gradientStart, colors.gradientEnd]}
+							start={{ x: 0, y: 0 }}
+							end={{ x: 1, y: 0 }}>
+							<Text
+								className="font-black text-center opacity-0"
+								style={{ fontSize: 38, letterSpacing: -0.5 }}>
+								UploadDoc:
+							</Text>
+						</LinearGradient>
+					</MaskedView>
+					<Text
+						className="text-foreground font-black text-center leading-tight"
+						style={{ fontSize: 38, letterSpacing: -0.5 }}>
+						Document management, simplified
+					</Text>
+				</Animated.View>
 
 				{/* Action Buttons */}
 				<Animated.View
-					entering={FadeInDown.delay(600).springify()}
-					className="w-full max-w-sm gap-4 pb-8">
-					{/* Primary Sign In Button with Gradient */}
+					entering={FadeInDown.delay(700).springify()}
+					className="w-full max-w-md gap-3.5 px-6"
+					style={{ paddingBottom: insets.bottom + 24 }}>
+					{/* Log in Button */}
 					<AnimatedPressable
 						onPress={() => navigation.navigate('SignIn')}
-						className="overflow-hidden rounded-2xl shadow-lg shadow-indigo-500/30"
+						className="rounded-full py-4 px-8 active:opacity-90 bg-primary"
 						style={({ pressed }) => ({
-							transform: [{ scale: pressed ? 0.98 : 1 }],
+							transform: [{ scale: pressed ? 0.97 : 1 }],
 						})}>
-						<LinearGradient
-							colors={['#4F46E5', '#4338CA']} // Indigo-600 to Indigo-700
-							start={{ x: 0, y: 0 }}
-							end={{ x: 1, y: 1 }}
-							className="py-4 px-6 flex-row items-center justify-center">
-							<View className="mr-3 bg-white/20 p-1.5 rounded-lg">
-								<LoginIcon
-									size={20}
-									color="#fff"
-								/>
-							</View>
-							<Text className="text-white font-bold text-lg">Sign In</Text>
-						</LinearGradient>
+						<Text
+							className="font-bold text-center text-lg"
+							style={{ color: colors.primaryForeground }}>
+							Log in
+						</Text>
 					</AnimatedPressable>
 
-					{/* Secondary Sign Up Button */}
+					{/* Register Button */}
 					<AnimatedPressable
 						onPress={() => navigation.navigate('SignUp')}
-						className="border-2 border-border/60 rounded-2xl py-4 px-6 bg-card active:bg-muted/50"
+						className="rounded-full py-4 px-8 active:opacity-90 bg-primary"
 						style={({ pressed }) => ({
-							transform: [{ scale: pressed ? 0.98 : 1 }],
+							transform: [{ scale: pressed ? 0.97 : 1 }],
 						})}>
-						<View className="flex-row items-center justify-center">
-							<Text className="text-foreground font-semibold text-lg mr-2">
-								Create Account
-							</Text>
-							<ArrowForwardIcon
-								size={18}
-								color={colorScheme === 'dark' ? '#fff' : '#000'}
-							/>
+						<Text
+							className="font-bold text-center text-lg"
+							style={{ color: colors.primaryForeground }}>
+							Register
+						</Text>
+					</AnimatedPressable>
+
+					{/* Sign in with Google */}
+					<AnimatedPressable
+						onPress={() => {
+							// Handle Google Sign In
+						}}
+						className="rounded-full py-4 px-8 bg-accent-foreground active:opacity-80 flex-row items-center justify-center gap-3"
+						style={({ pressed }) => ({
+							transform: [{ scale: pressed ? 0.97 : 1 }],
+						})}>
+						<View className="w-5 h-5 rounded-full items-center justify-center">
+							<GoogleIcon size={20} />
 						</View>
+						<Text className="text-white dark:text-black font-semibold text-center text-base">
+							Sign in with Google
+						</Text>
 					</AnimatedPressable>
 				</Animated.View>
 			</View>
 		</View>
 	);
-}
+});
+
+export default WelcomeScreen;
