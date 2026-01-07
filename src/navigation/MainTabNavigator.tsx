@@ -1,5 +1,4 @@
 import React from 'react';
-import { View, Platform, StyleSheet } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { MainTabParamList } from '../types/navigation.types';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -39,10 +38,10 @@ export default function MainTabNavigator() {
 					backgroundColor: colors.background,
 					borderTopWidth: 1,
 					borderTopColor: colors.border,
-					height: Platform.OS === 'ios' ? 60 + insets.bottom : 70,
-					paddingBottom: Platform.OS === 'ios' ? insets.bottom : 12,
+					height: 60 + Math.max(insets.bottom, 16),
+					paddingBottom: Math.max(insets.bottom, 16),
 					paddingTop: 8,
-					elevation: 0, // Android shadow
+					elevation: 0,
 					shadowColor: colorScheme === 'dark' ? '#000' : '#000',
 					shadowOffset: { width: 0, height: -2 },
 					shadowOpacity: colorScheme === 'dark' ? 0.2 : 0.05,

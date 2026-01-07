@@ -18,8 +18,11 @@ import { getStudentProjects, deleteProject } from '../../api/projects';
 import DocumentsHeader from './components/DocumentsHeader';
 import DocumentCard from './components/DocumentCard';
 import { useDebounce } from 'use-debounce';
-import * as Linking from 'expo-linking';
 import { FlashList } from '@shopify/flash-list';
+import {
+	downloadDocument,
+	getDownloadFolderPath,
+} from '../../utils/fileDownload';
 import SearchIcon from '../../assets/icons/search.icon';
 import CloseCircleIcon from '../../assets/icons/close-circle.icon';
 import AlertCircleIcon from '../../assets/icons/alert-circle.icon';
@@ -97,8 +100,54 @@ export default function DocumentsListScreen({ navigation }: Props) {
 		}
 	};
 
-	const handleDownload = useCallback((url: string) => {
-		Linking.openURL(url);
+	const handleDownload = useCallback(async (project: Project) => {
+		if (!project.fileUrl) {
+			showMessage({
+				message: 'Error',
+				description: 'No file URL available for this document',
+				type: 'danger',
+				icon: 'danger',
+			});
+			return;
+		}
+
+		console.log('[DocumentsList] Download requested for:', project.title);
+		console.log('[DocumentsList] Download folder:', getDownloadFolderPath());
+
+		showMessage({
+			message: 'Downloading...',
+			description: `Starting download: ${project.title}`,
+			type: 'info',
+			icon: 'info',
+		});
+
+		const result = await downloadDocument(
+			project.fileUrl,
+			project.title,
+			project.fileType,
+		);
+
+		if (result.success) {
+			console.log('[DocumentsList] Download successful:', result.filePath);
+			console.log('[DocumentsList] Saved to public storage:', result.isPublic);
+			showMessage({
+				message: 'Download Complete',
+				description: result.isPublic
+					? `Saved to Downloads folder: ${project.title}`
+					: `Saved to app storage: ${project.title}`,
+				type: 'success',
+				icon: 'success',
+				duration: 4000,
+			});
+		} else {
+			console.error('[DocumentsList] Download failed:', result.error);
+			showMessage({
+				message: 'Download Failed',
+				description: result.error || 'An error occurred while downloading',
+				type: 'danger',
+				icon: 'danger',
+			});
+		}
 	}, []);
 
 	const projects = useMemo(() => {

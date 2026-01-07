@@ -8,7 +8,7 @@ import { format } from 'date-fns';
 type DocumentCardProps = {
 	project: Project;
 	onDelete: (id: string) => void;
-	onDownload: (url: string) => void;
+	onDownload: (project: Project) => void;
 };
 
 const DocumentCard = ({ project, onDelete, onDownload }: DocumentCardProps) => {
@@ -101,7 +101,7 @@ const DocumentCard = ({ project, onDelete, onDownload }: DocumentCardProps) => {
 						<View className="flex-row gap-1">
 							{project.fileUrl && (
 								<Pressable
-									onPress={() => onDownload(project.fileUrl!)}
+									onPress={() => onDownload(project)}
 									className="p-2 rounded-full active:bg-muted">
 									<DownloadIcon
 										size={18}
