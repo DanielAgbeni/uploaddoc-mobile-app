@@ -1,122 +1,239 @@
-import React from 'react';
-import { View, Text, FlatList, Pressable, TextInput } from 'react-native';
+import React, { useState, useCallback } from 'react';
+import {
+	View,
+	TextInput,
+	FlatList,
+	ActivityIndicator,
+	RefreshControl,
+} from 'react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { VendorsStackParamList } from '../../types/navigation.types';
+import { CompositeNavigationProp } from '@react-navigation/native';
+import { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
+import { useInfiniteQuery } from '@tanstack/react-query';
+import { useDebouncedCallback } from 'use-debounce';
+import { LinearGradient } from 'expo-linear-gradient';
 
-type Props = NativeStackScreenProps<VendorsStackParamList, 'VendorsList'>;
+import {
+	VendorsStackParamList,
+	MainTabParamList,
+	Admin,
+} from '../../types/navigation.types';
+import { fetchAdmins } from '../../api/admins';
+import { useTheme } from '../../providers/ThemeProvider';
+import { TextComponent } from 'src/components';
+import { SearchIcon, StacksIcon } from 'src/assets/icons';
+import VendorCard from 'src/components/vendors/VendorCard';
 
-// Mock data - replace with actual API data
-const mockVendors = [
-  {
-    id: '1',
-    name: 'Acme Corporation',
-    description: 'Global supplier of office supplies and equipment',
-    acceptanceRate: 95,
-    documentsReceived: 1234,
-  },
-  {
-    id: '2',
-    name: 'Tech Supplies Inc',
-    description: 'Leading provider of technology and software solutions',
-    acceptanceRate: 88,
-    documentsReceived: 856,
-  },
-  {
-    id: '3',
-    name: 'Office Depot',
-    description: 'Comprehensive office and business supplies',
-    acceptanceRate: 92,
-    documentsReceived: 2105,
-  },
-];
+type NavigationProp = CompositeNavigationProp<
+	NativeStackScreenProps<VendorsStackParamList, 'VendorsList'>['navigation'],
+	BottomTabNavigationProp<MainTabParamList>
+>;
+
+type Props = {
+	navigation: NavigationProp;
+	route: NativeStackScreenProps<VendorsStackParamList, 'VendorsList'>['route'];
+};
 
 export default function VendorsListScreen({ navigation }: Props) {
-  const [searchQuery, setSearchQuery] = React.useState('');
+	const { colors } = useTheme();
+	const [searchQuery, setSearchQuery] = useState('');
+	const [debouncedQuery, setDebouncedQuery] = useState('');
 
-  const filteredVendors = mockVendors.filter((vendor) =>
-    vendor.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    vendor.description.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+	// Debounce search
+	const debouncedSearch = useDebouncedCallback((query: string) => {
+		setDebouncedQuery(query);
+	}, 500);
 
-  const renderVendor = ({ item }: { item: typeof mockVendors[0] }) => {
-    const rateColor =
-      item.acceptanceRate >= 90
-        ? 'text-green-600'
-        : item.acceptanceRate >= 75
-        ? 'text-yellow-600'
-        : 'text-red-600';
+	const handleSearchChange = (query: string) => {
+		setSearchQuery(query);
+		debouncedSearch(query);
+	};
 
-    return (
-      <Pressable
-        className="card-3d rounded-xl p-4 mb-3 active:opacity-80"
-        onPress={() => navigation.navigate('VendorDetails', { vendorId: item.id })}
-      >
-        <View className="flex-row justify-between items-start mb-2">
-          <View className="flex-1">
-            <Text className="text-foreground font-bold text-lg mb-1">{item.name}</Text>
-            <Text className="text-muted-foreground text-sm" numberOfLines={2}>
-              {item.description}
-            </Text>
-          </View>
-        </View>
+	// Infinite query for admins
+	const {
+		data,
+		isLoading,
+		isError,
+		refetch,
+		fetchNextPage,
+		hasNextPage,
+		isFetchingNextPage,
+		isRefetching,
+	} = useInfiniteQuery({
+		queryKey: ['admins', debouncedQuery],
+		queryFn: async ({ pageParam = 1 }) => {
+			return fetchAdmins({ page: pageParam, limit: 12, query: debouncedQuery });
+		},
+		getNextPageParam: (lastPage) => {
+			const { currentPage, totalPages } = lastPage.data.pagination;
+			return currentPage < totalPages ? currentPage + 1 : undefined;
+		},
+		initialPageParam: 1,
+	});
 
-        <View className="flex-row justify-between items-center mt-3 pt-3 border-t border-border">
-          <View>
-            <Text className="text-muted-foreground text-xs mb-1">Acceptance Rate</Text>
-            <Text className={`font-bold text-lg ${rateColor}`}>{item.acceptanceRate}%</Text>
-          </View>
-          <View>
-            <Text className="text-muted-foreground text-xs mb-1 text-right">Documents</Text>
-            <Text className="text-foreground font-semibold text-right">
-              {item.documentsReceived.toLocaleString()}
-            </Text>
-          </View>
-        </View>
-      </Pressable>
-    );
-  };
+	// Flatten all pages into a single array
+	const admins: Admin[] = data?.pages.flatMap((page) => page.data.admins) ?? [];
 
-  return (
-    <View className="flex-1 bg-background">
-      {/* Header */}
-      <View className="bg-primary p-6 pb-8">
-        <Text className="text-2xl font-bold text-primary-foreground">Find Vendors</Text>
-        <Text className="text-primary-foreground/80 mt-1">Browse available vendors</Text>
-      </View>
+	// Handle vendor selection
+	const handleSelectVendor = useCallback(
+		(admin: Admin) => {
+			navigation.navigate('DocumentsTab', {
+				screen: 'SubmitDocument',
+				params: {
+					vendorId: admin._id,
+					vendorName: admin.name,
+					vendorEmail: admin.email,
+					vendorProfilePicture: admin.profilePicture ?? undefined,
+					vendorPrintingCost: admin.printingCost ?? undefined,
+					vendorRating: admin.rating,
+					isVendorLocked: true,
+				},
+			});
+		},
+		[navigation],
+	);
 
-      {/* Search Bar */}
-      <View className="px-4 -mt-4 mb-4">
-        <View className="card-3d rounded-xl p-2">
-          <TextInput
-            className="bg-input rounded-lg p-3 text-foreground"
-            placeholder="Search vendors..."
-            placeholderTextColor="#888"
-            value={searchQuery}
-            onChangeText={setSearchQuery}
-          />
-        </View>
-      </View>
+	// Handle end reached for infinite scroll
+	const handleEndReached = () => {
+		if (hasNextPage && !isFetchingNextPage) {
+			fetchNextPage();
+		}
+	};
 
-      {/* Vendors List */}
-      <View className="flex-1 px-4">
-        <FlatList
-          data={filteredVendors}
-          renderItem={renderVendor}
-          keyExtractor={(item) => item.id}
-          contentContainerStyle={{ paddingBottom: 20 }}
-          showsVerticalScrollIndicator={false}
-          ListEmptyComponent={
-            <View className="card-3d rounded-xl p-8 items-center justify-center">
-              <Text className="text-muted-foreground text-center text-lg mb-2">
-                No vendors found
-              </Text>
-              <Text className="text-muted-foreground text-center">
-                Try adjusting your search
-              </Text>
-            </View>
-          }
-        />
-      </View>
-    </View>
-  );
+	// Render vendor card
+	const renderVendor = useCallback(
+		({ item }: { item: Admin }) => (
+			<VendorCard
+				admin={item}
+				onSelect={handleSelectVendor}
+			/>
+		),
+		[handleSelectVendor],
+	);
+
+	// Footer component for loading indicator
+	const renderFooter = () => {
+		if (!isFetchingNextPage) return null;
+		return (
+			<View className="py-4 items-center">
+				<ActivityIndicator
+					size="small"
+					color={colors.primary}
+				/>
+			</View>
+		);
+	};
+
+	// Empty component
+	const renderEmpty = () => {
+		if (isLoading) return null;
+		return (
+			<View className="card-3d rounded-2xl p-8 items-center justify-center mt-4">
+				<View className="w-16 h-16 bg-muted rounded-full items-center justify-center mb-4">
+					<StacksIcon
+						size={32}
+						color={colors.mutedForeground}
+					/>
+				</View>
+				<TextComponent className="text-foreground text-center text-lg font-semibold mb-2">
+					No vendors found
+				</TextComponent>
+				<TextComponent className="text-muted-foreground text-center">
+					{debouncedQuery
+						? 'Try adjusting your search query'
+						: 'No vendors are currently available'}
+				</TextComponent>
+			</View>
+		);
+	};
+
+	return (
+		<View className="flex-1 bg-background">
+			{/* Gradient Header */}
+			<LinearGradient
+				colors={[colors.primary, colors.accent]}
+				start={{ x: 0, y: 0 }}
+				end={{ x: 1, y: 1 }}
+				className="pt-14 pb-10 px-6 rounded-b-3xl">
+				<View className="items-center">
+					<View className="w-16 h-16 bg-white/20 rounded-2xl items-center justify-center mb-4">
+						<StacksIcon
+							size={32}
+							color="#fff"
+						/>
+					</View>
+					<TextComponent className="text-white font-bold text-2xl mb-1">
+						Find Vendors
+					</TextComponent>
+					<TextComponent className="text-white/80 text-base text-center">
+						Browse and select a vendor for your documents
+					</TextComponent>
+				</View>
+			</LinearGradient>
+
+			{/* Search Bar */}
+			<View className="px-5 -mt-5 mb-4">
+				<View className="bg-card border border-border rounded-xl flex-row items-center px-4 shadow-sm">
+					<SearchIcon
+						size={18}
+						color={colors.mutedForeground}
+					/>
+					<TextInput
+						className="flex-1 py-3.5 ml-3 text-foreground text-base"
+						placeholder="Search vendors by name..."
+						placeholderTextColor={colors.mutedForeground}
+						value={searchQuery}
+						onChangeText={handleSearchChange}
+					/>
+					{isLoading && (
+						<ActivityIndicator
+							size="small"
+							color={colors.primary}
+						/>
+					)}
+				</View>
+			</View>
+
+			{/* Vendors List */}
+			{isError ? (
+				<View className="flex-1 px-5 pt-4">
+					<View className="card-3d rounded-2xl p-8 items-center justify-center">
+						<TextComponent className="text-destructive text-center text-lg font-semibold mb-2">
+							Something went wrong
+						</TextComponent>
+						<TextComponent className="text-muted-foreground text-center mb-4">
+							Failed to load vendors. Please try again.
+						</TextComponent>
+						<View
+							className="bg-primary px-6 py-3 rounded-xl"
+							onTouchEnd={() => refetch()}>
+							<TextComponent className="text-white font-semibold">
+								Retry
+							</TextComponent>
+						</View>
+					</View>
+				</View>
+			) : (
+				<FlatList
+					data={admins}
+					renderItem={renderVendor}
+					keyExtractor={(item) => item._id}
+					contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 24 }}
+					showsVerticalScrollIndicator={false}
+					onEndReached={handleEndReached}
+					onEndReachedThreshold={0.3}
+					ListFooterComponent={renderFooter}
+					ListEmptyComponent={renderEmpty}
+					refreshControl={
+						<RefreshControl
+							refreshing={isRefetching && !isFetchingNextPage}
+							onRefresh={refetch}
+							tintColor={colors.primary}
+							colors={[colors.primary]}
+						/>
+					}
+				/>
+			)}
+		</View>
+	);
 }

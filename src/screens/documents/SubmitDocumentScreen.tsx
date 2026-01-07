@@ -43,7 +43,15 @@ type SelectedFile = {
 };
 
 export default function SubmitDocumentScreen({ navigation, route }: Props) {
-	const { vendorId, vendorName, isVendorLocked } = route.params || {};
+	const {
+		vendorId,
+		vendorName,
+		vendorEmail,
+		vendorProfilePicture,
+		vendorPrintingCost,
+		vendorRating,
+		isVendorLocked,
+	} = route.params || {};
 	const { colors } = useTheme();
 	const { user } = useUserStore();
 	const queryClient = useQueryClient();
@@ -51,7 +59,14 @@ export default function SubmitDocumentScreen({ navigation, route }: Props) {
 	// Form state
 	const [selectedVendor, setSelectedVendor] = useState<AdminInfo | null>(
 		vendorId && vendorName
-			? { _id: vendorId, name: vendorName, email: '' }
+			? {
+					_id: vendorId,
+					name: vendorName,
+					email: vendorEmail || '',
+					profilePicture: vendorProfilePicture ?? undefined,
+					printingCost: vendorPrintingCost ?? undefined,
+					rating: vendorRating,
+				}
 			: null,
 	);
 	const [selectedFile, setSelectedFile] = useState<SelectedFile | null>(null);

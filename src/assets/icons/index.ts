@@ -23,6 +23,12 @@ import FileImageIcon from './file-image.icon';
 import LightbulbIcon from './lightbulb.icon';
 import CloseIcon from './close.icon';
 import DocumentTextIcon from './document-text.icon';
+import StarIcon from './star.icon';
+import MapPinIcon from './map-pin.icon';
+import PhoneIcon from './phone.icon';
+import ClockIcon from './clock.icon';
+import UsersIcon from './users.icon';
+import MailIcon from './mail.icon';
 
 export {
 	icon,
@@ -50,4 +56,10 @@ export {
 	LightbulbIcon,
 	CloseIcon,
 	DocumentTextIcon,
+	StarIcon,
+	MapPinIcon,
+	PhoneIcon,
+	ClockIcon,
+	UsersIcon,
+	MailIcon,
 };
