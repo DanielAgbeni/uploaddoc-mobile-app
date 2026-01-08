@@ -214,7 +214,9 @@ export default function SubmitDocumentScreen({ navigation, route }: Props) {
 			formData.append('title', title.trim());
 			formData.append('assignedAdmin', selectedVendor._id);
 			formData.append('studentName', user.name);
-			formData.append('matricNumber', user.matricNumber);
+			if (user.matricNumber) {
+				formData.append('matricNumber', user.matricNumber);
+			}
 
 			if (description.trim()) {
 				formData.append('description', description.trim());

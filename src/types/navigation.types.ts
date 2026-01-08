@@ -21,7 +21,7 @@ export interface Admin {
 	id: string;
 	name: string;
 	email: string;
-	matricNumber: string;
+	matricNumber?: string;
 	isAdmin: boolean;
 	profilePicture: string | null;
 	rating: number;

@@ -31,7 +31,6 @@ type Props = NativeStackScreenProps<AuthStackParamList, 'SignUp'>;
 type SignUpFormData = {
 	name: string;
 	email: string;
-	matricNumber: string;
 	password: string;
 	confirmPassword: string;
 };

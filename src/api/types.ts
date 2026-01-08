@@ -31,7 +31,7 @@ declare global {
 		id: string;
 		name: string;
 		email: string;
-		matricNumber: string;
+		matricNumber?: string;
 		profilePicture: string | null;
 		isAdmin: boolean;
 		isVerified: boolean;
@@ -91,7 +91,6 @@ declare global {
 	export type RegisterPayloadType = {
 		name: string;
 		email: string;
-		matricNumber: string;
 		password?: string;
 	};
 
@@ -132,7 +131,7 @@ declare global {
 		_id: string;
 		studentId: string;
 		studentName: string;
-		matricNumber: string;
+		matricNumber?: string;
 		title: string;
 		description: string;
 		assignedAdmin: string;
@@ -187,7 +186,7 @@ declare global {
 		id: string;
 		name: string;
 		email: string;
-		matricNumber: string;
+		matricNumber?: string;
 		profilePicture: string | null;
 		isAdmin: boolean;
 		isVerified: boolean;

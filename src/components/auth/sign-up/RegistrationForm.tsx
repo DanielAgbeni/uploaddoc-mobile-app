@@ -13,7 +13,6 @@ import TextComponent from 'src/components/ui/TextComponent';
 type SignUpFormData = {
 	name: string;
 	email: string;
-	matricNumber: string;
 	password: string;
 	confirmPassword: string;
 };
@@ -36,7 +35,6 @@ const RegistrationForm = ({ onSubmit, isLoading }: RegistrationFormProps) => {
 		defaultValues: {
 			name: '',
 			email: '',
-			matricNumber: '',
 			password: '',
 			confirmPassword: '',
 		},
@@ -103,19 +101,6 @@ const RegistrationForm = ({ onSubmit, isLoading }: RegistrationFormProps) => {
 						value: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
 						message: 'Please enter a valid email address',
 					},
-				}}
-			/>
-
-			<FormInput
-				name="matricNumber"
-				control={control}
-				label="Matric Number"
-				placeholder="e.g. 123456"
-				icon="school-outline"
-				autoCapitalize="none"
-				error={errors.matricNumber?.message}
-				rules={{
-					required: 'Matric number is required',
 				}}
 			/>
 
