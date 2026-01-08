@@ -19,6 +19,12 @@ import {
 	HistoryIcon,
 } from 'src/assets/icons';
 import { CustomImage, TextComponent } from 'src/components';
+import { registerForPushNotificationsAsync } from '../../services/NotificationService';
+import {
+	subscribeToPushNotifications,
+	unsubscribeFromPushNotifications,
+} from '../../api/notifications';
+import * as SecureStore from 'expo-secure-store';
 
 type Props = NativeStackScreenProps<AccountStackParamList, 'Profile'>;
 
@@ -87,13 +93,62 @@ export default function ProfileScreen({ navigation }: Props) {
 	const { showAlert } = useModal();
 	const user = useUserStore((state) => state.user);
 	const logout = useUserStore((state) => state.logout);
-	const [notifications, setNotifications] = React.useState(true);
+	const [notifications, setNotifications] = React.useState(false);
+
+	React.useEffect(() => {
+		checkNotificationStatus();
+	}, []);
+
+	const checkNotificationStatus = async () => {
+		const token = await SecureStore.getItemAsync('push_token');
+		setNotifications(!!token);
+	};
 
 	const isVendor = user?.isAdmin || false;
 
-	const handleToggleNotifications = () => {
-		setNotifications(!notifications);
-		// TODO: Update API with new notification setting
+	const handleToggleNotifications = async () => {
+		try {
+			const newValue = !notifications;
+			setNotifications(newValue);
+
+			if (newValue) {
+				// Turning on
+				const token = await registerForPushNotificationsAsync();
+				if (token && user?.id) {
+					await subscribeToPushNotifications(user.id, token);
+					await SecureStore.setItemAsync('push_token', token);
+					showAlert({
+						title: 'Success',
+						message: 'Push notifications enabled',
+						type: 'success',
+					});
+				} else {
+					// Failed to get token or permission denied
+					setNotifications(false);
+					showAlert({
+						title: 'Permission Required',
+						message: 'Please enable notifications in your device settings',
+						type: 'error',
+					});
+				}
+			} else {
+				// Turning off
+				const token = await SecureStore.getItemAsync('push_token');
+				if (token && user?.id) {
+					await unsubscribeFromPushNotifications(user.id, token);
+					await SecureStore.deleteItemAsync('push_token');
+				}
+			}
+		} catch (error) {
+			console.error('Error toggling notifications:', error);
+			// Revert state on error
+			setNotifications(!notifications);
+			showAlert({
+				title: 'Error',
+				message: 'Failed to update notification settings',
+				type: 'error',
+			});
+		}
 	};
 
 	const handleLogout = () => {
