@@ -9,6 +9,11 @@ import {
 } from 'react-native';
 import Modal from 'react-native-modal';
 import { useForm } from 'react-hook-form';
+import {
+	GoogleSignin,
+	statusCodes,
+	isErrorWithCode,
+} from '@react-native-google-signin/google-signin';
 import FormInput from './FormInput';
 import AuthButton from './AuthButton';
 import {
@@ -24,6 +29,7 @@ import {
 	resendVerificationCode,
 	forgetpassword,
 	resetPassword,
+	googleLogin,
 } from '../../api/auth';
 import { showMessage } from 'react-native-flash-message';
 import { useUserStore } from '../../shared/user-store/useUserStore';
@@ -64,6 +70,14 @@ const AuthModal = ({ isVisible, onClose }: AuthModalProps) => {
 		}
 		return () => clearInterval(interval);
 	}, [canResend, timer]);
+
+	// Google Signin Configure
+	React.useEffect(() => {
+		GoogleSignin.configure({
+			webClientId:
+				'32599014807-5903r9empqsb9gogojkqms9jkgh4rrnk.apps.googleusercontent.com',
+		});
+	}, []);
 
 	// Login Form
 	const {
@@ -316,6 +330,65 @@ const AuthModal = ({ isVisible, onClose }: AuthModalProps) => {
 		}
 	};
 
+	const onGoogleButtonPress = async () => {
+		setIsLoading(true);
+		try {
+			await GoogleSignin.hasPlayServices();
+			const userInfo = await GoogleSignin.signIn();
+			const idToken = userInfo.data?.idToken;
+
+			if (idToken) {
+				const response = await googleLogin(idToken);
+				if (response.data.success) {
+					showMessage({
+						message: 'Login Successful',
+						description: `Welcome back!`,
+						type: 'success',
+					});
+					setLoginData(response.data.data);
+					handleClose();
+				} else {
+					throw new Error(response.data.message || 'Google Login Failed');
+				}
+			} else {
+				throw new Error('No ID Token obtained from Google');
+			}
+		} catch (error: any) {
+			let errorMessage = 'Google login failed';
+			if (isErrorWithCode(error)) {
+				switch (error.code) {
+					case statusCodes.SIGN_IN_CANCELLED:
+						errorMessage = 'Sign in cancelled';
+						break;
+					case statusCodes.IN_PROGRESS:
+						errorMessage = 'Sign in in progress';
+						break;
+					case statusCodes.PLAY_SERVICES_NOT_AVAILABLE:
+						errorMessage = 'Play services not available';
+						break;
+					default:
+						errorMessage = error.message || 'Something went wrong';
+				}
+			} else {
+				errorMessage =
+					error?.response?.data?.message ||
+					error.message ||
+					'Google login failed';
+			}
+
+			if (errorMessage !== 'Sign in cancelled') {
+				showMessage({
+					message: 'Login Failed',
+					description: errorMessage,
+					type: 'danger',
+				});
+				console.log(error);
+			}
+		} finally {
+			setIsLoading(false);
+		}
+	};
+
 	const handleClose = () => {
 		setMode('login');
 		resetLoginForm();
@@ -422,7 +495,8 @@ const AuthModal = ({ isVisible, onClose }: AuthModalProps) => {
 							<View className="gap-3 mb-8">
 								<Pressable
 									className="flex-row items-center border border-border rounded-xl p-4 bg-background active:bg-muted"
-									disabled={loginMutation.isPending}>
+									disabled={loginMutation.isPending || isLoading}
+									onPress={onGoogleButtonPress}>
 									<GoogleIcon size={24} />
 									<TextComponent className="flex-1 text-center font-semibold text-foreground">
 										Continue with Google

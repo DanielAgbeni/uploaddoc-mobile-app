@@ -345,7 +345,7 @@ export default function ProfileScreen({ navigation }: Props) {
 							title="Privacy Policy"
 							onPress={() =>
 								handleOpenLink(
-									'https://uploaddoc.app/privacy',
+									'https://uploaddoc.app/privacy-policy',
 									'Privacy Policy',
 								)
 							}
@@ -361,7 +361,7 @@ export default function ProfileScreen({ navigation }: Props) {
 							title="Terms of Service"
 							onPress={() =>
 								handleOpenLink(
-									'https://uploaddoc.app/terms',
+									'https://uploaddoc.app/terms-of-service',
 									'Terms of Service',
 								)
 							}
