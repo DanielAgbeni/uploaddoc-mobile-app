@@ -29,6 +29,10 @@ import PhoneIcon from './phone.icon';
 import ClockIcon from './clock.icon';
 import UsersIcon from './users.icon';
 import MailIcon from './mail.icon';
+import EyeIcon from './eye.icon';
+import AppleIcon from './apple.icon';
+import FacebookIcon from './facebook.icon';
+import GoogleIcon from './google.icon';
 
 export {
 	icon,
@@ -62,4 +66,8 @@ export {
 	ClockIcon,
 	UsersIcon,
 	MailIcon,
+	EyeIcon,
+	AppleIcon,
+	FacebookIcon,
+	GoogleIcon,
 };

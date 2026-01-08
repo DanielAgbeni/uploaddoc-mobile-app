@@ -9,6 +9,7 @@ import {
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { Controller, Control, FieldValues, Path } from 'react-hook-form';
+import { EyeIcon, EyeOffIcon } from 'src/assets/icons';
 
 interface FormInputProps<T extends FieldValues> extends Omit<
 	TextInputProps,
@@ -92,9 +93,17 @@ export default function FormInput<T extends FieldValues>({
 									onPress={() => setIsPasswordVisible(!isPasswordVisible)}
 									className="px-4 active:opacity-70"
 									hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
-									<Text className="text-primary font-semibold text-base">
-										{isPasswordVisible ? 'Hide' : 'Show'}
-									</Text>
+									{isPasswordVisible ? (
+										<EyeOffIcon
+											size={24}
+											color="#888"
+										/>
+									) : (
+										<EyeIcon
+											size={24}
+											color="#888"
+										/>
+									)}
 								</Pressable>
 							)}
 						</View>
