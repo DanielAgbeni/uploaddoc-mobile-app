@@ -150,7 +150,7 @@ const VendorCard: React.FC<VendorCardProps> = ({ admin, onSelect }) => {
 
 			{/* Footer: Rate + Select Button */}
 			<View className="px-5 py-4 bg-background border-t border-border flex-row items-center justify-between">
-				{admin.printingCost && (
+				{!!admin.printingCost && (
 					<View>
 						<TextComponent className="text-xs text-muted-foreground font-medium uppercase tracking-wider">
 							Rate
