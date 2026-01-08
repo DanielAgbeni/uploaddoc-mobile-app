@@ -13,33 +13,37 @@ import MainTabNavigator from './MainTabNavigator';
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
 export default function RootNavigator() {
-  const isAuthenticated = useUserStore((state) => state.isAuthenticated);
-  const hasHydrated = useUserStore((state) => state.hasHydrated);
+	const isAuthenticated = useUserStore((state) => state.isAuthenticated);
+	const hasHydrated = useUserStore((state) => state.hasHydrated);
 
-  // Show loading screen while store is hydrating
-  if (!hasHydrated) {
-    return (
-      <View className="flex-1 bg-background items-center justify-center">
-        <ActivityIndicator size="large" color="#1724ab" />
-      </View>
-    );
-  }
-
-  return (
-    <NavigationContainer linking={linkingConfig}>
-      <Stack.Navigator
-        screenOptions={{
-          headerShown: false,
-          animation: 'fade',
-        }}
-      >
-        {isAuthenticated ? (
-          <Stack.Screen name="Main" component={MainTabNavigator} />
-        ) : (
-          <Stack.Screen name="Auth" component={AuthStack} />
-        )}
-      </Stack.Navigator>
-    </NavigationContainer>
-  );
+	return (
+		<NavigationContainer linking={linkingConfig}>
+			{!hasHydrated ? (
+				<View className="flex-1 bg-background items-center justify-center">
+					<ActivityIndicator
+						size="large"
+						color="#1724ab"
+					/>
+				</View>
+			) : (
+				<Stack.Navigator
+					screenOptions={{
+						headerShown: false,
+						animation: 'fade',
+					}}>
+					{isAuthenticated ? (
+						<Stack.Screen
+							name="Main"
+							component={MainTabNavigator}
+						/>
+					) : (
+						<Stack.Screen
+							name="Auth"
+							component={AuthStack}
+						/>
+					)}
+				</Stack.Navigator>
+			)}
+		</NavigationContainer>
+	);
 }
-

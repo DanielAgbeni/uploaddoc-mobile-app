@@ -36,8 +36,6 @@ export default function MainTabNavigator() {
 				animation: 'shift', // Adds transition animation between tabs
 				tabBarStyle: {
 					backgroundColor: colors.background,
-					borderTopWidth: 1,
-					borderTopColor: colors.border,
 					height: 60 + Math.max(insets.bottom, 16),
 					paddingBottom: Math.max(insets.bottom, 16),
 					paddingTop: 8,

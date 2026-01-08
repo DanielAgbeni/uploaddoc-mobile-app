@@ -75,18 +75,20 @@ export type MainTabParamList = {
 	AccountTab: NavigatorScreenParams<AccountStackParamList>;
 };
 
+export type SubmitDocumentParams = {
+	vendorId?: string;
+	vendorName?: string;
+	vendorEmail?: string;
+	vendorProfilePicture?: string;
+	vendorPrintingCost?: number;
+	vendorRating?: number;
+	isVendorLocked?: boolean; // True when navigating from Find Vendors or deep link
+};
+
 // Documents Stack (nested in Documents Tab)
 export type DocumentsStackParamList = {
 	DocumentsList: undefined;
-	SubmitDocument: {
-		vendorId?: string;
-		vendorName?: string;
-		vendorEmail?: string;
-		vendorProfilePicture?: string;
-		vendorPrintingCost?: number;
-		vendorRating?: number;
-		isVendorLocked?: boolean; // True when navigating from Find Vendors or deep link
-	};
+	SubmitDocument: SubmitDocumentParams;
 };
 
 // Vendors Stack (nested in Find Vendors Tab)
@@ -95,6 +97,7 @@ export type VendorsStackParamList = {
 	VendorDetails: {
 		vendorId: string;
 	};
+	SubmitDocument: SubmitDocumentParams;
 };
 
 // Account Stack (nested in Account Tab)

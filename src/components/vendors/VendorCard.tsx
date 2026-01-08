@@ -50,7 +50,7 @@ const VendorCard: React.FC<VendorCardProps> = ({ admin, onSelect }) => {
 								numberOfLines={1}>
 								{admin.name}
 							</TextComponent>
-							<View className="flex-row items-center gap-2 mt-1">
+							{/* <View className="flex-row items-center gap-2 mt-1">
 								<View className="flex-row items-center bg-yellow-50 dark:bg-yellow-900/20 px-2 py-0.5 rounded-full">
 									<StarIcon
 										size={12}
@@ -63,15 +63,15 @@ const VendorCard: React.FC<VendorCardProps> = ({ admin, onSelect }) => {
 								<TextComponent className="text-xs text-muted-foreground">
 									• {admin.reviews?.length || 0} reviews
 								</TextComponent>
-							</View>
+							</View> */}
 						</View>
 					</View>
 					{/* Status Badge */}
 					<View
 						className={`px-2.5 py-1 rounded-full border ${
 							admin.adminStatus === 'active'
-								? 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-900/30'
-								: 'bg-muted border-border'
+								? 'dark:bg-green-900/20 border-green-200 dark:border-green-900/30'
+								: 'dark:bg-muted border-border'
 						}`}>
 						<TextComponent
 							className={`text-xs font-medium ${
@@ -150,28 +150,30 @@ const VendorCard: React.FC<VendorCardProps> = ({ admin, onSelect }) => {
 
 			{/* Footer: Rate + Select Button */}
 			<View className="px-5 py-4 bg-background border-t border-border flex-row items-center justify-between">
-				<View>
-					<TextComponent className="text-xs text-muted-foreground font-medium uppercase tracking-wider">
-						Rate
-					</TextComponent>
-					<View className="flex-row items-baseline">
-						<TextComponent className="font-bold text-foreground text-lg">
-							{admin.printingCost ? `₦${admin.printingCost}` : 'N/A'}
+				{admin.printingCost && (
+					<View>
+						<TextComponent className="text-xs text-muted-foreground font-medium uppercase tracking-wider">
+							Rate
 						</TextComponent>
-						{admin.printingCost && (
-							<TextComponent className="text-xs text-muted-foreground ml-1">
-								/page
+						<View className="flex-row items-baseline">
+							<TextComponent className="font-bold text-foreground text-lg">
+								{admin.printingCost ? `₦${admin.printingCost}` : 'N/A'}
 							</TextComponent>
-						)}
+							{admin.printingCost && (
+								<TextComponent className="text-xs text-muted-foreground ml-1">
+									/page
+								</TextComponent>
+							)}
+						</View>
 					</View>
-				</View>
+				)}
 				<Pressable
 					onPress={() => onSelect(admin)}
-					className="bg-primary/80 px-5 py-2.5 rounded-xl active:opacity-80"
+					className="bg-primary px-5 py-2.5 rounded-md font-normal active:opacity-90"
 					style={({ pressed }) => ({
-						opacity: pressed ? 0.8 : 1,
+						opacity: pressed ? 0.9 : 1,
 					})}>
-					<TextComponent className="text-white font-semibold text-sm">
+					<TextComponent className="text-white font-normal text-sm">
 						Select Vendor
 					</TextComponent>
 				</Pressable>

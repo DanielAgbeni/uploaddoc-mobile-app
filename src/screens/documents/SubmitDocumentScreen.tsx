@@ -14,7 +14,10 @@ import * as DocumentPicker from 'expo-document-picker';
 import * as FileSystem from 'expo-file-system';
 import { PDFDocument } from 'pdf-lib';
 import { LinearGradient } from 'expo-linear-gradient';
-import { DocumentsStackParamList } from '../../types/navigation.types';
+import {
+	DocumentsStackParamList,
+	VendorsStackParamList,
+} from '../../types/navigation.types';
 import { uploadProject, searchAdmins } from '../../api/projects';
 import { useUserStore } from '../../shared/user-store/useUserStore';
 import { onError, onSuccess } from '../../utils/toast';
@@ -33,7 +36,10 @@ import {
 	LightbulbIcon,
 } from 'src/assets/icons';
 
-type Props = NativeStackScreenProps<DocumentsStackParamList, 'SubmitDocument'>;
+type Props = NativeStackScreenProps<
+	DocumentsStackParamList | VendorsStackParamList,
+	'SubmitDocument'
+>;
 
 type SelectedFile = {
 	uri: string;

@@ -7,8 +7,6 @@ import {
 	RefreshControl,
 } from 'react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { CompositeNavigationProp } from '@react-navigation/native';
-import { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 import { useInfiniteQuery } from '@tanstack/react-query';
 import { useDebouncedCallback } from 'use-debounce';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -24,10 +22,10 @@ import { TextComponent } from 'src/components';
 import { SearchIcon, StacksIcon } from 'src/assets/icons';
 import VendorCard from 'src/components/vendors/VendorCard';
 
-type NavigationProp = CompositeNavigationProp<
-	NativeStackScreenProps<VendorsStackParamList, 'VendorsList'>['navigation'],
-	BottomTabNavigationProp<MainTabParamList>
->;
+type NavigationProp = NativeStackScreenProps<
+	VendorsStackParamList,
+	'VendorsList'
+>['navigation'];
 
 type Props = {
 	navigation: NavigationProp;
@@ -77,17 +75,14 @@ export default function VendorsListScreen({ navigation }: Props) {
 	// Handle vendor selection
 	const handleSelectVendor = useCallback(
 		(admin: Admin) => {
-			navigation.navigate('DocumentsTab', {
-				screen: 'SubmitDocument',
-				params: {
-					vendorId: admin._id,
-					vendorName: admin.name,
-					vendorEmail: admin.email,
-					vendorProfilePicture: admin.profilePicture ?? undefined,
-					vendorPrintingCost: admin.printingCost ?? undefined,
-					vendorRating: admin.rating,
-					isVendorLocked: true,
-				},
+			navigation.navigate('SubmitDocument', {
+				vendorId: admin._id,
+				vendorName: admin.name,
+				vendorEmail: admin.email,
+				vendorProfilePicture: admin.profilePicture ?? undefined,
+				vendorPrintingCost: admin.printingCost ?? undefined,
+				vendorRating: admin.rating,
+				isVendorLocked: true,
 			});
 		},
 		[navigation],
@@ -180,7 +175,7 @@ export default function VendorsListScreen({ navigation }: Props) {
 					/>
 					<TextInput
 						className="flex-1 py-3.5 ml-3 text-foreground text-base"
-						placeholder="Search vendors by name..."
+						placeholder="Search vendors by name or location"
 						placeholderTextColor={colors.mutedForeground}
 						value={searchQuery}
 						onChangeText={handleSearchChange}
