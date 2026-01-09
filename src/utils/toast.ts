@@ -1,7 +1,7 @@
 import { showMessage, MessageOptions } from 'react-native-flash-message';
 
 const defaultOptions: Partial<MessageOptions> = {
-	duration: 3000,
+	duration: 4000,
 	floating: true,
 	icon: 'auto',
 	style: { borderRadius: 12, alignItems: 'center' },

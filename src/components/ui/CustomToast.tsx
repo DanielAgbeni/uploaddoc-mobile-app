@@ -38,9 +38,16 @@ const CustomToastMessageComponent: React.FC<MessageComponentProps> = ({
 					'flex-row justify-between items-center gap-4 px-4 py-4 mx-4 rounded-xl shadow-lg',
 					getBackgroundColor(),
 				)}>
-				<TextComponent className="flex-1 text-sm font-bold text-white">
-					{message?.message}
-				</TextComponent>
+				<View className="flex-1">
+					<TextComponent className="text-sm font-bold text-white mb-1">
+						{message?.message}
+					</TextComponent>
+					{!!message?.description && (
+						<TextComponent className="text-xs text-white/90 font-medium leading-4">
+							{message.description}
+						</TextComponent>
+					)}
+				</View>
 
 				<View>
 					{message?.type === 'success' && (

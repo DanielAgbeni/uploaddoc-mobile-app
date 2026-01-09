@@ -1,217 +1,103 @@
-import React, { memo, useEffect } from 'react';
+import React, { memo, useState } from 'react';
 import { View, Text, Pressable } from 'react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { AuthStackParamList } from '../../types/navigation.types';
 import CustomImage from '../../components/common/CustomImage';
-import { LinearGradient } from 'expo-linear-gradient';
 import { useTheme } from '../../providers/ThemeProvider';
-import { MoonIcon, SunIcon } from 'src/assets/icons';
-import Animated, {
-	FadeInDown,
-	FadeInUp,
-	useAnimatedStyle,
-	useSharedValue,
-	withRepeat,
-	withSequence,
-	withTiming,
-} from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
-import GoogleIcon from 'src/assets/icons/google.icon';
-import MaskedView from '@react-native-masked-view/masked-view';
+import { UploadIcon, ShieldIcon, ClockIcon } from 'src/assets/icons';
+import AuthModal from '../../components/auth/AuthModal';
 
 type Props = NativeStackScreenProps<AuthStackParamList, 'Welcome'>;
 
-const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
-
 const WelcomeScreen = memo(function WelcomeScreen({ navigation }: Props) {
-	const { colorScheme, theme, setTheme, colors } = useTheme();
+	const { colors, colorScheme } = useTheme();
 	const insets = useSafeAreaInsets();
-
-	// Floating animation for the icon/logo
-	const translateY = useSharedValue(0);
-
-	useEffect(() => {
-		translateY.value = withRepeat(
-			withSequence(
-				withTiming(-12, { duration: 2000 }),
-				withTiming(0, { duration: 2000 }),
-			),
-			-1,
-			true,
-		);
-	}, []);
-
-	const logoStyle = useAnimatedStyle(() => ({
-		transform: [{ translateY: translateY.value }],
-	}));
-
-	const getThemeIcon = () => {
-		const iconColor = colors.foreground;
-		if (theme === 'light')
-			return (
-				<SunIcon
-					size={20}
-					color={iconColor}
-				/>
-			);
-		if (theme === 'dark')
-			return (
-				<MoonIcon
-					size={20}
-					color={iconColor}
-				/>
-			);
-		return (
-			<SunIcon
-				size={20}
-				color={iconColor}
-			/>
-		);
-	};
-
-	const cycleTheme = () => {
-		if (theme === 'system') setTheme('light');
-		else if (theme === 'light') setTheme('dark');
-		else setTheme('system');
-	};
+	const [isModalVisible, setModalVisible] = useState(false);
 
 	return (
-		<View className="flex-1 bg-background">
+		<View className="flex-1 bg-background justify-between">
 			<StatusBar style={colorScheme === 'dark' ? 'light' : 'dark'} />
 
-			{/* Top Progress Bar */}
-			<View
-				className="bg-primary/90"
-				style={{
-					height: 4,
-					marginTop: insets.top,
-					width: '100%',
-				}}
-			/>
+			{/* Zone A - Brand & Value (Top 35%) */}
+			<View className="flex-[0.4] items-center justify-center px-6 pt-12">
+				{/* App Icon */}
+				<View className="w-20 h-20 bg-card rounded-2xl items-center justify-center mb-6 shadow-sm border border-border">
+					<CustomImage
+						source={require('../../assets/app-images/icon.png')}
+						className="w-16 h-16 rounded-full"
+						contentFit="contain"
+					/>
+				</View>
 
-			{/* Subtle gradient overlay */}
-			<LinearGradient
-				colors={
-					colorScheme === 'dark'
-						? ['transparent', `${colors.primary}15`, 'transparent']
-						: ['transparent', `${colors.primary}08`, 'transparent']
-				}
-				className="absolute inset-0"
-				start={{ x: 0.5, y: 0 }}
-				end={{ x: 0.5, y: 1 }}
-			/>
+				{/* App Name */}
+				<Text className="text-foreground text-4xl font-bold mb-4 tracking-tight">
+					UploadDoc
+				</Text>
 
-			{/* Top Bar - Theme Toggle */}
-			<Animated.View
-				entering={FadeInUp.delay(200).springify()}
-				style={{ paddingTop: 16 }}
-				className="flex-row justify-end px-5 z-10">
-				<Pressable
-					onPress={cycleTheme}
-					className="w-9 h-9 rounded-full bg-card/80 backdrop-blur border border-border/40 items-center justify-center active:bg-muted">
-					{getThemeIcon()}
-				</Pressable>
-			</Animated.View>
-
-			{/* Main Content */}
-			<View className="flex-1 justify-center items-center px-6 -mt-8">
-				{/* App Icon/Logo with rounded gradient container */}
-				<Animated.View
-					entering={FadeInDown.delay(300).springify()}
-					style={logoStyle}
-					className="mb-16">
-					<View className="bg-background rounded-[60px] overflow-hidden">
-						<CustomImage
-							source={require('../../assets/app-images/icon.png')}
-							className="w-48 h-48"
-							contentFit="contain"
-						/>
-					</View>
-				</Animated.View>
-
-				{/* Headline with gradient text */}
-				<Animated.View
-					entering={FadeInDown.delay(500).springify()}
-					className="items-center mb-16 px-4">
-					{/* Gradient "UploadDoc:" text */}
-					<MaskedView
-						maskElement={
-							<Text
-								className="font-black text-center"
-								style={{ fontSize: 38, letterSpacing: -0.5 }}>
-								UploadDoc:
-							</Text>
-						}>
-						<LinearGradient
-							colors={[colors.gradientStart, colors.gradientEnd]}
-							start={{ x: 0, y: 0 }}
-							end={{ x: 1, y: 0 }}>
-							<Text
-								className="font-black text-center opacity-0"
-								style={{ fontSize: 38, letterSpacing: -0.5 }}>
-								UploadDoc:
-							</Text>
-						</LinearGradient>
-					</MaskedView>
-					<Text
-						className="text-foreground font-black text-center leading-tight"
-						style={{ fontSize: 38, letterSpacing: -0.5 }}>
-						Document management, simplified
-					</Text>
-				</Animated.View>
-
-				{/* Action Buttons */}
-				<Animated.View
-					entering={FadeInDown.delay(700).springify()}
-					className="w-full max-w-md gap-3.5 px-6"
-					style={{ paddingBottom: insets.bottom + 24 }}>
-					{/* Log in Button */}
-					<AnimatedPressable
-						onPress={() => navigation.navigate('SignIn')}
-						className="rounded-full py-4 px-8 active:opacity-90 bg-primary"
-						style={({ pressed }) => ({
-							transform: [{ scale: pressed ? 0.97 : 1 }],
-						})}>
-						<Text
-							className="font-bold text-center text-lg"
-							style={{ color: colors.primaryForeground }}>
-							Log in
-						</Text>
-					</AnimatedPressable>
-
-					{/* Register Button */}
-					<AnimatedPressable
-						onPress={() => navigation.navigate('SignUp')}
-						className="rounded-full py-4 px-8 active:opacity-90 bg-primary"
-						style={({ pressed }) => ({
-							transform: [{ scale: pressed ? 0.97 : 1 }],
-						})}>
-						<Text
-							className="font-bold text-center text-lg"
-							style={{ color: colors.primaryForeground }}>
-							Register
-						</Text>
-					</AnimatedPressable>
-
-					{/* Sign in with Google */}
-					<AnimatedPressable
-						onPress={() => {
-							// Handle Google Sign In
-						}}
-						className="rounded-full py-4 px-8 bg-accent-foreground active:opacity-80 flex-row items-center justify-center gap-3"
-						style={({ pressed }) => ({
-							transform: [{ scale: pressed ? 0.97 : 1 }],
-						})}>
-						<View className="w-5 h-5 rounded-full items-center justify-center">
-							<GoogleIcon size={20} />
-						</View>
-						<Text className="text-white dark:text-black font-semibold text-center text-base">
-							Sign in with Google
-						</Text>
-					</AnimatedPressable>
-				</Animated.View>
+				{/* Value Statement */}
+				<Text className="text-muted-foreground text-center text-lg leading-7 font-medium max-w-xs">
+					Send, track, and manage documents without stress.
+				</Text>
 			</View>
+
+			{/* Zone B - Key Benefits (Middle 40%) */}
+			<View className="flex-[0.4] px-8 justify-center gap-6">
+				{/* Benefit 1 */}
+				<View className="flex-row items-center bg-card p-4 rounded-xl border border-border">
+					<UploadIcon
+						size={20}
+						color={colors.primary}
+					/>
+					<Text className="text-foreground text-base font-medium ml-4">
+						Upload PDFs & documents instantly
+					</Text>
+				</View>
+
+				{/* Benefit 2 */}
+				<View className="flex-row items-center bg-card p-4 rounded-xl border border-border">
+					<ShieldIcon
+						size={20}
+						color={colors.primary}
+					/>
+					<Text className="text-foreground text-base font-medium ml-4">
+						Connect with verified vendors
+					</Text>
+				</View>
+
+				{/* Benefit 3 */}
+				<View className="flex-row items-center bg-card p-4 rounded-xl border border-border">
+					<ClockIcon
+						size={20}
+						color={colors.primary}
+					/>
+					<Text className="text-foreground text-base font-medium ml-4">
+						Track status in real time
+					</Text>
+				</View>
+			</View>
+
+			{/* Zone C - Primary Action (Bottom 25%) */}
+			<View
+				className="flex-[0.25] px-6 justify-center"
+				style={{ paddingBottom: insets.bottom + 10 }}>
+				<Pressable
+					onPress={() => setModalVisible(true)}
+					className="w-full rounded-2xl py-4 items-center justify-center active:opacity-90"
+					style={{ backgroundColor: colors.primary }}>
+					<Text className="text-white font-bold text-lg">Get Started</Text>
+				</Pressable>
+
+				<Text className="text-muted-foreground text-center text-xs mt-4 font-medium">
+					No queues. No confusion.
+				</Text>
+			</View>
+
+			<AuthModal
+				isVisible={isModalVisible}
+				onClose={() => setModalVisible(false)}
+			/>
 		</View>
 	);
 });

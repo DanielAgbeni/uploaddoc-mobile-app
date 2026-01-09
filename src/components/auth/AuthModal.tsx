@@ -1,27 +1,18 @@
 import React, { memo, useState } from 'react';
 import {
 	View,
-	Text,
 	Pressable,
 	ScrollView,
 	KeyboardAvoidingView,
 	Platform,
 } from 'react-native';
 import Modal from 'react-native-modal';
-import { useForm } from 'react-hook-form';
 import {
 	GoogleSignin,
 	statusCodes,
 	isErrorWithCode,
 } from '@react-native-google-signin/google-signin';
-import FormInput from './FormInput';
-import AuthButton from './AuthButton';
-import {
-	AppleIcon,
-	FacebookIcon,
-	GoogleIcon,
-	CloseIcon,
-} from 'src/assets/icons';
+import { CloseIcon } from 'src/assets/icons';
 import { useLoginMutation } from '../../hooks/useLoginMutation';
 import {
 	registerUser,
@@ -37,6 +28,14 @@ import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { AuthStackParamList } from '../../types/navigation.types';
 import TextComponent from '../ui/TextComponent';
+import { getErrorMessage } from '../../utils/error-handling';
+
+// Forms
+import LoginForm from './forms/LoginForm';
+import SignUpForm from './forms/SignUpForm';
+import OTPForm from './forms/OTPForm';
+import ForgotPasswordForm from './forms/ForgotPasswordForm';
+import ResetPasswordForm from './forms/ResetPasswordForm';
 
 interface AuthModalProps {
 	isVisible: boolean;
@@ -79,60 +78,6 @@ const AuthModal = ({ isVisible, onClose }: AuthModalProps) => {
 		});
 	}, []);
 
-	// Login Form
-	const {
-		control: loginControl,
-		handleSubmit: handleLoginSubmit,
-		formState: { errors: loginErrors },
-		reset: resetLoginForm,
-	} = useForm({
-		defaultValues: { email: '', password: '' },
-	});
-
-	// SignUp Form
-	const {
-		control: signupControl,
-		handleSubmit: handleSignupSubmit,
-		formState: { errors: signupErrors },
-		watch: watchSignup,
-		reset: resetSignupForm,
-	} = useForm({
-		defaultValues: { name: '', email: '', password: '', confirmPassword: '' },
-	});
-
-	// OTP Form
-	const {
-		control: otpControl,
-		handleSubmit: handleOtpSubmit,
-		formState: { errors: otpErrors },
-		reset: resetOtpForm,
-	} = useForm({
-		defaultValues: { otp: '' },
-	});
-
-	// Forgot/Reset Password Forms
-	const {
-		control: forgotPasswordControl,
-		handleSubmit: handleForgotPasswordSubmit,
-		formState: { errors: forgotPasswordErrors },
-		reset: resetForgotPasswordForm,
-	} = useForm({
-		defaultValues: { email: '' },
-	});
-
-	const {
-		control: resetPasswordControl,
-		handleSubmit: handleResetPasswordSubmit,
-		formState: { errors: resetPasswordErrors },
-		watch: watchResetPassword,
-		reset: resetResetPasswordForm,
-	} = useForm({
-		defaultValues: { otp: '', newPassword: '', confirmPassword: '' },
-	});
-
-	const signupPassword = watchSignup('password');
-	const resetNewPassword = watchResetPassword('newPassword');
-
 	const onLogin = (data: any) => {
 		loginMutation.mutate(
 			{ email: data.email.trim(), password: data.password.trim() },
@@ -146,10 +91,9 @@ const AuthModal = ({ isVisible, onClose }: AuthModalProps) => {
 					handleClose();
 				},
 				onError: (error: any) => {
-					const errorMessage = error.response?.data?.message || 'Login failed';
 					showMessage({
 						message: 'Login Failed',
-						description: errorMessage,
+						description: getErrorMessage(error),
 						type: 'danger',
 					});
 				},
@@ -180,8 +124,7 @@ const AuthModal = ({ isVisible, onClose }: AuthModalProps) => {
 				});
 			}
 		} catch (error: any) {
-			const errorMessage =
-				error?.response?.data?.message || 'An unexpected error occurred';
+			const errorMessage = getErrorMessage(error);
 			if (
 				errorMessage ===
 				'Email verification already pending. Please check your email or request a new code.'
@@ -229,7 +172,7 @@ const AuthModal = ({ isVisible, onClose }: AuthModalProps) => {
 		} catch (error: any) {
 			showMessage({
 				message: 'Error',
-				description: error?.response?.data?.message || 'Invalid OTP',
+				description: getErrorMessage(error),
 				type: 'danger',
 			});
 		} finally {
@@ -259,7 +202,7 @@ const AuthModal = ({ isVisible, onClose }: AuthModalProps) => {
 		} catch (error: any) {
 			showMessage({
 				message: 'Error',
-				description: error?.response?.data?.message,
+				description: getErrorMessage(error),
 				type: 'danger',
 			});
 		} finally {
@@ -289,7 +232,7 @@ const AuthModal = ({ isVisible, onClose }: AuthModalProps) => {
 		} catch (error: any) {
 			showMessage({
 				message: 'Error',
-				description: error.response?.data?.message || 'Request failed',
+				description: getErrorMessage(error),
 				type: 'danger',
 			});
 		} finally {
@@ -322,7 +265,7 @@ const AuthModal = ({ isVisible, onClose }: AuthModalProps) => {
 		} catch (error: any) {
 			showMessage({
 				message: 'Error',
-				description: error.response?.data?.message || 'Reset failed',
+				description: getErrorMessage(error),
 				type: 'danger',
 			});
 		} finally {
@@ -370,10 +313,7 @@ const AuthModal = ({ isVisible, onClose }: AuthModalProps) => {
 						errorMessage = error.message || 'Something went wrong';
 				}
 			} else {
-				errorMessage =
-					error?.response?.data?.message ||
-					error.message ||
-					'Google login failed';
+				errorMessage = getErrorMessage(error);
 			}
 
 			if (errorMessage !== 'Sign in cancelled') {
@@ -391,11 +331,6 @@ const AuthModal = ({ isVisible, onClose }: AuthModalProps) => {
 
 	const handleClose = () => {
 		setMode('login');
-		resetLoginForm();
-		resetSignupForm();
-		resetOtpForm();
-		resetForgotPasswordForm();
-		resetResetPasswordForm();
 		onClose();
 	};
 
@@ -418,7 +353,7 @@ const AuthModal = ({ isVisible, onClose }: AuthModalProps) => {
 				</View>
 
 				{/* Header */}
-				<View className="flex-row items-center justify-between px-6 pb-4 border-b border-border/50 bg-background z-10">
+				<View className="flex-row items-center justify-between px-6 pb-4 border-b border-border bg-background z-10">
 					<View style={{ width: 24 }} />
 					<TextComponent className="text-xl font-bold text-foreground">
 						{mode === 'login' && 'Log in or sign up'}
@@ -442,281 +377,50 @@ const AuthModal = ({ isVisible, onClose }: AuthModalProps) => {
 					showsVerticalScrollIndicator={false}
 					contentContainerStyle={{ paddingBottom: 40 }}>
 					{mode === 'login' && (
-						<>
-							<FormInput
-								name="email"
-								control={loginControl}
-								label="Email Address"
-								placeholder="you@example.com"
-								icon="mail-outline"
-								keyboardType="email-address"
-								autoCapitalize="none"
-								error={loginErrors.email?.message as string}
-								rules={{ required: 'Email is required' }}
-							/>
-							<View className="mb-6">
-								<FormInput
-									name="password"
-									control={loginControl}
-									label="Password"
-									placeholder="Enter your password"
-									secureTextEntry
-									icon="lock-closed-outline"
-									error={loginErrors.password?.message as string}
-									rules={{ required: 'Password is required' }}
-									containerClassName="mb-1"
-								/>
-								<Pressable
-									onPress={() => setMode('forgotPassword')}
-									className="self-end p-1">
-									<TextComponent className="text-primary font-semibold text-sm">
-										Forgot Password?
-									</TextComponent>
-								</Pressable>
-							</View>
-
-							<AuthButton
-								title="Continue"
-								onPress={handleLoginSubmit(onLogin)}
-								loading={loginMutation.isPending}
-								className="mb-8"
-							/>
-
-							{/* Divider */}
-							<View className="flex-row items-center mb-8">
-								<View className="flex-1 h-px bg-border" />
-								<TextComponent className="px-4 text-muted-foreground text-sm font-medium">
-									or
-								</TextComponent>
-								<View className="flex-1 h-px bg-border" />
-							</View>
-
-							{/* Social Buttons */}
-							<View className="gap-3 mb-8">
-								<Pressable
-									className="flex-row items-center border border-border rounded-xl p-4 bg-background active:bg-muted"
-									disabled={loginMutation.isPending || isLoading}
-									onPress={onGoogleButtonPress}>
-									<GoogleIcon size={24} />
-									<TextComponent className="flex-1 text-center font-semibold text-foreground">
-										Continue with Google
-									</TextComponent>
-								</Pressable>
-							</View>
-
-							<View className="flex-row justify-center pb-8">
-								<TextComponent className="text-muted-foreground text-base mr-1">
-									Don't have an account?
-								</TextComponent>
-								<Pressable onPress={() => setMode('signup')}>
-									<TextComponent className="text-primary font-bold text-base">
-										Sign up
-									</TextComponent>
-								</Pressable>
-							</View>
-						</>
+						<LoginForm
+							onSubmit={onLogin}
+							isLoading={loginMutation.isPending}
+							onForgotPassword={() => setMode('forgotPassword')}
+							onGoogleLogin={onGoogleButtonPress}
+							onSignUpPress={() => setMode('signup')}
+						/>
 					)}
 
 					{mode === 'signup' && (
-						<>
-							<FormInput
-								name="name"
-								control={signupControl}
-								label="Full Name"
-								placeholder="John Doe"
-								icon="person-outline"
-								error={signupErrors.name?.message as string}
-								rules={{ required: 'Name is required' }}
-							/>
-							<FormInput
-								name="email"
-								control={signupControl}
-								label="Email Address"
-								placeholder="you@example.com"
-								icon="mail-outline"
-								keyboardType="email-address"
-								autoCapitalize="none"
-								error={signupErrors.email?.message as string}
-								rules={{ required: 'Email is required' }}
-							/>
-							<FormInput
-								name="password"
-								control={signupControl}
-								label="Password"
-								placeholder="Create password"
-								secureTextEntry
-								icon="lock-closed-outline"
-								error={signupErrors.password?.message as string}
-								rules={{
-									required: 'Password is required',
-									minLength: { value: 8, message: 'Min 8 chars' },
-								}}
-							/>
-							<FormInput
-								name="confirmPassword"
-								control={signupControl}
-								label="Confirm Password"
-								placeholder="Confirm password"
-								secureTextEntry
-								icon="lock-closed-outline"
-								error={signupErrors.confirmPassword?.message as string}
-								rules={{
-									required: 'Confirm password',
-									validate: (val: string) =>
-										val === signupPassword || 'Passwords do not match',
-								}}
-							/>
-							<AuthButton
-								title="Continue"
-								onPress={handleSignupSubmit(onSignup)}
-								loading={isLoading}
-								className="mb-8"
-							/>
-
-							<View className="flex-row justify-center pb-8">
-								<TextComponent className="text-muted-foreground text-base mr-1">
-									Already have an account?
-								</TextComponent>
-								<Pressable onPress={() => setMode('login')}>
-									<TextComponent className="text-primary/50 font-bold text-base">
-										Log in
-									</TextComponent>
-								</Pressable>
-							</View>
-						</>
+						<SignUpForm
+							onSubmit={onSignup}
+							isLoading={isLoading}
+							onLoginPress={() => setMode('login')}
+						/>
 					)}
 
 					{mode === 'otp' && (
-						<>
-							<TextComponent className="text-base text-muted-foreground mb-6 text-center">
-								Enter the code sent to {tempEmail}
-							</TextComponent>
-							<FormInput
-								name="otp"
-								control={otpControl}
-								label="Verification Code"
-								placeholder="Enter OTP"
-								icon="key-outline"
-								keyboardType="number-pad"
-								autoCapitalize="none"
-								error={otpErrors.otp?.message as string}
-								rules={{
-									required: 'OTP is required',
-									minLength: { value: 4, message: 'Min 4 chars' },
-								}}
-							/>
-							<AuthButton
-								title="Verify Email"
-								onPress={handleOtpSubmit(onVerifyOtp)}
-								loading={isLoading}
-								className="mb-4"
-							/>
-							<Pressable
-								disabled={!canResend || isLoading}
-								onPress={onResendCode}
-								className="self-center p-2 mb-4">
-								<TextComponent
-									className={`font-semibold ${canResend ? 'text-primary' : 'text-muted-foreground'}`}>
-									{canResend ? 'Resend Code' : `Resend Code (${timer}s)`}
-								</TextComponent>
-							</Pressable>
-							<Pressable
-								onPress={() => setMode('signup')}
-								className="self-center">
-								<TextComponent className="text-muted-foreground">
-									Back to Sign Up
-								</TextComponent>
-							</Pressable>
-						</>
+						<OTPForm
+							onSubmit={onVerifyOtp}
+							isLoading={isLoading}
+							onResend={onResendCode}
+							canResend={canResend}
+							timer={timer}
+							email={tempEmail}
+							onBackToSignUp={() => setMode('signup')}
+						/>
 					)}
 
 					{mode === 'forgotPassword' && (
-						<>
-							<TextComponent className="text-base text-muted-foreground mb-6">
-								Enter your email and we'll send you reset instructions.
-							</TextComponent>
-							<FormInput
-								name="email"
-								control={forgotPasswordControl}
-								label="Email Address"
-								placeholder="you@example.com"
-								icon="mail-outline"
-								keyboardType="email-address"
-								autoCapitalize="none"
-								error={forgotPasswordErrors.email?.message as string}
-								rules={{ required: 'Email is required' }}
-							/>
-							<AuthButton
-								title="Send OTP"
-								onPress={handleForgotPasswordSubmit(onForgotPassword)}
-								loading={isLoading}
-								className="mb-4"
-							/>
-							<Pressable
-								onPress={() => setMode('login')}
-								className="self-center p-2">
-								<TextComponent className="text-primary font-semibold">
-									Back to Login
-								</TextComponent>
-							</Pressable>
-						</>
+						<ForgotPasswordForm
+							onSubmit={onForgotPassword}
+							isLoading={isLoading}
+							onBackToLogin={() => setMode('login')}
+						/>
 					)}
 
 					{mode === 'resetPassword' && (
-						<>
-							<TextComponent className="text-base text-muted-foreground mb-6">
-								Enter the OTP sent to {tempEmail} and your new password.
-							</TextComponent>
-							<FormInput
-								name="otp"
-								control={resetPasswordControl}
-								label="OTP Code"
-								placeholder="Enter OTP"
-								keyboardType="number-pad"
-								error={resetPasswordErrors.otp?.message as string}
-								rules={{ required: 'OTP is required' }}
-							/>
-							<FormInput
-								name="newPassword"
-								control={resetPasswordControl}
-								label="New Password"
-								placeholder="New password"
-								secureTextEntry
-								icon="lock-closed-outline"
-								error={resetPasswordErrors.newPassword?.message as string}
-								rules={{
-									required: 'Password is required',
-									minLength: { value: 8, message: 'Min 8 chars' },
-								}}
-							/>
-							<FormInput
-								name="confirmPassword"
-								control={resetPasswordControl}
-								label="Confirm Password"
-								placeholder="Confirm password"
-								secureTextEntry
-								icon="lock-closed-outline"
-								error={resetPasswordErrors.confirmPassword?.message as string}
-								rules={{
-									required: 'Confirm password',
-									validate: (val: string) =>
-										val === resetNewPassword || 'Passwords do not match',
-								}}
-							/>
-							<AuthButton
-								title="Reset Password"
-								onPress={handleResetPasswordSubmit(onResetPassword)}
-								loading={isLoading}
-								className="mb-4"
-							/>
-							<Pressable
-								onPress={() => setMode('login')}
-								className="self-center p-2">
-								<TextComponent className="text-primary font-semibold">
-									Back to Login
-								</TextComponent>
-							</Pressable>
-						</>
+						<ResetPasswordForm
+							onSubmit={onResetPassword}
+							isLoading={isLoading}
+							onBackToLogin={() => setMode('login')}
+							email={tempEmail}
+						/>
 					)}
 				</ScrollView>
 			</KeyboardAvoidingView>
