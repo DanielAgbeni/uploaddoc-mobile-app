@@ -59,6 +59,7 @@
     "libphonenumber-js": "^1.12.10",
     "lightningcss": "^1.30.1",
     "lottie-react-native": "7.2.2",
+    "lucide-react-native": "^0.562.0",
     "nativewind": "4.1.23",
     "pdf-lib": "^1.17.1",
     "react": "19.0.0",
@@ -84,6 +85,7 @@
     "tailwind-merge": "^3.3.1",
     "tailwindcss": "^3.4.17",
     "use-debounce": "^10.0.5",
+    "zod": "^4.3.5",
     "zustand": "^5.0.7"
   },
   "devDependencies": {

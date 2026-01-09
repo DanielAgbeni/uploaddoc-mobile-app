@@ -44,6 +44,7 @@ export default function MainTabNavigator() {
 					shadowOffset: { width: 0, height: -2 },
 					shadowOpacity: colorScheme === 'dark' ? 0.2 : 0.05,
 					shadowRadius: 4,
+					borderTopWidth: 0,
 				},
 				tabBarLabelStyle: {
 					fontSize: 12,
