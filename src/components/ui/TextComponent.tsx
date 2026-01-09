@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { memo } from 'react';
 import {
 	Text as RNText,
 	TextProps as RNTextProps,
@@ -94,4 +94,4 @@ const variantStyles: Record<TextVariant, string> = {
 	label: 'text-sm font-medium text-muted-foreground',
 };
 
-export default TextComponent;
+export default memo(TextComponent);

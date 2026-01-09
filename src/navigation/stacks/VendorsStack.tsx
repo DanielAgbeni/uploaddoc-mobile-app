@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { memo } from 'react';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { VendorsStackParamList } from '../../types/navigation.types';
 
@@ -9,7 +9,7 @@ import SubmitDocumentScreen from '../../screens/documents/SubmitDocumentScreen';
 
 const Stack = createNativeStackNavigator<VendorsStackParamList>();
 
-export default function VendorsStack() {
+function VendorsStack() {
 	return (
 		<Stack.Navigator
 			screenOptions={{
@@ -32,3 +32,4 @@ export default function VendorsStack() {
 		</Stack.Navigator>
 	);
 }
+export default memo(VendorsStack);

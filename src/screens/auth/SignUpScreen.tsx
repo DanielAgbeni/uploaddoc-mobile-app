@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, memo } from 'react';
 import {
 	View,
 	Text,
@@ -20,7 +20,7 @@ import {
 } from '../../api/auth';
 import { showMessage } from 'react-native-flash-message';
 import { useUserStore } from '../../shared/user-store/useUserStore';
-import { CustomModal } from '../../components/ui/CustomModal';
+import CustomModal from '../../components/ui/CustomModal';
 
 // Components
 import RegistrationForm from '../../components/auth/sign-up/RegistrationForm';
@@ -38,8 +38,7 @@ type SignUpFormData = {
 type OTPFormData = {
 	otp: string;
 };
-
-export default function SignUpScreen({ navigation }: Props) {
+function SignUpScreen({ navigation }: Props) {
 	const { colorScheme } = useTheme();
 	const setLoginData = useUserStore((state) => state.setLoginData);
 
@@ -269,3 +268,4 @@ export default function SignUpScreen({ navigation }: Props) {
 		</KeyboardAvoidingView>
 	);
 }
+export default memo(SignUpScreen);

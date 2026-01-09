@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { memo } from 'react';
 import { View, Text, Pressable, ScrollView, Switch } from 'react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -88,7 +88,7 @@ const SettingRow: React.FC<SettingRowProps> = ({
 // Separator component
 const Separator = () => <View className="h-px bg-border" />;
 
-export default function ProfileScreen({ navigation }: Props) {
+function ProfileScreen({ navigation }: Props) {
 	const { theme, setTheme, colors, colorScheme } = useTheme();
 	const { showAlert } = useModal();
 	const user = useUserStore((state) => state.user);
@@ -454,3 +454,5 @@ export default function ProfileScreen({ navigation }: Props) {
 		</ScrollView>
 	);
 }
+
+export default memo(ProfileScreen);

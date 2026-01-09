@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { memo, useEffect } from 'react';
 import {
 	View,
 	Modal,
@@ -22,7 +22,7 @@ interface CustomModalProps {
 	width?: number | string;
 }
 
-export const CustomModal: React.FC<CustomModalProps> = ({
+const CustomModal: React.FC<CustomModalProps> = ({
 	isVisible,
 	onClose,
 	children,
@@ -86,3 +86,5 @@ export const CustomModal: React.FC<CustomModalProps> = ({
 		</Modal>
 	);
 };
+
+export default memo(CustomModal);

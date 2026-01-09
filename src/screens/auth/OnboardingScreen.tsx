@@ -154,4 +154,4 @@ const OnboardingScreen = memo(function OnboardingScreen({ navigation }: Props) {
 	);
 });
 
-export default OnboardingScreen;
+export default memo(OnboardingScreen);

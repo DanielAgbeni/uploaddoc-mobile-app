@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { memo } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../types/navigation.types';
@@ -12,7 +12,7 @@ import MainTabNavigator from './MainTabNavigator';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
-export default function RootNavigator() {
+function RootNavigator() {
 	const isAuthenticated = useUserStore((state) => state.isAuthenticated);
 	const hasHydrated = useUserStore((state) => state.hasHydrated);
 
@@ -47,3 +47,4 @@ export default function RootNavigator() {
 		</NavigationContainer>
 	);
 }
+export default memo(RootNavigator);

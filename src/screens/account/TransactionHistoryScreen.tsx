@@ -16,13 +16,14 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import clsx from 'clsx';
 import { useInfiniteQuery } from '@tanstack/react-query';
 import { useRefreshOnFocus } from '../../hooks/useRefreshOnFocus';
+import TransactionItem from './components/TransactionItem';
 
 type Props = NativeStackScreenProps<
 	AccountStackParamList,
 	'TransactionHistory'
 >;
 
-export default function TransactionHistoryScreen({ navigation }: Props) {
+function TransactionHistoryScreen({ navigation }: Props) {
 	const { colors } = useTheme();
 
 	const {
@@ -55,78 +56,9 @@ export default function TransactionHistoryScreen({ navigation }: Props) {
 		}
 	};
 
-	const getPackageName = (packageId: number): string => {
-		return PACKAGES[packageId]?.name || 'Unknown';
-	};
-
-	const renderTransaction = ({ item }: { item: Transaction }) => {
-		const isCompleted = item.status === 'completed';
-		const isFailed = item.status === 'failed';
-
-		return (
-			<View className="bg-card rounded-2xl p-4 mb-3 shadow-sm border border-border">
-				<View className="flex-row justify-between items-start mb-3">
-					<View className="flex-1">
-						<TextComponent className="text-foreground font-bold text-lg mb-1">
-							{getPackageName(item.packageId)} Package
-						</TextComponent>
-						<TextComponent className="text-muted-foreground text-xs font-medium">
-							{new Date(item.createdAt).toLocaleDateString('en-NG', {
-								year: 'numeric',
-								month: 'short',
-								day: 'numeric',
-								hour: '2-digit',
-								minute: '2-digit',
-							})}
-						</TextComponent>
-					</View>
-
-					<View
-						className={clsx(
-							'px-2.5 py-1 rounded-full',
-							isCompleted
-								? 'bg-green-500/10'
-								: isFailed
-									? 'bg-red-500/10'
-									: 'bg-yellow-500/10',
-						)}>
-						<TextComponent
-							className={clsx(
-								'text-[10px] font-bold uppercase tracking-wider',
-								isCompleted
-									? 'text-green-600'
-									: isFailed
-										? 'text-red-600'
-										: 'text-yellow-600',
-							)}>
-							{item.status}
-						</TextComponent>
-					</View>
-				</View>
-
-				<View className="flex-row justify-between items-end pt-2 border-t border-border">
-					<View>
-						<TextComponent className="text-[10px] uppercase text-muted-foreground font-bold mb-0.5">
-							Amount
-						</TextComponent>
-						<TextComponent className="font-bold text-xl text-foreground">
-							₦{item.amount.toLocaleString()}
-						</TextComponent>
-					</View>
-					{isCompleted && (
-						<View className="items-end">
-							<TextComponent className="text-[10px] uppercase text-muted-foreground font-bold mb-0.5">
-								Tokens Received
-							</TextComponent>
-							<TextComponent className="text-sm text-green-600 font-bold bg-green-500/10 px-2 py-0.5 rounded-lg">
-								+{item.tokensAdded}
-							</TextComponent>
-						</View>
-					)}
-				</View>
-			</View>
-		);
-	};
+	const renderTransaction = ({ item }: { item: Transaction }) => (
+		<TransactionItem item={item} />
+	);
 
 	return (
 		<View className="flex-1 bg-background">
@@ -204,3 +136,5 @@ export default function TransactionHistoryScreen({ navigation }: Props) {
 		</View>
 	);
 }
+
+export default React.memo(TransactionHistoryScreen);

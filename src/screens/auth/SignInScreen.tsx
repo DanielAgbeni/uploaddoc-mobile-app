@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { memo } from 'react';
 import {
 	View,
 	Text,
@@ -29,7 +29,7 @@ type SignInFormData = {
 	password: string;
 };
 
-export default function SignInScreen({ navigation }: Props) {
+function SignInScreen({ navigation }: Props) {
 	const loginMutation = useLoginMutation();
 	const { colorScheme } = useTheme();
 
@@ -230,3 +230,5 @@ export default function SignInScreen({ navigation }: Props) {
 		</KeyboardAvoidingView>
 	);
 }
+
+export default memo(SignInScreen);

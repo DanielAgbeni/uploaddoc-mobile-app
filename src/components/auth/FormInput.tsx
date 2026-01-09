@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { memo, useState } from 'react';
 import {
 	View,
 	Text,
@@ -27,7 +27,7 @@ interface FormInputProps<T extends FieldValues> extends Omit<
 	containerClassName?: string;
 }
 
-export default function FormInput<T extends FieldValues>({
+function FormInput<T extends FieldValues>({
 	name,
 	control,
 	label,
@@ -125,6 +125,8 @@ export default function FormInput<T extends FieldValues>({
 		</View>
 	);
 }
+
+export default memo(FormInput) as typeof FormInput;
 
 const styles = StyleSheet.create({
 	inputContainer: {

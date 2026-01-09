@@ -29,13 +29,13 @@ import CloseCircleIcon from '../../assets/icons/close-circle.icon';
 import AlertCircleIcon from '../../assets/icons/alert-circle.icon';
 import DocumentTextIcon from '../../assets/icons/document-text.icon';
 import AddIcon from '../../assets/icons/add.icon';
-import { AlertModal } from '../../components/ui/AlertModal';
+import AlertModal from '../../components/ui/AlertModal';
 import { Pressable } from 'react-native';
 import { TextComponent } from 'src/components';
 
 type Props = NativeStackScreenProps<DocumentsStackParamList, 'DocumentsList'>;
 
-export default function DocumentsListScreen({ navigation }: Props) {
+function DocumentsListScreen({ navigation }: Props) {
 	const [searchQuery, setSearchQuery] = useState('');
 	const [debouncedSearch] = useDebounce(searchQuery, 500);
 	const [deleteModalVisible, setDeleteModalVisible] = useState(false);
@@ -319,3 +319,5 @@ export default function DocumentsListScreen({ navigation }: Props) {
 		</View>
 	);
 }
+
+export default React.memo(DocumentsListScreen);

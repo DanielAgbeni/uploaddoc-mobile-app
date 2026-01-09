@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { memo, useEffect, useState } from 'react';
 import {
 	View,
 	TextInput,
@@ -91,7 +91,7 @@ const SectionTitle = ({ title, icon: Icon }: { title: string; icon?: any }) => {
 	);
 };
 
-export default function EditProfileScreen({ navigation }: Props) {
+function EditProfileScreen({ navigation }: Props) {
 	const { colors } = useTheme();
 	const { showAlert } = useModal();
 	const { user, setUserDetails } = useUserStore();
@@ -593,3 +593,4 @@ export default function EditProfileScreen({ navigation }: Props) {
 		</View>
 	);
 }
+export default memo(EditProfileScreen);

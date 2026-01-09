@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { memo } from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { MainTabParamList } from '../types/navigation.types';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -19,7 +19,7 @@ import { useUserStore } from '../shared/user-store/useUserStore';
 
 const Tab = createBottomTabNavigator<MainTabParamList>();
 
-export default function MainTabNavigator() {
+function MainTabNavigator() {
 	const user = useUserStore((state) => state.user);
 	const isVendor = user?.isAdmin || false; // Using isAdmin as proxy; adjust as needed
 	const insets = useSafeAreaInsets();
@@ -113,3 +113,4 @@ export default function MainTabNavigator() {
 		</Tab.Navigator>
 	);
 }
+export default memo(MainTabNavigator);

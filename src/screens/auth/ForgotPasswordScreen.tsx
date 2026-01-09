@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, memo } from 'react';
 import {
 	View,
 	Text,
@@ -21,7 +21,7 @@ import { CustomImage } from 'src/components';
 
 type Props = NativeStackScreenProps<AuthStackParamList, 'ForgotPassword'>;
 
-export default function ForgotPasswordScreen({ navigation }: Props) {
+function ForgotPasswordScreen({ navigation }: Props) {
 	const { colorScheme } = useTheme();
 	const [step, setStep] = useState<1 | 2>(1);
 	const [email, setEmail] = useState('');
@@ -174,3 +174,5 @@ export default function ForgotPasswordScreen({ navigation }: Props) {
 		</KeyboardAvoidingView>
 	);
 }
+
+export default memo(ForgotPasswordScreen);

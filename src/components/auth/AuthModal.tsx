@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { memo, useState } from 'react';
 import {
 	View,
 	Text,
@@ -724,4 +724,4 @@ const AuthModal = ({ isVisible, onClose }: AuthModalProps) => {
 	);
 };
 
-export default AuthModal;
+export default memo(AuthModal);

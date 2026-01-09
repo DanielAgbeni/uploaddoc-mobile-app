@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { memo } from 'react';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { AccountStackParamList } from '../../types/navigation.types';
 
@@ -10,19 +10,31 @@ import SettingsScreen from '../../screens/account/SettingsScreen';
 
 const Stack = createNativeStackNavigator<AccountStackParamList>();
 
-export default function AccountStack() {
-  return (
-    <Stack.Navigator
-      screenOptions={{
-        headerShown: false,
-        animation: 'slide_from_right',
-        contentStyle: { backgroundColor: 'transparent' },
-      }}
-    >
-      <Stack.Screen name="Profile" component={ProfileScreen} />
-      <Stack.Screen name="EditProfile" component={EditProfileScreen} />
-      <Stack.Screen name="TransactionHistory" component={TransactionHistoryScreen} />
-      <Stack.Screen name="Settings" component={SettingsScreen} />
-    </Stack.Navigator>
-  );
+function AccountStack() {
+	return (
+		<Stack.Navigator
+			screenOptions={{
+				headerShown: false,
+				animation: 'slide_from_right',
+				contentStyle: { backgroundColor: 'transparent' },
+			}}>
+			<Stack.Screen
+				name="Profile"
+				component={ProfileScreen}
+			/>
+			<Stack.Screen
+				name="EditProfile"
+				component={EditProfileScreen}
+			/>
+			<Stack.Screen
+				name="TransactionHistory"
+				component={TransactionHistoryScreen}
+			/>
+			<Stack.Screen
+				name="Settings"
+				component={SettingsScreen}
+			/>
+		</Stack.Navigator>
+	);
 }
+export default memo(AccountStack);

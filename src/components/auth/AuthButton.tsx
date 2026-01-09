@@ -21,7 +21,7 @@ interface AuthButtonProps extends PressableProps {
 	fullWidth?: boolean;
 }
 
-export default function AuthButton({
+function AuthButton({
 	title,
 	onPress,
 	loading = false,
@@ -143,6 +143,8 @@ export default function AuthButton({
 		</Pressable>
 	);
 }
+
+export default React.memo(AuthButton);
 
 const styles = StyleSheet.create({
 	button: {

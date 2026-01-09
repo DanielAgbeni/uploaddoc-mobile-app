@@ -1,6 +1,6 @@
-import React from 'react';
+import React, { memo } from 'react';
 import { View, Text, Pressable } from 'react-native';
-import { CustomModal } from './CustomModal';
+import CustomModal from './CustomModal';
 import { useTheme } from '../../providers/ThemeProvider';
 
 export type AlertType = 'success' | 'error' | 'info' | 'warning' | 'confirm';
@@ -17,7 +17,7 @@ interface AlertModalProps {
 	isDestructive?: boolean;
 }
 
-export const AlertModal: React.FC<AlertModalProps> = ({
+const AlertModal: React.FC<AlertModalProps> = ({
 	isVisible,
 	onClose,
 	title,
@@ -80,3 +80,5 @@ export const AlertModal: React.FC<AlertModalProps> = ({
 		</CustomModal>
 	);
 };
+
+export default memo(AlertModal);

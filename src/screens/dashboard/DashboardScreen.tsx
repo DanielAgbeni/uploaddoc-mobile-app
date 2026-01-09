@@ -24,7 +24,7 @@ import DashboardHeader from './components/DashboardHeader';
 import ProjectCard from './components/ProjectCard';
 import { FlashList } from '@shopify/flash-list';
 import { showMessage } from 'react-native-flash-message';
-import { AlertModal } from '../../components/ui/AlertModal';
+import AlertModal from '../../components/ui/AlertModal';
 import {
 	downloadDocument,
 	getDownloadFolderPath,
@@ -40,7 +40,7 @@ import CloseCircleIcon from '../../assets/icons/close-circle.icon';
 
 type Props = NativeStackScreenProps<MainTabParamList, 'DashboardTab'>;
 
-export default function DashboardScreen({ navigation }: Props) {
+function DashboardScreen({ navigation }: Props) {
 	const insets = useSafeAreaInsets();
 	const { colors } = useTheme();
 	const [deleteModalVisible, setDeleteModalVisible] = useState(false);
@@ -328,3 +328,5 @@ export default function DashboardScreen({ navigation }: Props) {
 		</View>
 	);
 }
+
+export default React.memo(DashboardScreen);

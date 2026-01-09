@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { memo } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import {
 	calculatePasswordStrength,
@@ -11,7 +11,7 @@ interface PasswordStrengthIndicatorProps {
 	className?: string;
 }
 
-export default function PasswordStrengthIndicator({
+function PasswordStrengthIndicator({
 	password,
 	showFeedback = true,
 	className = '',
@@ -56,6 +56,8 @@ export default function PasswordStrengthIndicator({
 		</View>
 	);
 }
+
+export default memo(PasswordStrengthIndicator);
 
 const styles = StyleSheet.create({
 	bar: {
