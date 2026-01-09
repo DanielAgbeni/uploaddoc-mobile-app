@@ -7,6 +7,7 @@ import { queryClient } from './src/config/queryClient';
 import RootNavigator from './src/navigation/RootNavigator';
 import { ThemeProvider, useTheme } from './src/providers/ThemeProvider';
 import { ModalProvider } from './src/providers/ModalProvider';
+import CustomToastMessageComponent from './src/components/ui/CustomToast';
 import FlashMessage from 'react-native-flash-message';
 
 function AppContent() {
@@ -19,9 +20,7 @@ function AppContent() {
 			<FlashMessage
 				position="top"
 				floating
-				style={{ marginTop: 20 }}
-				titleStyle={{ fontSize: 16, fontWeight: '600' }}
-				textStyle={{ fontSize: 14 }}
+				MessageComponent={CustomToastMessageComponent}
 			/>
 		</View>
 	);
