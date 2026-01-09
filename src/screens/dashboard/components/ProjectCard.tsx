@@ -1,11 +1,26 @@
-import React, { memo } from 'react';
-import { View, Text, Pressable, Image } from 'react-native';
+import React, { memo, useState } from 'react';
+import {
+	View,
+	Pressable,
+	Image,
+	ActivityIndicator,
+	Linking,
+} from 'react-native';
 import DocumentTextIcon from '../../../assets/icons/document-text.icon';
 import DownloadIcon from '../../../assets/icons/download.icon';
 import TrashIcon from '../../../assets/icons/trash.icon';
 import CheckmarkCircleIcon from '../../../assets/icons/checkmark-circle.icon';
-import { format } from 'date-fns';
 import { TextComponent } from 'src/components';
+import CloudIcon from '../../../assets/icons/cloud.icon';
+import CloudOffIcon from '../../../assets/icons/cloud-off.icon';
+import ExternalLinkIcon from '../../../assets/icons/external-link.icon';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { getAllCloudStatus, getActiveProvider } from '../../../api/cloudSync';
+import { syncProject } from '../../../api/googledrive';
+import { syncProjectToOneDrive } from '../../../api/onedrive';
+import { syncProjectToDropbox } from '../../../api/dropbox';
+import { showMessage } from 'react-native-flash-message';
+
 type ProjectCardProps = {
 	project: Project;
 	onDelete: (id: string) => void;
@@ -21,6 +36,78 @@ const ProjectCard = ({
 	onAccept,
 	isAccepting,
 }: ProjectCardProps) => {
+	const queryClient = useQueryClient();
+	const [isSyncing, setIsSyncing] = useState(false);
+
+	// Get Cloud Status
+	const { data: cloudData } = useQuery({
+		queryKey: ['allCloudStatus'],
+		queryFn: getAllCloudStatus,
+		staleTime: 60000,
+	});
+
+	const activeProvider = cloudData ? getActiveProvider(cloudData) : null;
+	const providerName = activeProvider?.providerName || 'Cloud';
+
+	const handleSync = async () => {
+		if (!activeProvider) {
+			showMessage({
+				message: 'No Cloud Connected',
+				description:
+					'Please connect a cloud storage provider in your profile settings',
+				type: 'warning',
+				icon: 'warning',
+			});
+			return;
+		}
+
+		setIsSyncing(true);
+		try {
+			let result;
+			switch (activeProvider.providerName) {
+				case 'google-drive':
+					result = await syncProject(project._id);
+					break;
+				case 'onedrive':
+					result = await syncProjectToOneDrive(project._id);
+					break;
+				case 'dropbox':
+					result = await syncProjectToDropbox(project._id);
+					break;
+			}
+
+			showMessage({
+				message: 'Success',
+				description: `Document synced to ${providerName}`,
+				type: 'success',
+				icon: 'success',
+			});
+
+			queryClient.invalidateQueries({ queryKey: ['assignedProjects'] });
+		} catch (error: any) {
+			console.error('Sync error:', error);
+			if (error.response?.status === 400 && error.response?.data?.driveUrl) {
+				showMessage({
+					message: 'Info',
+					description: 'Document is already synced',
+					type: 'info',
+					icon: 'info',
+				});
+			} else {
+				showMessage({
+					message: 'Sync Failed',
+					description:
+						error.response?.data?.message ||
+						`Failed to sync to ${providerName}`,
+					type: 'danger',
+					icon: 'danger',
+				});
+			}
+		} finally {
+			setIsSyncing(false);
+		}
+	};
+
 	const getStatusConfig = (status: string) => {
 		switch (status) {
 			case 'accepted':
@@ -97,19 +184,57 @@ const ProjectCard = ({
 
 					<View className="flex-row items-center gap-2">
 						<View className="bg-muted px-1.5 py-0.5 rounded">
-							<TextComponent className="text-[10px] text-muted-foreground uppercase">
+							<TextComponent className="text-sm text-muted-foreground">
 								{project.fileCategory}
 							</TextComponent>
 						</View>
-						<TextComponent className="text-[10px] text-muted-foreground">
+						<TextComponent className="text-sm text-muted-foreground">
 							{formatFileSize(project.fileSize)}
 						</TextComponent>
 						{project.pageCount > 0 && (
-							<TextComponent className="text-[10px] text-muted-foreground">
+							<TextComponent className="text-sm text-muted-foreground">
 								• {project.pageCount} pg
 							</TextComponent>
 						)}
 					</View>
+
+					{/* Cloud Sync Status (if accepted) */}
+					{project.status === 'accepted' && (
+						<View className="mt-1 flex-row items-center gap-1">
+							{project.driveSync?.synced ? (
+								<Pressable
+									onPress={() =>
+										project.driveSync?.driveFileUrl &&
+										Linking.openURL(project.driveSync.driveFileUrl)
+									}
+									className="flex-row items-center gap-1">
+									<CloudIcon
+										size={10}
+										color="#22c55e"
+									/>
+									<TextComponent className="text-[10px] text-green-600 font-medium">
+										Synced
+									</TextComponent>
+									{project.driveSync.driveFileUrl && (
+										<ExternalLinkIcon
+											size={8}
+											color="#22c55e"
+										/>
+									)}
+								</Pressable>
+							) : (
+								<View className="flex-row items-center gap-1">
+									<CloudOffIcon
+										size={10}
+										color="#94a3b8"
+									/>
+									<TextComponent className="text-[10px] text-muted-foreground">
+										Not synced
+									</TextComponent>
+								</View>
+							)}
+						</View>
+					)}
 				</View>
 
 				{/* Actions */}
@@ -119,22 +244,55 @@ const ProjectCard = ({
 							onPress={() => onAccept(project._id)}
 							disabled={isAccepting}
 							className={`p-2 rounded-full ${isAccepting ? 'opacity-50' : 'active:bg-green-50'}`}>
-							<CheckmarkCircleIcon
-								size={20}
-								color="#16a34a"
-							/>
+							{isAccepting ? (
+								<ActivityIndicator
+									size="small"
+									color="#16a34a"
+								/>
+							) : (
+								<CheckmarkCircleIcon
+									size={20}
+									color="#16a34a"
+								/>
+							)}
 						</Pressable>
 					)}
-					{project.fileUrl && project.status === 'accepted' && (
-						<Pressable
-							onPress={() => onDownload(project)}
-							className="p-2 rounded-full active:bg-muted">
-							<DownloadIcon
-								size={20}
-								color="#64748b"
-							/>
-						</Pressable>
+
+					{project.status === 'accepted' && (
+						<>
+							{/* Sync Button */}
+							{!project.driveSync?.synced && (
+								<Pressable
+									onPress={handleSync}
+									disabled={isSyncing}
+									className="p-2 rounded-full active:bg-muted">
+									{isSyncing ? (
+										<ActivityIndicator
+											size="small"
+											color="#4F46E5"
+										/>
+									) : (
+										<CloudIcon
+											size={20}
+											color="#4F46E5"
+										/>
+									)}
+								</Pressable>
+							)}
+
+							{project.fileUrl && (
+								<Pressable
+									onPress={() => onDownload(project)}
+									className="p-2 rounded-full active:bg-muted">
+									<DownloadIcon
+										size={20}
+										color="#64748b"
+									/>
+								</Pressable>
+							)}
+						</>
 					)}
+
 					<Pressable
 						onPress={() => onDelete(project._id)}
 						className="p-2 rounded-full active:bg-red-50">

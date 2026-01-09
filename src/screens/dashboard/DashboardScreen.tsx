@@ -5,6 +5,7 @@ import {
 	ActivityIndicator,
 	RefreshControl,
 	StatusBar,
+	TextInput,
 } from 'react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { MainTabParamList } from '../../types/navigation.types';
@@ -19,7 +20,7 @@ import {
 	deleteProject,
 } from '../../api/projects';
 import DashboardHeader from './components/DashboardHeader';
-import ProjectCard from './components/ProjectCard'; // Created
+import ProjectCard from './components/ProjectCard';
 import { FlashList } from '@shopify/flash-list';
 import { showMessage } from 'react-native-flash-message';
 import { AlertModal } from '../../components/ui/AlertModal';
@@ -28,15 +29,26 @@ import {
 	getDownloadFolderPath,
 } from '../../utils/fileDownload';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { LinearGradient } from 'expo-linear-gradient';
+import { useTheme } from '../../providers/ThemeProvider';
+import { useDebounce } from 'use-debounce';
+import DashboardIcon from '../../assets/icons/dashboard.icon';
+import { SearchIcon } from '../../assets/icons'; // Assuming index.ts exports it
+import { TextComponent } from 'src/components';
+import CloseCircleIcon from '../../assets/icons/close-circle.icon';
 
-// Assuming Dashboard is part of MainTabParamList
 type Props = NativeStackScreenProps<MainTabParamList, 'DashboardTab'>;
 
 export default function DashboardScreen({ navigation }: Props) {
 	const insets = useSafeAreaInsets();
+	const { colors } = useTheme();
 	const [deleteModalVisible, setDeleteModalVisible] = useState(false);
 	const [projectToDelete, setProjectToDelete] = useState<string | null>(null);
 	const queryClient = useQueryClient();
+
+	// Search State
+	const [searchQuery, setSearchQuery] = useState('');
+	const [debouncedSearch] = useDebounce(searchQuery, 500);
 
 	const {
 		data,
@@ -48,8 +60,9 @@ export default function DashboardScreen({ navigation }: Props) {
 		refetch,
 		isRefetching,
 	} = useInfiniteQuery({
-		queryKey: ['assignedProjects'],
-		queryFn: ({ pageParam = 1 }) => getAssignedProjects(pageParam, 10, ''),
+		queryKey: ['assignedProjects', debouncedSearch],
+		queryFn: ({ pageParam = 1 }) =>
+			getAssignedProjects(pageParam, 10, debouncedSearch),
 		initialPageParam: 1,
 		getNextPageParam: (lastPage) => {
 			if (!lastPage?.data?.data?.pagination) return undefined;
@@ -209,28 +222,68 @@ export default function DashboardScreen({ navigation }: Props) {
 		}
 		return (
 			<View className="py-20 px-4 items-center">
-				<Text className="text-muted-foreground text-center">
-					No assigned projects found.
-				</Text>
+				<TextComponent className="text-muted-foreground text-center">
+					{debouncedSearch
+						? 'No projects matching your search.'
+						: 'No assigned projects found.'}
+				</TextComponent>
 			</View>
 		);
 	};
 
 	return (
-		<View
-			className="flex-1 bg-background"
-			style={{ paddingTop: insets.top }}>
+		<View className="flex-1 bg-background">
 			<StatusBar
-				barStyle="dark-content"
+				barStyle="light-content"
 				backgroundColor="transparent"
 				translucent
 			/>
 
-			<View className="px-4 py-3">
-				<Text className="text-2xl font-bold text-foreground">Dashboard</Text>
-				<Text className="text-muted-foreground">
-					Manage your assigned projects
-				</Text>
+			{/* Gradient Header */}
+			<LinearGradient
+				colors={[colors.primary, colors.accent || '#4F46E5']}
+				start={{ x: 0, y: 0 }}
+				end={{ x: 1, y: 1 }}
+				className="pt-14 pb-12 px-6 rounded-b-3xl">
+				<View className="items-center">
+					<View className="w-16 h-16 bg-white/20 rounded-2xl items-center justify-center mb-4">
+						<DashboardIcon
+							size={32}
+							color="#fff"
+						/>
+					</View>
+					<TextComponent className="text-white font-bold text-2xl mb-1">
+						Dashboard
+					</TextComponent>
+					<TextComponent className="text-white/80 text-base text-center">
+						Manage your assigned projects
+					</TextComponent>
+				</View>
+			</LinearGradient>
+
+			{/* Search Bar */}
+			<View className="px-5 -mt-6 mb-2">
+				<View className="bg-card border border-border rounded-xl flex-row items-center px-4 shadow-sm h-12">
+					<SearchIcon
+						size={18}
+						color={colors.mutedForeground}
+					/>
+					<TextInput
+						className="flex-1 ml-3 text-foreground text-base h-full font-medium"
+						placeholder="Search projects..."
+						placeholderTextColor={colors.mutedForeground}
+						value={searchQuery}
+						onChangeText={setSearchQuery}
+					/>
+					{searchQuery.length > 0 && (
+						<View onTouchEnd={() => setSearchQuery('')}>
+							<CloseCircleIcon
+								size={18}
+								color={colors.mutedForeground}
+							/>
+						</View>
+					)}
+				</View>
 			</View>
 
 			<FlashList
@@ -251,10 +304,11 @@ export default function DashboardScreen({ navigation }: Props) {
 					<RefreshControl
 						refreshing={isRefetching && !isFetchingNextPage}
 						onRefresh={refetch}
-						tintColor="#4F46E5"
+						tintColor={colors.primary}
+						colors={[colors.primary]}
 					/>
 				}
-				contentContainerStyle={{ paddingBottom: 100 }}
+				contentContainerStyle={{ paddingBottom: 100, paddingTop: 10 }}
 			/>
 
 			<AlertModal

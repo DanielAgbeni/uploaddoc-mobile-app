@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { View, Text, Pressable, ActivityIndicator } from 'react-native';
+import { View, Pressable, ActivityIndicator, Linking } from 'react-native';
+import { TextComponent } from 'src/components';
 import { useQuery } from '@tanstack/react-query';
 import { getUserStatus } from '../../../api/auth';
 import {
@@ -36,7 +37,7 @@ const DashboardHeader = () => {
 	const { data: cloudData, isLoading: cloudLoading } = useQuery({
 		queryKey: ['allCloudStatus'],
 		queryFn: getAllCloudStatus,
-		staleTime: 60000,
+		staleTime: 60000, // 1 minute
 	});
 
 	const copyToClipboard = async (slug: string) => {
@@ -76,17 +77,21 @@ const DashboardHeader = () => {
 	if (isError) {
 		return (
 			<View className="mx-4 mb-4 p-4 bg-red-50 dark:bg-red-900/10 border border-red-200 dark:border-red-900 rounded-lg">
-				<Text className="text-red-500 dark:text-red-400">
+				<TextComponent className="text-red-500 dark:text-red-400">
 					Failed to load status: {(error as Error).message}
-				</Text>
+				</TextComponent>
 			</View>
 		);
 	}
 
 	const user = data?.data?.data?.user;
 
-	const activeProvider = getActiveProvider(cloudData?.data);
-	const eligibility = getCloudSyncEligibility(cloudData?.data);
+	console.log('DashboardHeader cloudData:', JSON.stringify(cloudData, null, 2));
+
+	const activeProvider = cloudData ? getActiveProvider(cloudData) : null;
+	const eligibility = cloudData
+		? getCloudSyncEligibility(cloudData)
+		: { canUseDriveSync: false };
 
 	const activeStatus = activeProvider
 		? {
@@ -108,53 +113,55 @@ const DashboardHeader = () => {
 
 	if (!user) return null;
 
+	console.log('activeStatus', activeStatus);
+
 	return (
 		<View className="px-4 mb-6">
 			<View className="flex-row flex-wrap gap-3">
 				{/* Tokens Card */}
 				<View className="bg-card border border-border rounded-xl p-4 w-[48%] shadow-sm">
 					<View className="flex-row justify-between items-start mb-2">
-						<Text className="text-xs font-medium text-muted-foreground">
+						<TextComponent className="text-xs font-medium text-muted-foreground">
 							Tokens
-						</Text>
+						</TextComponent>
 						<CoinsIcon
 							size={16}
 							color="#94a3b8"
 						/>
 					</View>
-					<Text className="text-2xl font-bold text-foreground">
+					<TextComponent className="text-2xl font-bold text-foreground">
 						{user.documentToken}
-					</Text>
-					<Text className="text-[10px] text-muted-foreground">
+					</TextComponent>
+					<TextComponent className="text-[10px] text-muted-foreground">
 						Current balance
-					</Text>
+					</TextComponent>
 				</View>
 
 				{/* Documents Card */}
 				<View className="bg-card border border-border rounded-xl p-4 w-[48%] shadow-sm">
 					<View className="flex-row justify-between items-start mb-2">
-						<Text className="text-xs font-medium text-muted-foreground">
+						<TextComponent className="text-xs font-medium text-muted-foreground">
 							Received
-						</Text>
+						</TextComponent>
 						<DocumentTextIcon
 							size={16}
 							color="#94a3b8"
 						/>
 					</View>
-					<Text className="text-2xl font-bold text-foreground">
+					<TextComponent className="text-2xl font-bold text-foreground">
 						{user.documentsReceived}
-					</Text>
-					<Text className="text-[10px] text-muted-foreground">
+					</TextComponent>
+					<TextComponent className="text-[10px] text-muted-foreground">
 						Total submissions
-					</Text>
+					</TextComponent>
 				</View>
 
 				{/* Cloud Sync Card */}
 				<View className="bg-card border border-border rounded-xl p-4 w-[48%] shadow-sm justify-between">
 					<View className="flex-row justify-between items-start mb-1">
-						<Text className="text-xs font-medium text-muted-foreground">
+						<TextComponent className="text-xs font-medium text-muted-foreground">
 							Cloud Sync
-						</Text>
+						</TextComponent>
 						{cloudLoading ? (
 							<ActivityIndicator
 								size="small"
@@ -174,33 +181,35 @@ const DashboardHeader = () => {
 					</View>
 
 					{cloudLoading ? (
-						<Text className="text-xs text-muted-foreground">Loading...</Text>
+						<TextComponent className="text-xs text-muted-foreground">
+							Loading...
+						</TextComponent>
 					) : activeStatus.connected ? (
 						<View>
 							<View className="flex-row items-center gap-1 mb-1">
 								<View className="bg-green-100 dark:bg-green-900/30 px-1.5 py-0.5 rounded">
-									<Text className="text-[10px] font-medium text-green-700 dark:text-green-400 capitalize">
+									<TextComponent className="text-[10px] font-medium text-green-700 dark:text-green-400 capitalize">
 										{activeStatus.provider?.replace('-', ' ')}
-									</Text>
+									</TextComponent>
 								</View>
 							</View>
-							<Text
+							<TextComponent
 								className="text-[10px] text-muted-foreground truncate"
 								numberOfLines={1}>
 								{activeStatus.driveEmail}
-							</Text>
+							</TextComponent>
 						</View>
 					) : activeStatus.canUseDriveSync ? (
 						<View>
-							<Text className="text-[10px] text-muted-foreground mb-1">
+							<TextComponent className="text-[10px] text-muted-foreground mb-1">
 								Not connected
-							</Text>
+							</TextComponent>
 							<Pressable
 								onPress={() => navigation.navigate('AccountTab' as any)}>
 								<View className="flex-row items-center">
-									<Text className="text-[10px] text-primary font-medium">
+									<TextComponent className="text-[10px] text-primary font-medium">
 										Connect
-									</Text>
+									</TextComponent>
 									<ExternalLinkIcon
 										size={10}
 										color="#4F46E5"
@@ -210,15 +219,17 @@ const DashboardHeader = () => {
 						</View>
 					) : (
 						<View>
-							<Text className="text-[10px] text-muted-foreground mb-1">
+							<TextComponent className="text-[10px] text-muted-foreground mb-1">
 								Upgrade to unlock
-							</Text>
+							</TextComponent>
 							<Pressable
-								onPress={() => navigation.navigate('AccountTab' as any)}>
+								onPress={() =>
+									Linking.openURL('https://uploaddoc.app/pricing')
+								}>
 								<View className="flex-row items-center">
-									<Text className="text-[10px] text-primary font-medium">
+									<TextComponent className="text-[10px] text-primary font-medium">
 										View plans
-									</Text>
+									</TextComponent>
 									<ExternalLinkIcon
 										size={10}
 										color="#4F46E5"
@@ -232,9 +243,9 @@ const DashboardHeader = () => {
 				{/* Share Link Card */}
 				<View className="bg-card border border-border rounded-xl p-4 w-[48%] shadow-sm justify-between">
 					<View className="flex-row justify-between items-start mb-1">
-						<Text className="text-xs font-medium text-muted-foreground">
+						<TextComponent className="text-xs font-medium text-muted-foreground">
 							Link
-						</Text>
+						</TextComponent>
 						<LinkIcon
 							size={16}
 							color="#94a3b8"
@@ -244,11 +255,11 @@ const DashboardHeader = () => {
 					{user.slug ? (
 						<View>
 							<View className="flex-row items-center gap-2 bg-muted/50 rounded p-1 mb-1">
-								<Text
+								<TextComponent
 									className="text-[10px] font-mono text-foreground truncate flex-1"
 									numberOfLines={1}>
 									/{user.slug}
-								</Text>
+								</TextComponent>
 								<Pressable
 									onPress={() => copyToClipboard(user.slug!)}
 									className="p-1 bg-background rounded shadow-sm">
@@ -265,21 +276,21 @@ const DashboardHeader = () => {
 									)}
 								</Pressable>
 							</View>
-							<Text className="text-[10px] text-muted-foreground">
+							<TextComponent className="text-[10px] text-muted-foreground">
 								Share for submissions
-							</Text>
+							</TextComponent>
 						</View>
 					) : (
 						<View>
-							<Text className="text-[10px] text-muted-foreground mb-1">
+							<TextComponent className="text-[10px] text-muted-foreground mb-1">
 								No custom link
-							</Text>
+							</TextComponent>
 							<Pressable
 								onPress={() => navigation.navigate('AccountTab' as any)}>
 								<View className="flex-row items-center">
-									<Text className="text-[10px] text-primary font-medium">
+									<TextComponent className="text-[10px] text-primary font-medium">
 										Set up
-									</Text>
+									</TextComponent>
 									<ExternalLinkIcon
 										size={10}
 										color="#4F46E5"
