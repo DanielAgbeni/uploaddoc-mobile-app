@@ -14,6 +14,7 @@ import {
 	useMutation,
 	useQueryClient,
 } from '@tanstack/react-query';
+import { useRefreshOnFocus } from '../../hooks/useRefreshOnFocus';
 import { getStudentProjects, deleteProject } from '../../api/projects';
 import DocumentsHeader from './components/DocumentsHeader';
 import DocumentCard from './components/DocumentCard';
@@ -60,6 +61,8 @@ export default function DocumentsListScreen({ navigation }: Props) {
 			return currentPage < totalPages ? currentPage + 1 : undefined;
 		},
 	});
+
+	useRefreshOnFocus(refetch);
 
 	const deleteMutation = useMutation({
 		mutationFn: deleteProject,

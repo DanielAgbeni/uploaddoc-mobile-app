@@ -14,6 +14,7 @@ import {
 	useMutation,
 	useQueryClient,
 } from '@tanstack/react-query';
+import { useRefreshOnFocus } from '../../hooks/useRefreshOnFocus';
 import {
 	getAssignedProjects,
 	acceptProject,
@@ -70,6 +71,8 @@ export default function DashboardScreen({ navigation }: Props) {
 			return currentPage < totalPages ? currentPage + 1 : undefined;
 		},
 	});
+
+	useRefreshOnFocus(refetch);
 
 	// Mutations
 	const acceptMutation = useMutation({

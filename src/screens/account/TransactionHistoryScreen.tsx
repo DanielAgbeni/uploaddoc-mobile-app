@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useMemo } from 'react';
 import {
 	View,
 	FlatList,
@@ -14,6 +14,8 @@ import { useTheme } from '../../providers/ThemeProvider';
 import { TextComponent } from 'src/components';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import clsx from 'clsx';
+import { useInfiniteQuery } from '@tanstack/react-query';
+import { useRefreshOnFocus } from '../../hooks/useRefreshOnFocus';
 
 type Props = NativeStackScreenProps<
 	AccountStackParamList,
@@ -22,62 +24,34 @@ type Props = NativeStackScreenProps<
 
 export default function TransactionHistoryScreen({ navigation }: Props) {
 	const { colors } = useTheme();
-	const [transactions, setTransactions] = useState<Transaction[]>([]);
-	const [loading, setLoading] = useState(true);
-	const [refreshing, setRefreshing] = useState(false);
-	const [loadingMore, setLoadingMore] = useState(false);
-	const [pagination, setPagination] = useState({
-		currentPage: 1,
-		totalPages: 1,
-		totalCount: 0,
-		limit: 10,
+
+	const {
+		data,
+		isLoading,
+		fetchNextPage,
+		hasNextPage,
+		isFetchingNextPage,
+		refetch,
+		isRefetching,
+	} = useInfiniteQuery({
+		queryKey: ['transactionHistory'],
+		queryFn: ({ pageParam = 1 }) => getTransactionHistory(pageParam, 10),
+		initialPageParam: 1,
+		getNextPageParam: (lastPage) => {
+			const { currentPage, totalPages } = lastPage.data.data.pagination;
+			return currentPage < totalPages ? currentPage + 1 : undefined;
+		},
 	});
 
-	const fetchTransactions = async (
-		page: number = 1,
-		refresh: boolean = false,
-	) => {
-		if (!refresh && page > pagination.totalPages && page !== 1) return;
+	useRefreshOnFocus(refetch);
 
-		if (refresh) {
-			setRefreshing(true);
-		} else if (page > 1) {
-			setLoadingMore(true);
-		} else {
-			setLoading(true);
-		}
-
-		try {
-			const response = await getTransactionHistory(page, pagination.limit);
-			if (response.data.success) {
-				const newTransactions = response.data.data.transactions;
-				if (refresh || page === 1) {
-					setTransactions(newTransactions);
-				} else {
-					setTransactions((prev) => [...prev, ...newTransactions]);
-				}
-				setPagination(response.data.data.pagination);
-			}
-		} catch (error) {
-			console.error('Failed to fetch transactions:', error);
-		} finally {
-			setLoading(false);
-			setRefreshing(false);
-			setLoadingMore(false);
-		}
-	};
-
-	useEffect(() => {
-		fetchTransactions(1);
-	}, []);
-
-	const handleRefresh = () => {
-		fetchTransactions(1, true);
-	};
+	const transactions = useMemo(() => {
+		return data?.pages.flatMap((page) => page.data.data.transactions) || [];
+	}, [data]);
 
 	const handleLoadMore = () => {
-		if (!loadingMore && pagination.currentPage < pagination.totalPages) {
-			fetchTransactions(pagination.currentPage + 1);
+		if (hasNextPage && !isFetchingNextPage) {
+			fetchNextPage();
 		}
 	};
 
@@ -177,7 +151,7 @@ export default function TransactionHistoryScreen({ navigation }: Props) {
 				</View>
 
 				<View className="flex-1 px-4">
-					{loading ? (
+					{isLoading ? (
 						<View className="flex-1 justify-center items-center">
 							<ActivityIndicator
 								size="large"
@@ -193,15 +167,15 @@ export default function TransactionHistoryScreen({ navigation }: Props) {
 							showsVerticalScrollIndicator={false}
 							refreshControl={
 								<RefreshControl
-									refreshing={refreshing}
-									onRefresh={handleRefresh}
+									refreshing={isRefetching && !isLoading}
+									onRefresh={refetch}
 									colors={[colors.primary]}
 								/>
 							}
 							onEndReached={handleLoadMore}
 							onEndReachedThreshold={0.5}
 							ListFooterComponent={
-								loadingMore ? (
+								isFetchingNextPage ? (
 									<View className="py-4">
 										<ActivityIndicator
 											size="small"
