@@ -39,7 +39,7 @@ const DocumentsHeader = () => {
 			<View>
 				<Text className="text-3xl font-bold text-white mb-2">Documents</Text>
 				<Text className="text-blue-100 text-base">
-					Track and manage your project submissions
+					Track and view your document submissions
 				</Text>
 			</View>
 		</View>

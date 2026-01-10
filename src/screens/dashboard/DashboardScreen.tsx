@@ -227,8 +227,8 @@ function DashboardScreen({ navigation }: Props) {
 			<View className="py-20 px-4 items-center">
 				<TextComponent className="text-muted-foreground text-center">
 					{debouncedSearch
-						? 'No projects matching your search.'
-						: 'No assigned projects found.'}
+						? 'No documents matching your search.'
+						: 'No assigned documents found.'}
 				</TextComponent>
 			</View>
 		);
@@ -259,7 +259,7 @@ function DashboardScreen({ navigation }: Props) {
 						Dashboard
 					</TextComponent>
 					<TextComponent className="text-white/80 text-base text-center">
-						Manage your assigned projects
+						Manage your assigned documents
 					</TextComponent>
 				</View>
 			</LinearGradient>
@@ -273,7 +273,7 @@ function DashboardScreen({ navigation }: Props) {
 					/>
 					<TextInput
 						className="flex-1 ml-3 text-foreground text-base h-full font-medium"
-						placeholder="Search projects..."
+						placeholder="Search documents..."
 						placeholderTextColor={colors.mutedForeground}
 						value={searchQuery}
 						onChangeText={setSearchQuery}

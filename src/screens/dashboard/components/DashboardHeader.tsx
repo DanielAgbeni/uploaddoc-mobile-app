@@ -205,7 +205,9 @@ const DashboardHeader = () => {
 								Not connected
 							</TextComponent>
 							<Pressable
-								onPress={() => navigation.navigate('AccountTab' as any)}>
+								onPress={() =>
+									Linking.openURL('https://uploaddoc.app/profile')
+								}>
 								<View className="flex-row items-center">
 									<TextComponent className="text-[10px] text-primary font-medium">
 										Connect
