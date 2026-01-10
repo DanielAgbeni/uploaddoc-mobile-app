@@ -11,10 +11,10 @@
 			"supportsTablet": true,
 			"bundleIdentifier": "com.uploaddoc.app",
 			"splash": {
-				"backgroundColor": "#1724ab",
+				"backgroundColor": "#ebf4ff",
 				"image": "./src/assets/app-images/splash_icon_light.png",
 				"dark": {
-					"backgroundColor": "#141314",
+					"backgroundColor": "#000914",
 					"image": "./src/assets/app-images/splash_icon_dark.png"
 				}
 			},
@@ -25,12 +25,13 @@
 		"android": {
 			"adaptiveIcon": {
 				"foregroundImage": "./src/assets/app-images/adaptive_icon.png",
-				"backgroundColor": "#1724ab"
+				"backgroundColor": "#000914"
 			},
 			"edgeToEdgeEnabled": true,
 			"supportsTablet": true,
 			"predictiveBackGestureEnabled": false,
-			"package": "com.uploaddoc.app"
+			"package": "com.uploaddoc.app",
+			"googleServicesFile": "./google-services.json"
 		},
 		"web": {
 			"favicon": "./src/assets/app-images/favicon.png"
@@ -38,7 +39,7 @@
 		"splash": {
 			"image": "./src/assets/app-images/splash_icon_light.png",
 			"resizeMode": "contain",
-			"backgroundColor": "#1724ab"
+			"backgroundColor": "#000914"
 		},
 		"plugins": [
 			[
@@ -53,7 +54,7 @@
 				"expo-notifications",
 				{
 					"icon": "./src/assets/app-images/icon.png",
-					"color": "#1724ab"
+					"color": "#000914"
 				}
 			]
 		],

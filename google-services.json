@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "711385990812",
+    "project_id": "uploaddoc-366bb",
+    "storage_bucket": "uploaddoc-366bb.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:711385990812:android:bd58d4ba05d350f0500f59",
+        "android_client_info": {
+          "package_name": "com.uploaddoc.app"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "711385990812-5r58ssnajdajr8ot33ncpnn131kqj5q4.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCnHMAOeUu_q01MDeFXmbWhjK2uzo5_8xc"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "711385990812-5r58ssnajdajr8ot33ncpnn131kqj5q4.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
