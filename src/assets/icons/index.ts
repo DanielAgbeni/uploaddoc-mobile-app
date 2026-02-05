@@ -33,6 +33,8 @@ import EyeIcon from './eye.icon';
 import AppleIcon from './apple.icon';
 import FacebookIcon from './facebook.icon';
 import GoogleIcon from './google.icon';
+import AddIcon from './add.icon';
+import TrashIcon from './trash.icon';
 
 export {
 	icon,
@@ -70,4 +72,6 @@ export {
 	AppleIcon,
 	FacebookIcon,
 	GoogleIcon,
+	AddIcon as PlusIcon,
+	TrashIcon,
 };

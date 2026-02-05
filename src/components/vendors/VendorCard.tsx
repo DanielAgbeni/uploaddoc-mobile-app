@@ -67,7 +67,7 @@ const VendorCard: React.FC<VendorCardProps> = ({ admin, onSelect }) => {
 												: 'bg-muted'
 										}`}>
 										<TextComponent
-											className={`text-[10px] font-bold uppercase tracking-wide ${
+											className={`text-xs font-bold uppercase tracking-wide ${
 												admin.adminStatus === 'active'
 													? 'text-green-700 dark:text-green-400'
 													: 'text-muted-foreground'

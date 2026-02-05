@@ -8,6 +8,7 @@ import {
 	ActivityIndicator,
 	FlatList,
 	Keyboard,
+	TouchableOpacity,
 } from 'react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import * as DocumentPicker from 'expo-document-picker';
@@ -34,7 +35,10 @@ import {
 	DocumentTextIcon,
 	CloseIcon,
 	LightbulbIcon,
+	PlusIcon,
+	TrashIcon,
 } from 'src/assets/icons';
+import { useForm, Controller } from 'react-hook-form';
 
 type Props = NativeStackScreenProps<
 	DocumentsStackParamList | VendorsStackParamList,
@@ -46,6 +50,14 @@ type SelectedFile = {
 	name: string;
 	size?: number;
 	mimeType?: string;
+	pageCount?: number;
+};
+
+type FormValues = {
+	title: string;
+	description: string;
+	vendor: AdminInfo | null;
+	files: SelectedFile[];
 };
 
 export default function SubmitDocumentScreen({ navigation, route }: Props) {
@@ -62,23 +74,35 @@ export default function SubmitDocumentScreen({ navigation, route }: Props) {
 	const { user } = useUserStore();
 	const queryClient = useQueryClient();
 
-	// Form state
-	const [selectedVendor, setSelectedVendor] = useState<AdminInfo | null>(
-		vendorId && vendorName
-			? {
-					_id: vendorId,
-					name: vendorName,
-					email: vendorEmail || '',
-					profilePicture: vendorProfilePicture ?? undefined,
-					printingCost: vendorPrintingCost ?? undefined,
-					rating: vendorRating,
-				}
-			: null,
-	);
-	const [selectedFile, setSelectedFile] = useState<SelectedFile | null>(null);
-	const [title, setTitle] = useState('');
-	const [description, setDescription] = useState('');
-	const [pageCount, setPageCount] = useState<number | undefined>(undefined);
+	// React Hook Form
+	const {
+		control,
+		handleSubmit,
+		setValue,
+		watch,
+		formState: { errors },
+	} = useForm<FormValues>({
+		defaultValues: {
+			title: '',
+			description: '',
+			vendor:
+				vendorId && vendorName
+					? {
+							_id: vendorId,
+							name: vendorName,
+							email: vendorEmail || '',
+							profilePicture: vendorProfilePicture ?? undefined,
+							printingCost: vendorPrintingCost ?? undefined,
+							rating: vendorRating,
+						}
+					: null,
+			files: [],
+		},
+	});
+
+	const files = watch('files');
+	const selectedVendor = watch('vendor');
+
 	const [loading, setLoading] = useState(false);
 
 	// Vendor search state (inline dropdown like web version)
@@ -100,9 +124,22 @@ export default function SubmitDocumentScreen({ navigation, route }: Props) {
 		setSearchingVendors(true);
 		try {
 			const response = await searchAdmins(query);
-			if (response.data?.data?.admins) {
+
+			if (
+				response.data &&
+				'data' in response.data &&
+				Array.isArray(response.data.data?.admins)
+			) {
+				// Handle standard API response structure
 				setVendorSearchResults(response.data.data.admins);
 				setShowDropdown(true);
+			} else if (Array.isArray(response)) {
+				// Handle if response is directly an array
+				setVendorSearchResults(response);
+				setShowDropdown(true);
+			} else {
+				// Fallback or empty
+				setVendorSearchResults([]);
 			}
 		} catch (error) {
 			console.error('Vendor search error:', error);
@@ -155,32 +192,45 @@ export default function SubmitDocumentScreen({ navigation, route }: Props) {
 					'image/*',
 				],
 				copyToCacheDirectory: true,
+				multiple: true,
 			});
 
-			if (!result.canceled && result.assets[0]) {
-				const file = result.assets[0];
-				setSelectedFile({
-					uri: file.uri,
-					name: file.name,
-					size: file.size,
-					mimeType: file.mimeType,
-				});
+			if (!result.canceled && result.assets) {
+				const newFiles: SelectedFile[] = [];
 
-				// Auto-fill title from filename if empty
-				if (!title) {
+				for (const file of result.assets) {
+					// Check for duplicates
+					if (files.some((f) => f.uri === file.uri)) continue;
+
+					const newFile: SelectedFile = {
+						uri: file.uri,
+						name: file.name,
+						size: file.size,
+						mimeType: file.mimeType,
+					};
+
+					// Get page count if it's a PDF
+					if (file.mimeType?.includes('pdf')) {
+						const pages = await getPdfPageCount(file.uri);
+						newFile.pageCount = pages;
+					} else {
+						// For non-PDF files (images), set page count to 1
+						newFile.pageCount = 1;
+					}
+					newFiles.push(newFile);
+				}
+
+				// If no files were previously selected and we just added some, auto-fill title
+				const currentTitle = watch('title');
+				if (!currentTitle && newFiles.length > 0) {
+					const firstFile = newFiles[0];
 					const fileName =
-						file.name.substring(0, file.name.lastIndexOf('.')) || file.name;
-					setTitle(fileName);
+						firstFile.name.substring(0, firstFile.name.lastIndexOf('.')) ||
+						firstFile.name;
+					setValue('title', fileName);
 				}
 
-				// Get page count if it's a PDF
-				if (file.mimeType?.includes('pdf')) {
-					const pages = await getPdfPageCount(file.uri);
-					setPageCount(pages);
-				} else {
-					// For non-PDF files (images), set page count to 1
-					setPageCount(1);
-				}
+				setValue('files', [...files, ...newFiles]);
 			}
 		} catch (error) {
 			console.error('File picker error:', error);
@@ -188,57 +238,61 @@ export default function SubmitDocumentScreen({ navigation, route }: Props) {
 		}
 	};
 
-	const handleSubmit = async () => {
-		// Validation
-		if (!selectedVendor) {
-			onError('Validation Error', 'Please select a vendor');
-			return;
-		}
-		if (!selectedFile) {
-			onError('Validation Error', 'Please select a file');
-			return;
-		}
-		if (!title.trim()) {
-			onError('Validation Error', 'Please enter a document title');
+	const removeFile = (index: number) => {
+		const newFiles = [...files];
+		newFiles.splice(index, 1);
+		setValue('files', newFiles);
+	};
+
+	const onSubmit = async (data: FormValues) => {
+		if (!user) {
+			onError('Error', 'You must be logged in to submit documents');
 			return;
 		}
 
-		if (!user) {
-			onError('Error', 'You must be logged in to submit documents');
+		if (!data.vendor) {
+			onError('Validation Error', 'Please select a vendor');
+			return;
+		}
+
+		if (data.files.length === 0) {
+			onError('Validation Error', 'Please select at least one file');
 			return;
 		}
 
 		setLoading(true);
 		try {
 			const formData = new FormData();
-			formData.append('title', title.trim());
-			formData.append('assignedAdmin', selectedVendor._id);
-			formData.append('studentName', user.name);
-			if (user.matricNumber) {
-				formData.append('matricNumber', user.matricNumber);
+			formData.append('title', data.title.trim());
+			formData.append('assignedAdmin', data.vendor._id);
+
+			if (data.description.trim()) {
+				formData.append('description', data.description.trim());
 			}
 
-			if (description.trim()) {
-				formData.append('description', description.trim());
+			// Aggregate page count
+			const totalPageCount = data.files.reduce((acc, file) => {
+				return acc + (file.pageCount || 0);
+			}, 0);
+
+			if (totalPageCount > 0) {
+				formData.append('pageCount', totalPageCount.toString());
 			}
 
-			// Include page count in payload if available
-			if (pageCount !== undefined) {
-				formData.append('pageCount', pageCount.toString());
-			}
-
-			formData.append('file', {
-				uri: selectedFile.uri,
-				name: selectedFile.name,
-				type: selectedFile.mimeType || 'application/octet-stream',
-			} as any);
+			// Append files
+			data.files.forEach((file) => {
+				// Using 'files' as key to match backend array config (likely upload.array('files'))
+				formData.append('files', {
+					uri: file.uri,
+					name: file.name,
+					type: file.mimeType || 'application/octet-stream',
+				} as any);
+			});
 
 			console.log('Submitting document:', {
-				title: title.trim(),
-				assignedAdmin: selectedVendor._id,
-				studentName: user.name,
-				matricNumber: user.matricNumber,
-				fileName: selectedFile.name,
+				title: data.title.trim(),
+				assignedAdmin: data.vendor._id,
+				fileCount: data.files.length,
 			});
 
 			await uploadProject(formData);
@@ -259,14 +313,14 @@ export default function SubmitDocumentScreen({ navigation, route }: Props) {
 	};
 
 	const handleSelectVendor = (vendor: AdminInfo) => {
-		setSelectedVendor(vendor);
+		setValue('vendor', vendor);
 		setVendorSearchQuery('');
 		setShowDropdown(false);
 		Keyboard.dismiss();
 	};
 
 	const handleClearVendor = () => {
-		setSelectedVendor(null);
+		setValue('vendor', null);
 		setVendorSearchQuery('');
 	};
 
@@ -337,14 +391,14 @@ export default function SubmitDocumentScreen({ navigation, route }: Props) {
 						Submit Document
 					</TextComponent>
 					<TextComponent className="text-white/80 text-base text-center">
-						Upload and send your document to a vendor
+						Upload multiple files and send to a vendor
 					</TextComponent>
 				</View>
 			</LinearGradient>
 
 			<View className="px-5 pt-6 pb-8 -mt-4">
 				{/* Main Form Card */}
-				<View className="card-3d rounded-2xl p-5 mb-5">
+				<View className="card-3d rounded-2xl p-5 mb-5 bg-card shadow-sm">
 					{/* Vendor Selection */}
 					<View className="mb-5">
 						<TextComponent className="text-foreground font-semibold text-base mb-2.5">
@@ -353,8 +407,8 @@ export default function SubmitDocumentScreen({ navigation, route }: Props) {
 						</TextComponent>
 
 						{selectedVendor ? (
-							// Selected Vendor Preview (like web's AdminPreview)
-							<View className="bg-secondary/50 border border-border rounded-xl p-4">
+							// Selected Vendor Preview
+							<View className="bg-secondary/30 border border-border rounded-xl p-4">
 								<View className="flex-row items-center justify-between">
 									<View className="flex-1">
 										<TextComponent className="text-muted-foreground text-xs mb-1">
@@ -370,20 +424,23 @@ export default function SubmitDocumentScreen({ navigation, route }: Props) {
 										)}
 									</View>
 									{!isVendorLocked && (
-										<Pressable
+										<TouchableOpacity
 											onPress={handleClearVendor}
 											className="bg-destructive/10 px-4 py-2.5 rounded-xl active:opacity-70">
 											<TextComponent className="text-destructive font-semibold text-sm">
 												Change
 											</TextComponent>
-										</Pressable>
+										</TouchableOpacity>
 									)}
 								</View>
 							</View>
 						) : (
-							// Vendor Search Input (like web's AdminSearchInput)
+							// Vendor Search Input
 							<View className="relative">
-								<View className="flex-row items-center bg-input border border-border rounded-xl px-4">
+								<View
+									className={`flex-row items-center bg-input border rounded-xl px-4 ${
+										errors.vendor ? 'border-destructive' : 'border-border'
+									}`}>
 									<View className="mr-2">
 										<SearchIcon
 											size={18}
@@ -408,6 +465,11 @@ export default function SubmitDocumentScreen({ navigation, route }: Props) {
 										/>
 									)}
 								</View>
+								{errors.vendor && (
+									<TextComponent className="text-destructive text-xs mt-1">
+										Please select a vendor
+									</TextComponent>
+								)}
 
 								{/* Dropdown Results */}
 								{showDropdown && (
@@ -454,16 +516,31 @@ export default function SubmitDocumentScreen({ navigation, route }: Props) {
 					{/* Document Title */}
 					<View className="mb-5">
 						<TextComponent className="text-foreground font-semibold text-base mb-2.5">
-							Document Title{' '}
+							Title{' '}
 							<TextComponent className="text-destructive">*</TextComponent>
 						</TextComponent>
-						<TextInput
-							className="bg-input border border-border rounded-xl px-4 py-3.5 text-foreground text-base"
-							placeholder="e.g., Final Year Thesis"
-							placeholderTextColor={colors.mutedForeground}
-							value={title}
-							onChangeText={setTitle}
+						<Controller
+							control={control}
+							name="title"
+							rules={{ required: 'Document title is required' }}
+							render={({ field: { onChange, onBlur, value } }) => (
+								<TextInput
+									className={`bg-input border rounded-xl px-4 py-3.5 text-foreground text-base ${
+										errors.title ? 'border-destructive' : 'border-border'
+									}`}
+									placeholder="e.g., Final Year Thesis"
+									placeholderTextColor={colors.mutedForeground}
+									onBlur={onBlur}
+									onChangeText={onChange}
+									value={value}
+								/>
+							)}
 						/>
+						{errors.title && (
+							<TextComponent className="text-destructive text-xs mt-1">
+								{errors.title.message}
+							</TextComponent>
+						)}
 					</View>
 
 					{/* Description */}
@@ -474,67 +551,102 @@ export default function SubmitDocumentScreen({ navigation, route }: Props) {
 								(Optional)
 							</TextComponent>
 						</TextComponent>
-						<TextInput
-							className="bg-input border border-border rounded-xl px-4 py-3.5 text-foreground text-base min-h-[100px]"
-							placeholder="Any specific instructions or notes..."
-							placeholderTextColor={colors.mutedForeground}
-							value={description}
-							onChangeText={setDescription}
-							multiline
-							numberOfLines={4}
-							textAlignVertical="top"
+						<Controller
+							control={control}
+							name="description"
+							render={({ field: { onChange, onBlur, value } }) => (
+								<TextInput
+									className="bg-input border border-border rounded-xl px-4 py-3.5 text-foreground text-base min-h-[100px]"
+									placeholder="Any specific instructions or notes..."
+									placeholderTextColor={colors.mutedForeground}
+									onBlur={onBlur}
+									onChangeText={onChange}
+									value={value}
+									multiline
+									numberOfLines={4}
+									textAlignVertical="top"
+								/>
+							)}
 						/>
 					</View>
 
 					{/* File Upload */}
 					<View className="mb-6">
-						<TextComponent className="text-foreground font-semibold text-base mb-2.5">
-							Document{' '}
-							<TextComponent className="text-destructive">*</TextComponent>
-						</TextComponent>
+						<View className="flex-row items-center justify-between mb-2.5">
+							<TextComponent className="text-foreground font-semibold text-base">
+								Documents{' '}
+								<TextComponent className="text-destructive">*</TextComponent>
+							</TextComponent>
+							{files.length > 0 && (
+								<TouchableOpacity
+									onPress={handleSelectFile}
+									className="flex-row items-center bg-primary/10 px-3 py-1.5 rounded-lg active:opacity-70">
+									<PlusIcon
+										size={14}
+										color={colors.primary}
+									/>
+									<TextComponent className="text-primary font-bold text-xs ml-1">
+										Add File
+									</TextComponent>
+								</TouchableOpacity>
+							)}
+						</View>
 
-						{selectedFile ? (
-							// File Preview Card
-							<View className="bg-secondary/50 border border-border rounded-xl p-4">
-								<View className="flex-row items-center">
-									<View className="w-14 h-14 bg-primary/10 rounded-xl items-center justify-center">
-										{renderFileIcon(selectedFile.mimeType)}
-									</View>
-									<View className="flex-1 ml-4">
-										<TextComponent
-											className="text-foreground font-semibold text-base"
-											numberOfLines={1}>
-											{selectedFile.name}
-										</TextComponent>
-										<View className="flex-row items-center mt-1">
-											<TextComponent className="text-muted-foreground text-xs">
-												{getFileTypeLabel(selectedFile.mimeType)}
-											</TextComponent>
-											<TextComponent className="text-muted-foreground text-xs mx-2">
-												•
-											</TextComponent>
-											<TextComponent className="text-muted-foreground text-xs">
-												{formatFileSize(selectedFile.size)}
-											</TextComponent>
+						{files.length > 0 ? (
+							<View className="space-y-3">
+								{files.map((file, index) => (
+									<View
+										key={`${file.uri}-${index}`}
+										className="bg-secondary/30 border border-border rounded-xl p-3">
+										<View className="flex-row items-center">
+											<View className="w-12 h-12 bg-primary/10 rounded-xl items-center justify-center">
+												{renderFileIcon(file.mimeType, 24)}
+											</View>
+											<View className="flex-1 ml-3">
+												<TextComponent
+													className="text-foreground font-semibold text-sm"
+													numberOfLines={1}>
+													{file.name}
+												</TextComponent>
+												<View className="flex-row items-center mt-0.5">
+													<TextComponent className="text-muted-foreground text-[10px]">
+														{getFileTypeLabel(file.mimeType)}
+													</TextComponent>
+													<TextComponent className="text-muted-foreground text-[10px] mx-1.5">
+														•
+													</TextComponent>
+													<TextComponent className="text-muted-foreground text-[10px]">
+														{formatFileSize(file.size)}
+													</TextComponent>
+													{file.pageCount !== undefined && (
+														<>
+															<TextComponent className="text-muted-foreground text-[10px] mx-1.5">
+																•
+															</TextComponent>
+															<TextComponent className="text-muted-foreground text-[10px]">
+																{file.pageCount} pages
+															</TextComponent>
+														</>
+													)}
+												</View>
+											</View>
+											<TouchableOpacity
+												onPress={() => removeFile(index)}
+												className="bg-destructive/10 p-2 rounded-lg active:opacity-70 ml-2">
+												<TrashIcon
+													size={16}
+													color={colors.destructive}
+												/>
+											</TouchableOpacity>
 										</View>
 									</View>
-									<Pressable
-										onPress={() => {
-											setSelectedFile(null);
-											setPageCount(undefined);
-										}}
-										className="bg-destructive/10 p-2.5 rounded-xl active:opacity-70">
-										<CloseIcon
-											size={18}
-											color={colors.destructive}
-										/>
-									</Pressable>
-								</View>
+								))}
 							</View>
 						) : (
-							// Upload Button
 							<Pressable
-								className="border-2 border-dashed border-border rounded-xl p-8 items-center active:opacity-80 bg-muted/30"
+								className={`border-2 border-dashed rounded-xl p-8 items-center active:opacity-80 bg-muted/30 ${
+									errors.files ? 'border-destructive' : 'border-border'
+								}`}
 								onPress={handleSelectFile}>
 								<View className="w-16 h-16 bg-primary/15 rounded-2xl items-center justify-center mb-4">
 									<DocumentTextIcon
@@ -543,25 +655,28 @@ export default function SubmitDocumentScreen({ navigation, route }: Props) {
 									/>
 								</View>
 								<TextComponent className="text-foreground font-bold text-base mb-1">
-									Tap to select file
+									Tap to select files
 								</TextComponent>
 								<TextComponent className="text-muted-foreground text-sm text-center">
 									PDF, Word documents, or images up to 15MB
 								</TextComponent>
 							</Pressable>
 						)}
+						{errors.files && (
+							<TextComponent className="text-destructive text-xs mt-1">
+								Please select at least one file
+							</TextComponent>
+						)}
 					</View>
 
 					{/* Submit Button */}
-					<Pressable
+					<TouchableOpacity
 						className={`rounded-xl p-4 items-center flex-row justify-center ${
-							loading ? 'bg-primary/70' : 'bg-primary'
+							loading ? 'bg-primary' : 'bg-primary'
 						}`}
-						onPress={handleSubmit}
+						onPress={handleSubmit(onSubmit)}
 						disabled={loading}
-						style={({ pressed }) => ({
-							opacity: pressed && !loading ? 0.85 : 1,
-						})}>
+						activeOpacity={0.8}>
 						{loading ? (
 							<>
 								<ActivityIndicator
@@ -575,22 +690,23 @@ export default function SubmitDocumentScreen({ navigation, route }: Props) {
 						) : (
 							<TextComponent className="text-primary-foreground font-bold text-lg">
 								Submit Document
+								{files.length > 1 ? `s (${files.length})` : ''}
 							</TextComponent>
 						)}
-					</Pressable>
+					</TouchableOpacity>
 
 					{/* Cancel */}
-					<Pressable
+					<TouchableOpacity
 						className="mt-3 py-3 items-center"
 						onPress={() => navigation.goBack()}>
 						<TextComponent className="text-muted-foreground font-semibold">
 							Cancel
 						</TextComponent>
-					</Pressable>
+					</TouchableOpacity>
 				</View>
 
 				{/* Tips Section */}
-				<View className="bg-blue-50 dark:bg-blue-950/30 p-5 rounded-2xl border border-blue-100 dark:border-blue-900/50">
+				<View className="bg-blue-50 dark:bg-blue-950/30 p-5 rounded-2xl border border-blue-100 dark:border-blue-900/50 mb-8">
 					<View className="flex-row items-center mb-3">
 						<View className="mr-2">
 							<LightbulbIcon
@@ -608,7 +724,7 @@ export default function SubmitDocumentScreen({ navigation, route }: Props) {
 								•
 							</TextComponent>
 							<TextComponent className="text-blue-800 dark:text-blue-200 text-sm flex-1">
-								Ensure your file is under 15MB
+								Ensure your files are under 15MB each
 							</TextComponent>
 						</View>
 						<View className="flex-row items-start">
@@ -616,7 +732,7 @@ export default function SubmitDocumentScreen({ navigation, route }: Props) {
 								•
 							</TextComponent>
 							<TextComponent className="text-blue-800 dark:text-blue-200 text-sm flex-1">
-								PDFs are recommended for page counting accuracy
+								You can upload multiple files at once
 							</TextComponent>
 						</View>
 						<View className="flex-row items-start">
@@ -624,14 +740,8 @@ export default function SubmitDocumentScreen({ navigation, route }: Props) {
 								•
 							</TextComponent>
 							<TextComponent className="text-blue-800 dark:text-blue-200 text-sm flex-1">
-								Provide clear instructions in the description
+								PDFs are best for accurate page counts
 							</TextComponent>
-						</View>
-						<View className="flex-row items-start">
-							<Text className="text-blue-600 dark:text-blue-300 mr-2">•</Text>
-							<Text className="text-blue-800 dark:text-blue-200 text-sm flex-1">
-								Double-check the selected vendor
-							</Text>
 						</View>
 					</View>
 				</View>

@@ -6,14 +6,20 @@ import {
 	ActivityIndicator,
 	Linking,
 } from 'react-native';
-import DocumentTextIcon from '../../../assets/icons/document-text.icon';
-import DownloadIcon from '../../../assets/icons/download.icon';
-import TrashIcon from '../../../assets/icons/trash.icon';
-import CheckmarkCircleIcon from '../../../assets/icons/checkmark-circle.icon';
+/* Icons */
+import {
+	FileText,
+	Download,
+	Trash2,
+	CheckCircle,
+	Cloud,
+	CloudOff,
+	ExternalLink,
+	Clock,
+	XCircle,
+} from 'lucide-react-native';
 import { TextComponent } from 'src/components';
-import CloudIcon from '../../../assets/icons/cloud.icon';
-import CloudOffIcon from '../../../assets/icons/cloud-off.icon';
-import ExternalLinkIcon from '../../../assets/icons/external-link.icon';
+import { useTheme } from 'src/providers/ThemeProvider';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { getAllCloudStatus, getActiveProvider } from '../../../api/cloudSync';
 import { syncProject } from '../../../api/googledrive';
@@ -36,6 +42,7 @@ const ProjectCard = ({
 	onAccept,
 	isAccepting,
 }: ProjectCardProps) => {
+	const { colors } = useTheme();
 	const queryClient = useQueryClient();
 	const [isSyncing, setIsSyncing] = useState(false);
 
@@ -112,29 +119,39 @@ const ProjectCard = ({
 		switch (status) {
 			case 'accepted':
 				return {
-					icon: 'checkmark-circle',
-					border: 'border-green-200 dark:border-green-900/30',
-					bg: 'bg-green-100 dark:bg-green-900/20',
-					text: 'text-green-700 dark:text-green-400',
+					Icon: CheckCircle,
+					color: '#16a34a', // green-600
+					// SOLID COLORS: green-100 (light), green-950 (dark)
+					containerClass:
+						'bg-green-100 dark:bg-green-950 border-green-200 dark:border-green-800',
+					textClass: 'text-green-700 dark:text-green-400',
+					label: 'Accepted',
 				};
 			case 'rejected':
 				return {
-					icon: 'close-circle',
-					border: 'border-red-200 dark:border-red-900/30',
-					bg: 'bg-red-100 dark:bg-red-900/20',
-					text: 'text-red-700 dark:text-red-400',
+					Icon: XCircle,
+					color: '#dc2626', // red-600
+					// SOLID COLORS: red-100 (light), red-950 (dark)
+					containerClass:
+						'bg-red-100 dark:bg-red-950 border-red-200 dark:border-red-800',
+					textClass: 'text-red-700 dark:text-red-400',
+					label: 'Rejected',
 				};
 			default:
 				return {
-					icon: 'time',
-					border: 'border-yellow-200 dark:border-yellow-900/30',
-					bg: 'bg-yellow-100 dark:bg-yellow-900/20',
-					text: 'text-yellow-700 dark:text-yellow-400',
+					Icon: Clock,
+					color: '#ca8a04', // yellow-600
+					// SOLID COLORS: yellow-100 (light), yellow-950 (dark)
+					containerClass:
+						'bg-yellow-100 dark:bg-yellow-950 border-yellow-200 dark:border-yellow-800',
+					textClass: 'text-yellow-700 dark:text-yellow-400',
+					label: 'Pending',
 				};
 		}
 	};
 
-	const statusConfig = getStatusConfig(project.status);
+	const statusInfo = getStatusConfig(project.status);
+	const StatusIcon = statusInfo.Icon;
 
 	const formatFileSize = (bytes: number) => {
 		if (bytes === 0) return '0 B';
@@ -145,10 +162,10 @@ const ProjectCard = ({
 	};
 
 	return (
-		<View className="bg-card border border-border rounded-xl p-3 mb-2 shadow-sm mx-4">
-			<View className="flex-row items-center gap-3">
+		<View className="bg-card border border-border rounded-3xl overflow-hidden shadow-md mb-4 mx-4">
+			<View className="p-4 flex-row gap-4">
 				{/* Thumbnail */}
-				<View className="h-12 w-12 rounded-lg bg-primary/10 flex items-center justify-center shrink-0 overflow-hidden">
+				<View className="h-16 w-16 rounded-2xl bg-indigo-50 dark:bg-slate-900 border border-border flex items-center justify-center shrink-0 overflow-hidden shadow-sm">
 					{project.filePreview ? (
 						<Image
 							source={{ uri: project.filePreview }}
@@ -156,102 +173,124 @@ const ProjectCard = ({
 							resizeMode="cover"
 						/>
 					) : (
-						<DocumentTextIcon
-							size={24}
-							color="#4F46E5"
+						<FileText
+							size={28}
+							color={colors.primary}
+							strokeWidth={1.5}
 						/>
 					)}
 				</View>
 
 				{/* Content */}
-				<View className="flex-1 min-w-0">
-					<View className="flex-row items-center gap-2 mb-0.5">
-						<View
-							className={`w-2 h-2 rounded-full ${statusConfig.text.replace('text-', 'bg-')}`}
-						/>
+				<View className="flex-1 min-w-0 justify-between py-0.5">
+					<View>
+						<View className="flex-row items-start justify-between">
+							<TextComponent
+								className="font-bold text-lg text-foreground truncate flex-1 mr-2"
+								numberOfLines={1}>
+								{project.title}
+							</TextComponent>
+
+							{/* Status Badge */}
+							<View
+								className={`px-1.5 py-0.5 rounded-full border ${statusInfo.containerClass}`}>
+								<TextComponent
+									className={`text-xs font-bold uppercase tracking-tighter ${statusInfo.textClass}`}>
+									{statusInfo.label}
+								</TextComponent>
+							</View>
+						</View>
+
 						<TextComponent
-							className="font-medium text-sm text-foreground truncate"
+							className="text-xs text-muted-foreground truncate mt-0.5"
 							numberOfLines={1}>
-							{project.title}
+							{project.studentName} • {project.matricNumber || 'No ID'}
 						</TextComponent>
 					</View>
 
-					<TextComponent
-						className="text-xs text-muted-foreground truncate mb-1"
-						numberOfLines={1}>
-						{project.studentName} • {project.matricNumber || 'No Matric'}
-					</TextComponent>
-
-					<View className="flex-row items-center gap-2">
-						<View className="bg-muted px-1.5 py-0.5 rounded">
-							<TextComponent className="text-sm text-muted-foreground">
+					<View className="flex-row items-center gap-3 mt-2">
+						<View className="bg-muted px-2 py-1 rounded-md">
+							<TextComponent className="text-xs font-medium text-muted-foreground">
 								{project.fileCategory}
 							</TextComponent>
 						</View>
-						<TextComponent className="text-sm text-muted-foreground">
+						<TextComponent className="text-xs text-muted-foreground">
 							{formatFileSize(project.fileSize)}
 						</TextComponent>
 						{project.pageCount > 0 && (
-							<TextComponent className="text-sm text-muted-foreground">
+							<TextComponent className="text-xs text-muted-foreground">
 								• {project.pageCount} pg
 							</TextComponent>
 						)}
 					</View>
+				</View>
+			</View>
 
-					{/* Cloud Sync Status (if accepted) */}
-					{project.status === 'accepted' && (
-						<View className="mt-1 flex-row items-center gap-1">
+			{/* Divider */}
+			{/* <View className="h-[1px] bg-border mx-4" /> */}
+
+			{/* Footer / Actions */}
+			<View className="px-4 py-3 bg-muted/30 border-t border-border flex-row items-center justify-between">
+				{/* Cloud Sync Status */}
+				<View className="flex-1 mr-4">
+					{project.status === 'accepted' ? (
+						<View className="flex-row items-center gap-1.5">
 							{project.driveSync?.synced ? (
 								<Pressable
 									onPress={() =>
 										project.driveSync?.driveFileUrl &&
 										Linking.openURL(project.driveSync.driveFileUrl)
 									}
-									className="flex-row items-center gap-1">
-									<CloudIcon
-										size={10}
-										color="#22c55e"
+									className="flex-row items-center gap-1.5">
+									<Cloud
+										size={14}
+										color="#16a34a"
 									/>
-									<TextComponent className="text-[10px] text-green-600 font-medium">
+									<TextComponent className="text-xs text-green-600 font-medium">
 										Synced
 									</TextComponent>
 									{project.driveSync.driveFileUrl && (
-										<ExternalLinkIcon
-											size={8}
-											color="#22c55e"
+										<ExternalLink
+											size={10}
+											color="#16a34a"
 										/>
 									)}
 								</Pressable>
 							) : (
-								<View className="flex-row items-center gap-1">
-									<CloudOffIcon
-										size={10}
-										color="#94a3b8"
+								<View className="flex-row items-center gap-1.5">
+									<CloudOff
+										size={14}
+										color={colors.mutedForeground}
 									/>
-									<TextComponent className="text-[10px] text-muted-foreground">
+									<TextComponent className="text-xs text-muted-foreground">
 										Not synced
 									</TextComponent>
 								</View>
 							)}
 						</View>
+					) : (
+						<TextComponent className="text-xs text-muted-foreground italic">
+							Action required
+						</TextComponent>
 					)}
 				</View>
 
-				{/* Actions */}
-				<View className="flex-row items-center gap-1">
+				{/* Action Buttons */}
+				<View className="flex-row items-center gap-3">
 					{project.status === 'pending' && (
 						<Pressable
 							onPress={() => onAccept(project._id)}
 							disabled={isAccepting}
-							className={`p-2 rounded-full ${isAccepting ? 'opacity-50' : 'active:bg-green-50'}`}>
+							className={`h-11 w-11 rounded-full flex items-center justify-center border border-green-200 bg-green-50 dark:bg-green-950 dark:border-green-800 ${isAccepting ? 'opacity-100 bg-muted' : 'active:scale-95'}`}
+							style={isAccepting ? { backgroundColor: colors.muted } : {}}>
 							{isAccepting ? (
 								<ActivityIndicator
 									size="small"
 									color="#16a34a"
 								/>
 							) : (
-								<CheckmarkCircleIcon
-									size={20}
+								<CheckCircle
+									size={18}
 									color="#16a34a"
 								/>
 							)}
@@ -265,16 +304,16 @@ const ProjectCard = ({
 								<Pressable
 									onPress={handleSync}
 									disabled={isSyncing}
-									className="p-2 rounded-full active:bg-muted">
+									className="h-11 w-11 rounded-full bg-background border border-border flex items-center justify-center shadow-sm active:scale-95">
 									{isSyncing ? (
 										<ActivityIndicator
 											size="small"
-											color="#4F46E5"
+											color={colors.primary}
 										/>
 									) : (
-										<CloudIcon
-											size={20}
-											color="#4F46E5"
+										<Cloud
+											size={18}
+											color={colors.primary}
 										/>
 									)}
 								</Pressable>
@@ -283,10 +322,11 @@ const ProjectCard = ({
 							{project.fileUrl && (
 								<Pressable
 									onPress={() => onDownload(project)}
-									className="p-2 rounded-full active:bg-muted">
-									<DownloadIcon
-										size={20}
-										color="#64748b"
+									className="h-11 w-11 rounded-full bg-background border border-border flex items-center justify-center shadow-sm active:scale-95">
+									<Download
+										size={18}
+										color={colors.foreground}
+										strokeWidth={1.5}
 									/>
 								</Pressable>
 							)}
@@ -295,9 +335,9 @@ const ProjectCard = ({
 
 					<Pressable
 						onPress={() => onDelete(project._id)}
-						className="p-2 rounded-full active:bg-red-50">
-						<TrashIcon
-							size={20}
+						className="h-11 w-11 rounded-full bg-red-50 dark:bg-red-950 border border-red-200 dark:border-red-900 flex items-center justify-center active:scale-95">
+						<Trash2
+							size={18}
 							color="#ef4444"
 						/>
 					</Pressable>

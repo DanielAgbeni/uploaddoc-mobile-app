@@ -29,7 +29,7 @@ const DashboardHeader = () => {
 	const navigation = useNavigation<NavigationProp>();
 	const [copied, setCopied] = useState(false);
 
-	const { data, isLoading, isError, error } = useQuery({
+	const { data, isLoading, isError, error, refetch } = useQuery({
 		queryKey: ['userStatus'],
 		queryFn: getUserStatus,
 	});
@@ -76,10 +76,17 @@ const DashboardHeader = () => {
 
 	if (isError) {
 		return (
-			<View className="mx-4 mb-4 p-4 bg-red-50 dark:bg-red-900/10 border border-red-200 dark:border-red-900 rounded-lg">
-				<TextComponent className="text-red-500 dark:text-red-400">
-					Failed to load status: {(error as Error).message}
+			<View className="mx-4 mb-6 p-4 bg-destructive/10 border border-destructive/20 rounded-xl flex-row items-center justify-between">
+				<TextComponent className="text-destructive flex-1 mr-2 text-sm font-medium">
+					Failed to load status
 				</TextComponent>
+				<Pressable
+					onPress={() => refetch()}
+					className="bg-destructive px-4 py-2 rounded-lg active:opacity-80">
+					<TextComponent className="text-destructive-foreground font-bold text-xs">
+						Retry
+					</TextComponent>
+				</Pressable>
 			</View>
 		);
 	}
