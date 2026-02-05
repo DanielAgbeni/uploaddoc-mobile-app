@@ -21,77 +21,77 @@ const VendorCard: React.FC<VendorCardProps> = ({ admin, onSelect }) => {
 	const { colors } = useTheme();
 
 	return (
-		<View className="bg-card border border-border rounded-2xl overflow-hidden shadow-sm mb-4">
+		<View className="bg-card border border-border rounded-3xl overflow-hidden shadow-md mb-5 mx-1">
 			<View className="p-5">
-				{/* Header: Avatar, Name, Rating, Status */}
-				<View className="flex-row items-start justify-between gap-3">
-					<View className="flex-row items-center gap-3 flex-1">
-						{/* Profile Picture */}
-						<View className="relative h-14 w-14 rounded-full overflow-hidden bg-muted border-2 border-border">
-							{admin.profilePicture ? (
-								<Image
-									source={{ uri: admin.profilePicture }}
-									className="h-full w-full"
-									resizeMode="cover"
+				{/* Header: Avatar, Name, Status */}
+				<View className="flex-row items-center gap-4">
+					{/* Profile Picture */}
+					<View className="relative h-16 w-16 rounded-full overflow-hidden bg-muted border-2 border-border shadow-sm">
+						{admin.profilePicture ? (
+							<Image
+								source={{ uri: admin.profilePicture }}
+								className="h-full w-full"
+								resizeMode="cover"
+							/>
+						) : (
+							<View className="h-full w-full flex items-center justify-center bg-muted/50">
+								<UsersIcon
+									size={32}
+									color={colors.mutedForeground}
 								/>
-							) : (
-								<View className="h-full w-full flex items-center justify-center bg-muted">
-									<UsersIcon
-										size={28}
-										color={colors.mutedForeground}
-									/>
-								</View>
-							)}
-						</View>
-						{/* Name + Rating */}
-						<View className="flex-1">
-							<TextComponent
-								className="font-bold text-base text-foreground"
-								numberOfLines={1}>
-								{admin.name}
-							</TextComponent>
-							{/* <View className="flex-row items-center gap-2 mt-1">
-								<View className="flex-row items-center bg-yellow-50 dark:bg-yellow-900/20 px-2 py-0.5 rounded-full">
-									<StarIcon
-										size={12}
-										color="#eab308"
-									/>
-									<TextComponent className="text-xs font-semibold text-yellow-700 dark:text-yellow-500 ml-1">
-										{admin.rating ? admin.rating.toFixed(1) : 'New'}
-									</TextComponent>
-								</View>
-								<TextComponent className="text-xs text-muted-foreground">
-									• {admin.reviews?.length || 0} reviews
-								</TextComponent>
-							</View> */}
-						</View>
+							</View>
+						)}
+						{/* Status Indicator Dot - Optional Absolute Positioned */}
+						<View
+							className={`absolute bottom-0 right-0 h-4 w-4 rounded-full border-2 border-card ${
+								admin.adminStatus === 'active' ? 'bg-green-500' : 'bg-gray-400'
+							}`}
+						/>
 					</View>
-					{/* Status Badge */}
-					<View
-						className={`px-2.5 py-1 rounded-full border ${
-							admin.adminStatus === 'active'
-								? 'dark:bg-green-900/20 border-green-200 dark:border-green-900/30'
-								: 'dark:bg-muted border-border'
-						}`}>
-						<TextComponent
-							className={`text-xs font-medium ${
-								admin.adminStatus === 'active'
-									? 'text-green-700 dark:text-green-400'
-									: 'text-muted-foreground'
-							}`}>
-							{admin.adminStatus === 'active' ? 'Active' : 'Offline'}
-						</TextComponent>
+
+					{/* Name & Basic Meta */}
+					<View className="flex-1 justify-center">
+						<View className="flex-row justify-between items-start">
+							<View className="flex-1 mr-2">
+								<TextComponent
+									className="font-bold text-lg text-foreground mb-1"
+									numberOfLines={1}>
+									{admin.name}
+								</TextComponent>
+								{/* Status Text Badge */}
+								<View className="flex-row items-center">
+									<View
+										className={`px-2 py-0.5 rounded-md ${
+											admin.adminStatus === 'active'
+												? 'bg-green-100 dark:bg-green-900/30'
+												: 'bg-muted'
+										}`}>
+										<TextComponent
+											className={`text-[10px] font-bold uppercase tracking-wide ${
+												admin.adminStatus === 'active'
+													? 'text-green-700 dark:text-green-400'
+													: 'text-muted-foreground'
+											}`}>
+											{admin.adminStatus === 'active' ? 'Available' : 'Offline'}
+										</TextComponent>
+									</View>
+								</View>
+							</View>
+						</View>
 					</View>
 				</View>
 
-				{/* Info Rows */}
-				<View className="mt-5 space-y-2.5">
+				{/* Divider */}
+				<View className="h-[1px] bg-border my-4" />
+
+				{/* Info Rows - Compact & Aligned */}
+				<View className="space-y-3">
 					{admin.email && (
 						<View className="flex-row items-center">
-							<View className="h-8 w-8 rounded-full bg-muted/50 flex items-center justify-center mr-3">
+							<View className="w-6 items-center justify-center mr-3">
 								<MailIcon
-									size={14}
-									color={colors.mutedForeground}
+									size={16}
+									color={colors.primary}
 								/>
 							</View>
 							<TextComponent
@@ -103,16 +103,16 @@ const VendorCard: React.FC<VendorCardProps> = ({ admin, onSelect }) => {
 					)}
 
 					{admin.printingLocation && (
-						<View className="flex-row items-center">
-							<View className="h-8 w-8 rounded-full bg-muted/50 flex items-center justify-center mr-3">
+						<View className="flex-row items-start">
+							<View className="w-6 items-center justify-center mr-3 mt-0.5">
 								<MapPinIcon
-									size={14}
-									color={colors.mutedForeground}
+									size={16}
+									color={colors.primary}
 								/>
 							</View>
 							<TextComponent
 								className="text-sm text-muted-foreground flex-1"
-								numberOfLines={1}>
+								numberOfLines={2}>
 								{admin.printingLocation}
 							</TextComponent>
 						</View>
@@ -120,10 +120,10 @@ const VendorCard: React.FC<VendorCardProps> = ({ admin, onSelect }) => {
 
 					{admin.supportContact && (
 						<View className="flex-row items-center">
-							<View className="h-8 w-8 rounded-full bg-muted/50 flex items-center justify-center mr-3">
+							<View className="w-6 items-center justify-center mr-3">
 								<PhoneIcon
-									size={14}
-									color={colors.mutedForeground}
+									size={16}
+									color={colors.primary}
 								/>
 							</View>
 							<TextComponent className="text-sm text-muted-foreground">
@@ -132,49 +132,44 @@ const VendorCard: React.FC<VendorCardProps> = ({ admin, onSelect }) => {
 						</View>
 					)}
 
-					{admin.openingHours && (
+					{/* {admin.openingHours && (
 						<View className="flex-row items-center">
-							<View className="h-8 w-8 rounded-full bg-muted/50 flex items-center justify-center mr-3">
+							<View className="w-6 items-center justify-center mr-3">
 								<ClockIcon
-									size={14}
-									color={colors.mutedForeground}
+									size={16}
+									color={colors.primary}
+									style={{ opacity: 0.7 }}
 								/>
 							</View>
 							<TextComponent className="text-sm text-muted-foreground">
 								{admin.openingHours}
 							</TextComponent>
 						</View>
-					)}
+					)} */}
 				</View>
 			</View>
 
-			{/* Footer: Rate + Select Button */}
-			<View className="px-5 py-4 bg-background border-t border-border flex-row items-center justify-between">
-				{!!admin.printingCost && (
-					<View>
-						<TextComponent className="text-xs text-muted-foreground font-medium uppercase tracking-wider">
-							Rate
+			{/* Highlighted Footer Action Area */}
+			<View className="bg-muted/30 px-5 py-4 flex-row items-center justify-between border-t border-border">
+				<View>
+					<TextComponent className="text-[10px] text-muted-foreground font-bold uppercase tracking-wider mb-0.5">
+						Rate per page(pdf)
+					</TextComponent>
+					<View className="flex-row items-baseline">
+						<TextComponent className="font-extrabold text-foreground text-xl">
+							{admin.printingCost ? `₦${admin.printingCost}` : 'N/A'}
 						</TextComponent>
-						<View className="flex-row items-baseline">
-							<TextComponent className="font-bold text-foreground text-lg">
-								{admin.printingCost ? `₦${admin.printingCost}` : 'N/A'}
-							</TextComponent>
-							{admin.printingCost && (
-								<TextComponent className="text-xs text-muted-foreground ml-1">
-									/page
-								</TextComponent>
-							)}
-						</View>
 					</View>
-				)}
+				</View>
+
 				<Pressable
 					onPress={() => onSelect(admin)}
-					className="bg-primary px-5 py-2.5 rounded-md font-normal active:opacity-90"
+					className="bg-primary h-10 px-6 rounded-full flex-row items-center justify-center active:bg-primary shadow-sm"
 					style={({ pressed }) => ({
-						opacity: pressed ? 0.9 : 1,
+						transform: [{ scale: pressed ? 0.96 : 1 }],
 					})}>
-					<TextComponent className="text-white font-normal text-sm">
-						Select Vendor
+					<TextComponent className="text-white font-semibold text-sm">
+						Select
 					</TextComponent>
 				</Pressable>
 			</View>

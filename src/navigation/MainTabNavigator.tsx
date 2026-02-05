@@ -70,7 +70,7 @@ function MainTabNavigator() {
 				name="VendorsTab"
 				component={VendorsStack}
 				options={{
-					tabBarLabel: 'Find Provider',
+					tabBarLabel: 'Find Vendor',
 					tabBarIcon: ({ color, focused }) => (
 						<SearchIcon
 							size={24}

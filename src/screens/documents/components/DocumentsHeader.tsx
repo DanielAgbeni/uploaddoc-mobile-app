@@ -16,10 +16,10 @@ const DocumentsHeader = () => {
 			style={{ paddingTop: insets.top + 16 }}>
 			<View className="flex-row justify-between items-center mb-6">
 				<View className="flex-row items-center gap-3">
-					<View className="bg-white/10 p-2 rounded-xl backdrop-blur-sm border border-white/20">
+					<View className="bg-white/10 rounded-xl backdrop-blur-sm border border-white/20">
 						<CustomImage
 							source={require('../../../assets/app-images/icon.png')}
-							className="w-8 h-8 rounded-lg"
+							className="w-10 h-10 rounded-lg"
 							contentFit="cover"
 						/>
 					</View>
