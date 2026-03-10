@@ -17,6 +17,7 @@ import clsx from 'clsx';
 import { useInfiniteQuery } from '@tanstack/react-query';
 import { useRefreshOnFocus } from '../../hooks/useRefreshOnFocus';
 import TransactionItem from './components/TransactionItem';
+import TransactionItemSkeleton from './components/TransactionItemSkeleton';
 
 type Props = NativeStackScreenProps<
 	AccountStackParamList,
@@ -84,11 +85,10 @@ function TransactionHistoryScreen({ navigation }: Props) {
 
 				<View className="flex-1 px-4">
 					{isLoading ? (
-						<View className="flex-1 justify-center items-center">
-							<ActivityIndicator
-								size="large"
-								color={colors.primary}
-							/>
+						<View className="flex-1 pt-2">
+							{[...Array(6)].map((_, index) => (
+								<TransactionItemSkeleton key={index} />
+							))}
 						</View>
 					) : (
 						<FlatList

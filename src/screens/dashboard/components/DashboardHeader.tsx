@@ -21,6 +21,7 @@ import * as Clipboard from 'expo-clipboard';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { MainTabParamList } from '../../../types/navigation.types';
+import { Skeleton } from '../../../components/ui/Skeleton';
 
 // Assuming MainTabParamList needs to be imported or used for type safety
 type NavigationProp = NativeStackNavigationProp<MainTabParamList>;
@@ -55,18 +56,18 @@ const DashboardHeader = () => {
 
 	if (isLoading) {
 		return (
-			<View className="flex-row flex-wrap gap-3 mb-6 px-4">
+			<View className="flex-row flex-wrap gap-3 mb-6 px-4 pt-2">
 				{[1, 2, 3, 4].map((i) => (
 					<View
 						key={i}
-						className="bg-card border border-border rounded-xl p-4 w-[47%] h-32 justify-between animate-pulse">
-						<View className="flex-row justify-between">
-							<View className="h-4 w-16 bg-muted rounded" />
-							<View className="h-4 w-4 bg-muted rounded" />
+						className="bg-card border border-border rounded-xl p-4 w-[48%] h-32 justify-between shadow-sm">
+						<View className="flex-row justify-between items-start">
+							<Skeleton className="h-4 w-16 rounded" />
+							<Skeleton className="h-4 w-4 rounded" />
 						</View>
 						<View>
-							<View className="h-8 w-12 bg-muted rounded mb-1" />
-							<View className="h-3 w-20 bg-muted rounded" />
+							<Skeleton className="h-8 w-12 rounded mb-1" />
+							<Skeleton className="h-3 w-20 rounded" />
 						</View>
 					</View>
 				))}

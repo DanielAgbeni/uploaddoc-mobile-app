@@ -21,6 +21,7 @@ import { useTheme } from '../../providers/ThemeProvider';
 import { TextComponent } from 'src/components';
 import { SearchIcon, StacksIcon } from 'src/assets/icons';
 import VendorCard from 'src/components/vendors/VendorCard';
+import VendorCardSkeleton from 'src/components/vendors/VendorCardSkeleton';
 
 type NavigationProp = NativeStackScreenProps<
 	VendorsStackParamList,
@@ -121,9 +122,17 @@ export default function VendorsListScreen({ navigation }: Props) {
 
 	// Empty component
 	const renderEmpty = () => {
-		if (isLoading) return null;
+		if (isLoading) {
+			return (
+				<View className="mt-2">
+					{[...Array(5)].map((_, index) => (
+						<VendorCardSkeleton key={index} />
+					))}
+				</View>
+			);
+		}
 		return (
-			<View className="card-3d rounded-2xl p-8 items-center justify-center mt-4">
+			<View className="card-3d rounded-2xl p-8 items-center justify-center mt-4 mx-4">
 				<View className="w-16 h-16 bg-muted rounded-full items-center justify-center mb-4">
 					<StacksIcon
 						size={32}
@@ -180,12 +189,6 @@ export default function VendorsListScreen({ navigation }: Props) {
 						value={searchQuery}
 						onChangeText={handleSearchChange}
 					/>
-					{isLoading && (
-						<ActivityIndicator
-							size="small"
-							color={colors.primary}
-						/>
-					)}
 				</View>
 			</View>
 

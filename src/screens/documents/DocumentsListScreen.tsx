@@ -18,6 +18,7 @@ import { useRefreshOnFocus } from '../../hooks/useRefreshOnFocus';
 import { getStudentProjects, deleteProject } from '../../api/projects';
 import DocumentsHeader from './components/DocumentsHeader';
 import DocumentCard from './components/DocumentCard';
+import DocumentCardSkeleton from './components/DocumentCardSkeleton';
 import { useDebounce } from 'use-debounce';
 import { FlashList } from '@shopify/flash-list';
 import {
@@ -99,7 +100,7 @@ function DocumentsListScreen({ navigation }: Props) {
 		if (projectToDelete) {
 			deleteMutation.mutate(projectToDelete);
 		} else {
-			console.error('No project to delete found in state');
+			console.error('No Document to delete found in state');
 		}
 	};
 
@@ -185,14 +186,10 @@ function DocumentsListScreen({ navigation }: Props) {
 	const renderEmpty = () => {
 		if (isLoading) {
 			return (
-				<View className="flex-1 items-center justify-center py-20">
-					<ActivityIndicator
-						size="large"
-						color="#4F46E5"
-					/>
-					<TextComponent className="text-muted-foreground mt-4 font-medium">
-						Loading documents...
-					</TextComponent>
+				<View className="flex-1 pt-2">
+					{[...Array(5)].map((_, index) => (
+						<DocumentCardSkeleton key={index} />
+					))}
 				</View>
 			);
 		}
@@ -204,14 +201,14 @@ function DocumentsListScreen({ navigation }: Props) {
 						size={48}
 						color="#ef4444"
 					/>
-					<Text className="text-destructive font-medium mt-4 text-center">
+					<TextComponent className="text-destructive font-medium mt-4 text-center">
 						Failed to load documents
-					</Text>
-					<Text
+					</TextComponent>
+					<TextComponent
 						className="text-sm text-muted-foreground mt-2 text-center"
 						onPress={() => refetch()}>
 						Tap to retry
-					</Text>
+					</TextComponent>
 				</View>
 			);
 		}
@@ -224,14 +221,14 @@ function DocumentsListScreen({ navigation }: Props) {
 						color="#94a3b8"
 					/>
 				</View>
-				<Text className="text-lg font-semibold text-foreground">
+				<TextComponent className="text-lg font-semibold text-foreground">
 					No documents found
-				</Text>
-				<Text className="text-muted-foreground text-center mt-2 max-w-xs">
+				</TextComponent>
+				<TextComponent className="text-muted-foreground text-center mt-2 max-w-xs">
 					{searchQuery
 						? 'No documents match your search criteria.'
-						: "You haven't submitted any projects yet."}
-				</Text>
+						: "You haven't submitted any documents yet."}
+				</TextComponent>
 			</View>
 		);
 	};

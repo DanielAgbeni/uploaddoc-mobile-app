@@ -22,6 +22,7 @@ import {
 } from '../../api/projects';
 import DashboardHeader from './components/DashboardHeader';
 import ProjectCard from './components/ProjectCard';
+import ProjectCardSkeleton from './components/ProjectCardSkeleton';
 import { FlashList } from '@shopify/flash-list';
 import { showMessage } from 'react-native-flash-message';
 import AlertModal from '../../components/ui/AlertModal';
@@ -73,6 +74,12 @@ function DashboardScreen({ navigation }: Props) {
 	});
 
 	useRefreshOnFocus(refetch);
+
+	const handleRefresh = useCallback(() => {
+		refetch();
+		queryClient.invalidateQueries({ queryKey: ['userStatus'] });
+		queryClient.invalidateQueries({ queryKey: ['allCloudStatus'] });
+	}, [refetch, queryClient]);
 
 	// Mutations
 	const acceptMutation = useMutation({
@@ -215,11 +222,10 @@ function DashboardScreen({ navigation }: Props) {
 	const renderEmpty = () => {
 		if (isLoading) {
 			return (
-				<View className="py-20 items-center">
-					<ActivityIndicator
-						size="large"
-						color="#4F46E5"
-					/>
+				<View className="py-2">
+					{[...Array(5)].map((_, index) => (
+						<ProjectCardSkeleton key={index} />
+					))}
 				</View>
 			);
 		}
@@ -306,7 +312,7 @@ function DashboardScreen({ navigation }: Props) {
 				refreshControl={
 					<RefreshControl
 						refreshing={isRefetching && !isFetchingNextPage}
-						onRefresh={refetch}
+						onRefresh={handleRefresh}
 						tintColor={colors.primary}
 						colors={[colors.primary]}
 					/>

@@ -36,12 +36,12 @@ function MainTabNavigator() {
 				animation: 'shift', // Adds transition animation between tabs
 				tabBarStyle: {
 					backgroundColor: colors.background,
-					height: 60 + Math.max(insets.bottom, 16),
-					paddingBottom: Math.max(insets.bottom, 16),
+					height: 60 + Math.max(insets.bottom, 18),
+					paddingBottom: Math.max(insets.bottom, 20),
 					paddingTop: 8,
 					elevation: 0,
 					shadowColor: colorScheme === 'dark' ? '#000' : '#000',
-					shadowOffset: { width: 0, height: -2 },
+					shadowOffset: { width: 0, height: 1 },
 					shadowOpacity: colorScheme === 'dark' ? 0.2 : 0.05,
 					shadowRadius: 4,
 					borderTopWidth: 0,
