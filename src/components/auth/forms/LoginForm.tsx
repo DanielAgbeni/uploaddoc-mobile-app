@@ -72,7 +72,7 @@ const LoginForm = memo(
 				/>
 
 				{/* Divider */}
-				<View className="flex-row items-center mb-8">
+				{/* <View className="flex-row items-center mb-8">
 					<View className="flex-1 h-px bg-border" />
 					<TextComponent className="px-4 text-muted-foreground text-sm font-medium">
 						or
@@ -83,7 +83,7 @@ const LoginForm = memo(
 				<SocialLoginSection
 					onGoogleLogin={onGoogleLogin}
 					isLoading={isLoading}
-				/>
+				/> */}
 
 				<View className="flex-row justify-center pb-8">
 					<TextComponent className="text-muted-foreground text-base mr-1">
