@@ -35,6 +35,7 @@ import FacebookIcon from './facebook.icon';
 import GoogleIcon from './google.icon';
 import AddIcon from './add.icon';
 import TrashIcon from './trash.icon';
+import AlertCircleIcon from './alert-circle.icon';
 
 export {
 	icon,
@@ -74,4 +75,5 @@ export {
 	GoogleIcon,
 	AddIcon as PlusIcon,
 	TrashIcon,
+	AlertCircleIcon,
 };

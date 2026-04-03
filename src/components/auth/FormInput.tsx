@@ -7,9 +7,8 @@ import {
 	Pressable,
 	StyleSheet,
 } from 'react-native';
-import Icon from 'react-native-vector-icons/Ionicons';
 import { Controller, Control, FieldValues, Path } from 'react-hook-form';
-import { EyeIcon, EyeOffIcon } from 'src/assets/icons';
+import { EyeIcon, EyeOffIcon, AlertCircleIcon } from 'src/assets/icons';
 
 interface FormInputProps<T extends FieldValues> extends Omit<
 	TextInputProps,
@@ -111,8 +110,7 @@ function FormInput<T extends FieldValues>({
 						{/* Error Message */}
 						{error && (
 							<View className="flex-row items-center mt-2">
-								<Icon
-									name="alert-circle"
+								<AlertCircleIcon
 									size={14}
 									color="#ef4444"
 								/>

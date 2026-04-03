@@ -11,7 +11,6 @@ import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { AuthStackParamList } from '../../types/navigation.types';
 import { MainContainer } from 'src/shared/components';
 import { LinearGradient } from 'expo-linear-gradient';
-import Icon from 'react-native-vector-icons/Ionicons';
 import { useTheme } from '../../providers/ThemeProvider';
 import { forgetpassword, resetPassword } from '../../api/auth';
 import { showMessage } from 'react-native-flash-message';

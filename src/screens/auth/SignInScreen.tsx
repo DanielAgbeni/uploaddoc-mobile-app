@@ -18,7 +18,6 @@ import CustomImage from '../../components/common/CustomImage';
 import FormInput from '../../components/auth/FormInput';
 import AuthButton from '../../components/auth/AuthButton';
 import { LinearGradient } from 'expo-linear-gradient';
-import Icon from 'react-native-vector-icons/Ionicons';
 import { useTheme } from '../../providers/ThemeProvider';
 import GoogleIcon from 'src/assets/icons/google.icon';
 
