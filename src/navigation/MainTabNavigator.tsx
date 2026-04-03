@@ -34,6 +34,8 @@ function MainTabNavigator() {
 				tabBarShowLabel: true,
 				// @ts-ignore: 'animation' is a valid option in v7 but might not be in the types yet if mismatch
 				animation: 'shift', // Adds transition animation between tabs
+				// @ts-ignore: sceneStyle is added in v7 to style the background of the screen container
+				sceneStyle: { backgroundColor: colors.background },
 				tabBarStyle: {
 					backgroundColor: colors.background,
 					height: 60 + Math.max(insets.bottom, 18),

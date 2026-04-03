@@ -1,10 +1,11 @@
 import React, { memo } from 'react';
-import { NavigationContainer } from '@react-navigation/native';
+import { NavigationContainer, DefaultTheme, DarkTheme } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../types/navigation.types';
 import { linkingConfig } from '../config/linking.config';
 import { useUserStore } from '../shared/user-store/useUserStore';
 import { View, ActivityIndicator } from 'react-native';
+import { useTheme } from '../providers/ThemeProvider';
 
 // Navigators
 import AuthStack from './AuthStack';
@@ -15,9 +16,32 @@ const Stack = createNativeStackNavigator<RootStackParamList>();
 function RootNavigator() {
 	const isAuthenticated = useUserStore((state) => state.isAuthenticated);
 	const hasHydrated = useUserStore((state) => state.hasHydrated);
+	const { colors, colorScheme } = useTheme();
+
+	const navigationTheme = colorScheme === 'dark' ? {
+		...DarkTheme,
+		colors: {
+			...DarkTheme.colors,
+			background: colors.background,
+			card: colors.card,
+			text: colors.foreground,
+			border: colors.border,
+			primary: colors.primary,
+		}
+	} : {
+		...DefaultTheme,
+		colors: {
+			...DefaultTheme.colors,
+			background: colors.background,
+			card: colors.card,
+			text: colors.foreground,
+			border: colors.border,
+			primary: colors.primary,
+		}
+	};
 
 	return (
-		<NavigationContainer linking={linkingConfig}>
+		<NavigationContainer linking={linkingConfig} theme={navigationTheme}>
 			{!hasHydrated ? (
 				<View className="flex-1 bg-background items-center justify-center">
 					<ActivityIndicator
