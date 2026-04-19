@@ -74,7 +74,7 @@ const AuthModal = ({ isVisible, onClose }: AuthModalProps) => {
 	React.useEffect(() => {
 		GoogleSignin.configure({
 			webClientId:
-				'32599014807-5903r9empqsb9gogojkqms9jkgh4rrnk.apps.googleusercontent.com',
+				'711385990812-5r58ssnajdajr8ot33ncpnn131kqj5q4.apps.googleusercontent.com',
 		});
 	}, []);
 
@@ -391,6 +391,7 @@ const AuthModal = ({ isVisible, onClose }: AuthModalProps) => {
 							onSubmit={onSignup}
 							isLoading={isLoading}
 							onLoginPress={() => setMode('login')}
+							onGoogleLogin={onGoogleButtonPress}
 						/>
 					)}
 

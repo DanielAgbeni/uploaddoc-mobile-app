@@ -4,15 +4,22 @@ import { useForm } from 'react-hook-form';
 import FormInput from '../FormInput';
 import AuthButton from '../AuthButton';
 import TextComponent from '../../ui/TextComponent';
+import SocialLoginSection from '../SocialLoginSection';
 
 interface SignUpFormProps {
 	onSubmit: (data: any) => void;
 	isLoading: boolean;
 	onLoginPress: () => void;
+	onGoogleLogin: () => void;
 }
 
 const SignUpForm = memo(
-	({ onSubmit, isLoading, onLoginPress }: SignUpFormProps) => {
+	({
+		onSubmit,
+		isLoading,
+		onLoginPress,
+		onGoogleLogin,
+	}: SignUpFormProps) => {
 		const {
 			control,
 			handleSubmit,
@@ -77,6 +84,20 @@ const SignUpForm = memo(
 					onPress={handleSubmit(onSubmit)}
 					loading={isLoading}
 					className="mb-8"
+				/>
+
+				{/* Divider */}
+				<View className="flex-row items-center mb-8">
+					<View className="flex-1 h-px bg-border" />
+					<TextComponent className="px-4 text-muted-foreground text-sm font-medium">
+						or
+					</TextComponent>
+					<View className="flex-1 h-px bg-border" />
+				</View>
+
+				<SocialLoginSection
+					onGoogleLogin={onGoogleLogin}
+					isLoading={isLoading}
 				/>
 
 				<View className="flex-row justify-center pb-8">
