@@ -448,7 +448,7 @@ function ProfileScreen({ navigation }: Props) {
 
 				{/* App Version */}
 				<TextComponent className="text-center text-muted-foreground text-xs mt-4">
-					UploadDoc v2.0.1
+					UploadDoc v2.0.11
 				</TextComponent>
 			</View>
 		</ScrollView>

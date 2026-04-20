@@ -30,6 +30,8 @@ import { AuthStackParamList } from '../../types/navigation.types';
 import TextComponent from '../ui/TextComponent';
 import { getErrorMessage } from '../../utils/error-handling';
 
+import AuthErrorBanner from './AuthErrorBanner';
+
 // Forms
 import LoginForm from './forms/LoginForm';
 import SignUpForm from './forms/SignUpForm';
@@ -51,6 +53,10 @@ const AuthModal = ({ isVisible, onClose }: AuthModalProps) => {
 	const loginMutation = useLoginMutation();
 	const setLoginData = useUserStore((state) => state.setLoginData);
 	const [isLoading, setIsLoading] = useState(false);
+	const [authError, setAuthError] = useState<string | null>(null);
+
+	// Combined loading state for better UI feedback
+	const isAnyLoading = isLoading || loginMutation.isPending;
 
 	// State to hold temp data for flows
 	const [tempEmail, setTempEmail] = useState('');
@@ -58,6 +64,10 @@ const AuthModal = ({ isVisible, onClose }: AuthModalProps) => {
 	const [timer, setTimer] = useState(0);
 
 	// Timer effect
+	React.useEffect(() => {
+		setAuthError(null);
+	}, [mode]);
+
 	React.useEffect(() => {
 		let interval: NodeJS.Timeout;
 		if (!canResend && timer > 0) {
@@ -79,6 +89,7 @@ const AuthModal = ({ isVisible, onClose }: AuthModalProps) => {
 	}, []);
 
 	const onLogin = (data: any) => {
+		setAuthError(null);
 		loginMutation.mutate(
 			{ email: data.email.trim(), password: data.password.trim() },
 			{
@@ -91,9 +102,11 @@ const AuthModal = ({ isVisible, onClose }: AuthModalProps) => {
 					handleClose();
 				},
 				onError: (error: any) => {
+					const errorMessage = getErrorMessage(error);
+					setAuthError(errorMessage);
 					showMessage({
 						message: 'Login Failed',
-						description: getErrorMessage(error),
+						description: errorMessage,
 						type: 'danger',
 					});
 				},
@@ -102,6 +115,7 @@ const AuthModal = ({ isVisible, onClose }: AuthModalProps) => {
 	};
 
 	const onSignup = async (data: any) => {
+		setAuthError(null);
 		setIsLoading(true);
 		try {
 			const { confirmPassword, ...registerData } = data;
@@ -117,6 +131,7 @@ const AuthModal = ({ isVisible, onClose }: AuthModalProps) => {
 				setCanResend(false);
 				setTimer(60);
 			} else {
+				setAuthError(response.data.message);
 				showMessage({
 					message: 'Registration Failed',
 					description: response.data.message,
@@ -125,6 +140,7 @@ const AuthModal = ({ isVisible, onClose }: AuthModalProps) => {
 			}
 		} catch (error: any) {
 			const errorMessage = getErrorMessage(error);
+			setAuthError(errorMessage);
 			if (
 				errorMessage ===
 				'Email verification already pending. Please check your email or request a new code.'
@@ -151,6 +167,7 @@ const AuthModal = ({ isVisible, onClose }: AuthModalProps) => {
 	};
 
 	const onVerifyOtp = async (data: any) => {
+		setAuthError(null);
 		setIsLoading(true);
 		try {
 			const response = await verifyEmail({ email: tempEmail, otp: data.otp });
@@ -163,6 +180,7 @@ const AuthModal = ({ isVisible, onClose }: AuthModalProps) => {
 				setLoginData(response.data.data);
 				handleClose();
 			} else {
+				setAuthError(response.data.message);
 				showMessage({
 					message: 'Verification Failed',
 					description: response.data.message,
@@ -170,9 +188,11 @@ const AuthModal = ({ isVisible, onClose }: AuthModalProps) => {
 				});
 			}
 		} catch (error: any) {
+			const errorMessage = getErrorMessage(error);
+			setAuthError(errorMessage);
 			showMessage({
 				message: 'Error',
-				description: getErrorMessage(error),
+				description: errorMessage,
 				type: 'danger',
 			});
 		} finally {
@@ -181,6 +201,7 @@ const AuthModal = ({ isVisible, onClose }: AuthModalProps) => {
 	};
 
 	const onResendCode = async () => {
+		setAuthError(null);
 		setIsLoading(true);
 		try {
 			const response = await resendVerificationCode(tempEmail);
@@ -193,6 +214,7 @@ const AuthModal = ({ isVisible, onClose }: AuthModalProps) => {
 				setCanResend(false);
 				setTimer(60);
 			} else {
+				setAuthError(response.data.message);
 				showMessage({
 					message: 'Failed',
 					description: response.data.message,
@@ -200,9 +222,11 @@ const AuthModal = ({ isVisible, onClose }: AuthModalProps) => {
 				});
 			}
 		} catch (error: any) {
+			const errorMessage = getErrorMessage(error);
+			setAuthError(errorMessage);
 			showMessage({
 				message: 'Error',
-				description: getErrorMessage(error),
+				description: errorMessage,
 				type: 'danger',
 			});
 		} finally {
@@ -274,11 +298,22 @@ const AuthModal = ({ isVisible, onClose }: AuthModalProps) => {
 	};
 
 	const onGoogleButtonPress = async () => {
+		setAuthError(null);
 		setIsLoading(true);
 		try {
 			await GoogleSignin.hasPlayServices();
-			const userInfo = await GoogleSignin.signIn();
-			const idToken = userInfo.data?.idToken;
+			const result = await GoogleSignin.signIn();
+
+			// Handle both old and new API response structures
+			const userInfo = (result as any).data ? (result as any).data : result;
+			const isCancelled = (result as any).type === 'cancelled';
+
+			if (isCancelled) {
+				setIsLoading(false);
+				return;
+			}
+
+			const idToken = userInfo?.idToken;
 
 			if (idToken) {
 				const response = await googleLogin(idToken);
@@ -298,10 +333,12 @@ const AuthModal = ({ isVisible, onClose }: AuthModalProps) => {
 			}
 		} catch (error: any) {
 			let errorMessage = 'Google login failed';
+			let cancelled = false;
+
 			if (isErrorWithCode(error)) {
 				switch (error.code) {
 					case statusCodes.SIGN_IN_CANCELLED:
-						errorMessage = 'Sign in cancelled';
+						cancelled = true;
 						break;
 					case statusCodes.IN_PROGRESS:
 						errorMessage = 'Sign in in progress';
@@ -316,13 +353,14 @@ const AuthModal = ({ isVisible, onClose }: AuthModalProps) => {
 				errorMessage = getErrorMessage(error);
 			}
 
-			if (errorMessage !== 'Sign in cancelled') {
+			if (!cancelled) {
+				setAuthError(errorMessage);
 				showMessage({
 					message: 'Login Failed',
 					description: errorMessage,
 					type: 'danger',
 				});
-				console.log(error);
+				console.log('Google login error:', error);
 			}
 		} finally {
 			setIsLoading(false);
@@ -331,6 +369,7 @@ const AuthModal = ({ isVisible, onClose }: AuthModalProps) => {
 
 	const handleClose = () => {
 		setMode('login');
+		setAuthError(null);
 		onClose();
 	};
 
@@ -372,6 +411,11 @@ const AuthModal = ({ isVisible, onClose }: AuthModalProps) => {
 					</Pressable>
 				</View>
 
+				<AuthErrorBanner
+					message={authError}
+					className="mt-4"
+				/>
+
 				<ScrollView
 					className="flex-1 px-6 pt-6"
 					showsVerticalScrollIndicator={false}
@@ -379,7 +423,7 @@ const AuthModal = ({ isVisible, onClose }: AuthModalProps) => {
 					{mode === 'login' && (
 						<LoginForm
 							onSubmit={onLogin}
-							isLoading={loginMutation.isPending}
+							isLoading={isAnyLoading}
 							onForgotPassword={() => setMode('forgotPassword')}
 							onGoogleLogin={onGoogleButtonPress}
 							onSignUpPress={() => setMode('signup')}
@@ -389,7 +433,7 @@ const AuthModal = ({ isVisible, onClose }: AuthModalProps) => {
 					{mode === 'signup' && (
 						<SignUpForm
 							onSubmit={onSignup}
-							isLoading={isLoading}
+							isLoading={isAnyLoading}
 							onLoginPress={() => setMode('login')}
 							onGoogleLogin={onGoogleButtonPress}
 						/>
@@ -398,7 +442,7 @@ const AuthModal = ({ isVisible, onClose }: AuthModalProps) => {
 					{mode === 'otp' && (
 						<OTPForm
 							onSubmit={onVerifyOtp}
-							isLoading={isLoading}
+							isLoading={isAnyLoading}
 							onResend={onResendCode}
 							canResend={canResend}
 							timer={timer}
@@ -410,7 +454,7 @@ const AuthModal = ({ isVisible, onClose }: AuthModalProps) => {
 					{mode === 'forgotPassword' && (
 						<ForgotPasswordForm
 							onSubmit={onForgotPassword}
-							isLoading={isLoading}
+							isLoading={isAnyLoading}
 							onBackToLogin={() => setMode('login')}
 						/>
 					)}
@@ -418,7 +462,7 @@ const AuthModal = ({ isVisible, onClose }: AuthModalProps) => {
 					{mode === 'resetPassword' && (
 						<ResetPasswordForm
 							onSubmit={onResetPassword}
-							isLoading={isLoading}
+							isLoading={isAnyLoading}
 							onBackToLogin={() => setMode('login')}
 							email={tempEmail}
 						/>
