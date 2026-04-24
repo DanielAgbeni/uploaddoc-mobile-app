@@ -5,7 +5,7 @@ type ApiRequestResponseType<T> = Promise<AxiosResponse<T>>;
 
 const controller = new AbortController();
 
-const baseURL = 'https://uploaddoc-backend.onrender.com';
+const baseURL = 'https://api.uploaddoc.app';
 
 console.log('Base URL: ', baseURL);
 
