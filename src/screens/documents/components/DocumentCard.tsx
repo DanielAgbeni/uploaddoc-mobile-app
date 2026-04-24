@@ -1,9 +1,11 @@
-import React, { memo } from 'react';
-import { View, Text, Pressable } from 'react-native';
+import React, { memo, useCallback, useMemo } from 'react';
+import { Pressable, View } from 'react-native';
+import { format } from 'date-fns';
 import DocumentTextIcon from '../../../assets/icons/document-text.icon';
 import DownloadIcon from '../../../assets/icons/download.icon';
 import TrashIcon from '../../../assets/icons/trash.icon';
-import { format } from 'date-fns';
+import TextComponent from '../../../components/ui/TextComponent';
+import { useTheme } from '../../../providers/ThemeProvider';
 
 type DocumentCardProps = {
 	project: Project;
@@ -11,107 +13,154 @@ type DocumentCardProps = {
 	onDownload: (project: Project) => void;
 };
 
-const DocumentCard = ({ project, onDelete, onDownload }: DocumentCardProps) => {
-	const getStatusConfig = (status: string) => {
-		switch (status) {
+type StatusConfig = {
+	accent: string;
+	label: string;
+	tint: string;
+};
+
+const formatFileSize = (bytes: number) => {
+	if (bytes === 0) return '0 B';
+	const k = 1024;
+	const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
+	const i = Math.floor(Math.log(bytes) / Math.log(k));
+	return `${parseFloat((bytes / Math.pow(k, i)).toFixed(2))} ${sizes[i]}`;
+};
+
+const DocumentCard = memo(function DocumentCard({
+	project,
+	onDelete,
+	onDownload,
+}: DocumentCardProps) {
+	const { colorScheme, colors } = useTheme();
+
+	const statusConfig = useMemo<StatusConfig>(() => {
+		switch (project.status) {
 			case 'accepted':
 				return {
-					icon: 'checkmark-circle',
-					border: 'border-green-200 dark:border-green-900/30',
-					text: 'text-green-700 dark:text-green-400',
-					badgeIcon: 'checkmark-circle-outline',
+					label: 'Accepted',
+					accent: colorScheme === 'dark' ? '#34d399' : '#047857',
+					tint: colorScheme === 'dark' ? 'rgba(52, 211, 153, 0.16)' : '#d1fae5',
 				};
 			case 'rejected':
 				return {
-					icon: 'close-circle',
-					border: 'border-red-200 dark:border-red-900/30',
-					text: 'text-red-700 dark:text-red-400',
-					badgeIcon: 'close-circle-outline',
+					label: 'Rejected',
+					accent: colorScheme === 'dark' ? '#f87171' : '#b91c1c',
+					tint: colorScheme === 'dark' ? 'rgba(248, 113, 113, 0.16)' : '#fee2e2',
 				};
 			default:
 				return {
-					icon: 'time',
-					border: 'border-yellow-200 dark:border-yellow-900/30',
-					text: 'text-yellow-700 dark:text-yellow-400',
-					badgeIcon: 'time-outline',
+					label: 'Pending',
+					accent: colorScheme === 'dark' ? '#fbbf24' : '#b45309',
+					tint: colorScheme === 'dark' ? 'rgba(251, 191, 36, 0.15)' : '#fef3c7',
 				};
 		}
-	};
+	}, [colorScheme, project.status]);
 
-	const statusConfig = getStatusConfig(project.status);
+	const metadata = useMemo(() => {
+		const items = [
+			formatFileSize(project.fileSize),
+			format(new Date(project.createdAt), 'MMM dd, yyyy'),
+		];
 
-	const formatFileSize = (bytes: number) => {
-		if (bytes === 0) return '0 B';
-		const k = 1024;
-		const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
-		const i = Math.floor(Math.log(bytes) / Math.log(k));
-		return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
-	};
+		if (project.pageCount > 0) {
+			items.push(`${project.pageCount} pages`);
+		}
+
+		if (project.fileCategory) {
+			items.push(project.fileCategory);
+		}
+
+		return items;
+	}, [project.createdAt, project.fileCategory, project.fileSize, project.pageCount]);
+
+	const handleDeletePress = useCallback(() => {
+		onDelete(project._id);
+	}, [onDelete, project._id]);
+
+	const handleDownloadPress = useCallback(() => {
+		onDownload(project);
+	}, [onDownload, project]);
 
 	return (
-		<View className="bg-card border border-border rounded-xl p-4 mb-3 shadow-sm mx-4">
-			<View className="flex-row items-center gap-4">
-				{/* Icon Container */}
-				<View className="h-12 w-12 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+		<View className="mb-4 rounded-[28px] border border-border bg-card px-4 py-4 shadow-sm">
+			<View className="flex-row items-start">
+				<View
+					className="mr-4 h-14 w-14 items-center justify-center rounded-[20px]"
+					style={{ backgroundColor: `${colors.primary}18` }}>
 					<DocumentTextIcon
-						size={24}
-						color="#4F46E5"
+						size={26}
+						color={colors.primary}
 					/>
 				</View>
 
-				{/* Content */}
-				<View className="flex-1 min-w-0 gap-1">
-					<View className="flex-row justify-between items-start">
-						<Text
-							className="font-semibold text-foreground text-base truncate flex-1 mr-2"
-							numberOfLines={1}>
-							{project.title}
-						</Text>
-						{/* Actions Menu (Simplified for mobile) */}
-						{/* Using a simple row of actions for now, or could use a proper menu if desired */}
-					</View>
+				<View className="flex-1">
+					<View className="mb-3 flex-row items-start justify-between gap-3">
+						<View className="flex-1">
+							<TextComponent
+								className="text-lg font-extrabold leading-6 text-foreground"
+								numberOfLines={2}>
+								{project.title}
+							</TextComponent>
 
-					<View className="flex-row items-center gap-2 flex-wrap">
-						<Text className="text-xs text-muted-foreground font-normal">
-							{formatFileSize(project.fileSize)}
-						</Text>
-						<View className="w-1 h-1 rounded-full bg-muted-foreground/40" />
-						<Text className="text-xs text-muted-foreground font-normal">
-							{format(new Date(project.createdAt), 'MMM dd, yyyy')}
-						</Text>
-						{project.pageCount > 0 && (
-							<>
-								<View className="w-1 h-1 rounded-full bg-muted-foreground/40" />
-								<Text className="text-xs text-muted-foreground font-normal">
-									{project.pageCount} pages
-								</Text>
-							</>
-						)}
-					</View>
-
-					<View className="flex-row justify-between items-center mt-2">
-						<View
-							className={`flex-row items-center px-2.5 py-1 rounded-full border ${statusConfig.border}`}>
-							<Text
-								className={`text-xs font-medium capitalize ${statusConfig.text}`}>
-								{project.status}
-							</Text>
+							<TextComponent
+								className="mt-2 text-sm leading-6 text-muted-foreground"
+								numberOfLines={2}>
+								{project.description || 'Document submission ready for review.'}
+							</TextComponent>
 						</View>
 
-						<View className="flex-row gap-1">
-							{project.fileUrl && (
+						<View
+							className="rounded-full px-3 py-2"
+							style={{ backgroundColor: statusConfig.tint }}>
+							<TextComponent
+								className="text-xs font-bold uppercase tracking-[1.2px]"
+								style={{ color: statusConfig.accent }}>
+								{statusConfig.label}
+							</TextComponent>
+						</View>
+					</View>
+
+					<View className="mb-4 flex-row flex-wrap gap-2">
+						{metadata.map((item) => (
+							<View
+								key={`${project._id}-${item}`}
+								className="rounded-full border border-border px-3 py-2">
+								<TextComponent className="text-xs font-medium capitalize text-muted-foreground">
+									{item}
+								</TextComponent>
+							</View>
+						))}
+					</View>
+
+					<View className="flex-row items-center justify-between border-t border-border pt-4">
+						<View className="flex-1 pr-3">
+							<TextComponent className="text-xs font-semibold uppercase tracking-[1.3px] text-muted-foreground">
+								Assigned to
+							</TextComponent>
+							<TextComponent
+								className="mt-1 text-sm font-semibold text-foreground"
+								numberOfLines={1}>
+								{project.assignedAdminName || 'UploadDoc'}
+							</TextComponent>
+						</View>
+
+						<View className="flex-row gap-2">
+							{project.fileUrl ? (
 								<Pressable
-									onPress={() => onDownload(project)}
-									className="p-2 rounded-full active:bg-muted">
+									onPress={handleDownloadPress}
+									className="min-h-[44px] min-w-[44px] items-center justify-center rounded-full border border-border bg-background active:opacity-85">
 									<DownloadIcon
 										size={18}
-										color="#64748b"
+										color={colors.foreground}
 									/>
 								</Pressable>
-							)}
+							) : null}
+
 							<Pressable
-								onPress={() => onDelete(project._id)}
-								className="p-2 rounded-full active:bg-red-50">
+								onPress={handleDeletePress}
+								className="min-h-[44px] min-w-[44px] items-center justify-center rounded-full active:opacity-85"
+								style={{ backgroundColor: colorScheme === 'dark' ? 'rgba(239, 68, 68, 0.15)' : '#fee2e2' }}>
 								<TrashIcon
 									size={18}
 									color="#ef4444"
@@ -121,16 +170,8 @@ const DocumentCard = ({ project, onDelete, onDownload }: DocumentCardProps) => {
 					</View>
 				</View>
 			</View>
-			<View className="mt-3 pt-3 border-t border-border flex-row justify-between items-center">
-				<Text className="text-xs text-muted-foreground uppercase tracking-wider font-medium">
-					Assigned To
-				</Text>
-				<Text className="text-sm font-normal text-muted-foreground">
-					{project.assignedAdminName || 'UploadDoc'}
-				</Text>
-			</View>
 		</View>
 	);
-};
+});
 
-export default memo(DocumentCard);
+export default DocumentCard;

@@ -1,46 +1,83 @@
-import React, { useState, useMemo, useCallback } from 'react';
+import React, { memo, useCallback, useMemo, useState } from 'react';
 import {
-	View,
-	Text,
 	ActivityIndicator,
-	TextInput,
+	Pressable,
 	RefreshControl,
+	ScrollView,
+	TextInput,
+	View,
 } from 'react-native';
-import { showMessage } from 'react-native-flash-message';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { DocumentsStackParamList } from '../../types/navigation.types';
+import { FlashList } from '@shopify/flash-list';
 import {
 	useInfiniteQuery,
 	useMutation,
 	useQueryClient,
 } from '@tanstack/react-query';
+import { useDebounce } from 'use-debounce';
+import { showMessage } from 'react-native-flash-message';
+import CloseCircleIcon from '../../assets/icons/close-circle.icon';
+import DocumentTextIcon from '../../assets/icons/document-text.icon';
+import SearchIcon from '../../assets/icons/search.icon';
+import AddIcon from '../../assets/icons/add.icon';
+import AlertCircleIcon from '../../assets/icons/alert-circle.icon';
+import AlertModal from '../../components/ui/AlertModal';
+import TextComponent from '../../components/ui/TextComponent';
 import { useRefreshOnFocus } from '../../hooks/useRefreshOnFocus';
-import { getStudentProjects, deleteProject } from '../../api/projects';
-import DocumentsHeader from './components/DocumentsHeader';
+import { useTheme } from '../../providers/ThemeProvider';
+import { useUserStore } from '../../shared/user-store/useUserStore';
+import { DocumentsStackParamList } from '../../types/navigation.types';
+import { downloadDocument } from '../../utils/fileDownload';
+import { deleteProject, getStudentProjects } from '../../api/projects';
 import DocumentCard from './components/DocumentCard';
 import DocumentCardSkeleton from './components/DocumentCardSkeleton';
-import { useDebounce } from 'use-debounce';
-import { FlashList } from '@shopify/flash-list';
-import {
-	downloadDocument,
-	getDownloadFolderPath,
-} from '../../utils/fileDownload';
-import SearchIcon from '../../assets/icons/search.icon';
-import CloseCircleIcon from '../../assets/icons/close-circle.icon';
-import AlertCircleIcon from '../../assets/icons/alert-circle.icon';
-import DocumentTextIcon from '../../assets/icons/document-text.icon';
-import AddIcon from '../../assets/icons/add.icon';
-import AlertModal from '../../components/ui/AlertModal';
-import { Pressable } from 'react-native';
-import { TextComponent } from 'src/components';
+import DocumentsHeader from './components/DocumentsHeader';
 
 type Props = NativeStackScreenProps<DocumentsStackParamList, 'DocumentsList'>;
+type StatusFilter = 'all' | Project['status'];
+
+const statusFilters: Array<{
+	label: string;
+	value: StatusFilter;
+}> = [
+	{ label: 'All', value: 'all' },
+	{ label: 'Pending', value: 'pending' },
+	{ label: 'Accepted', value: 'accepted' },
+];
+
+const StatusFilterChip = memo(function StatusFilterChip({
+	active,
+	label,
+	onPress,
+}: {
+	active: boolean;
+	label: string;
+	onPress: () => void;
+}) {
+	return (
+		<Pressable
+			onPress={onPress}
+			className={`mr-3 rounded-full px-5 py-2 ${
+				active ? 'bg-primary' : 'border border-border bg-card'
+			}`}>
+			<TextComponent
+				className={`text-sm font-semibold ${
+					active ? 'text-primary-foreground' : 'text-muted-foreground'
+				}`}>
+				{label}
+			</TextComponent>
+		</Pressable>
+	);
+});
 
 function DocumentsListScreen({ navigation }: Props) {
+	const { colors } = useTheme();
+	const { user } = useUserStore();
 	const [searchQuery, setSearchQuery] = useState('');
-	const [debouncedSearch] = useDebounce(searchQuery, 500);
+	const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
 	const [deleteModalVisible, setDeleteModalVisible] = useState(false);
 	const [projectToDelete, setProjectToDelete] = useState<string | null>(null);
+	const [debouncedSearch] = useDebounce(searchQuery, 450);
 	const queryClient = useQueryClient();
 
 	const {
@@ -53,9 +90,9 @@ function DocumentsListScreen({ navigation }: Props) {
 		refetch,
 		isRefetching,
 	} = useInfiniteQuery({
-		queryKey: ['studentProjects', debouncedSearch],
+		queryKey: ['studentProjects', { query: debouncedSearch }],
 		queryFn: ({ pageParam = 1 }) =>
-			getStudentProjects(pageParam, 10, debouncedSearch),
+			getStudentProjects(pageParam, 10, { query: debouncedSearch }),
 		initialPageParam: 1,
 		getNextPageParam: (lastPage) => {
 			const { currentPage, totalPages } = lastPage.data.data.pagination;
@@ -67,7 +104,7 @@ function DocumentsListScreen({ navigation }: Props) {
 
 	const deleteMutation = useMutation({
 		mutationFn: deleteProject,
-		onSuccess: (data) => {
+		onSuccess: () => {
 			queryClient.invalidateQueries({ queryKey: ['studentProjects'] });
 			setDeleteModalVisible(false);
 			setProjectToDelete(null);
@@ -79,8 +116,7 @@ function DocumentsListScreen({ navigation }: Props) {
 			});
 		},
 		onError: (error: any) => {
-			console.error('Delete error:', error);
-			setDeleteModalVisible(false); // Close invalid modal
+			setDeleteModalVisible(false);
 			showMessage({
 				message: 'Error',
 				description:
@@ -91,18 +127,30 @@ function DocumentsListScreen({ navigation }: Props) {
 		},
 	});
 
+	const handleSearchChange = useCallback((value: string) => {
+		setSearchQuery(value);
+	}, []);
+
+	const handleClearSearch = useCallback(() => {
+		setSearchQuery('');
+	}, []);
+
 	const handleDelete = useCallback((id: string) => {
 		setProjectToDelete(id);
 		setDeleteModalVisible(true);
 	}, []);
 
-	const confirmDelete = () => {
-		if (projectToDelete) {
-			deleteMutation.mutate(projectToDelete);
-		} else {
-			console.error('No Document to delete found in state');
+	const handleCloseDeleteModal = useCallback(() => {
+		setDeleteModalVisible(false);
+	}, []);
+
+	const handleConfirmDelete = useCallback(() => {
+		if (!projectToDelete) {
+			return;
 		}
-	};
+
+		deleteMutation.mutate(projectToDelete);
+	}, [deleteMutation, projectToDelete]);
 
 	const handleDownload = useCallback(async (project: Project) => {
 		if (!project.fileUrl) {
@@ -114,9 +162,6 @@ function DocumentsListScreen({ navigation }: Props) {
 			});
 			return;
 		}
-
-		console.log('[DocumentsList] Download requested for:', project.title);
-		console.log('[DocumentsList] Download folder:', getDownloadFolderPath());
 
 		showMessage({
 			message: 'Downloading...',
@@ -132,8 +177,6 @@ function DocumentsListScreen({ navigation }: Props) {
 		);
 
 		if (result.success) {
-			console.log('[DocumentsList] Download successful:', result.filePath);
-			console.log('[DocumentsList] Saved to public storage:', result.isPublic);
 			showMessage({
 				message: 'Download Complete',
 				description: result.isPublic
@@ -143,23 +186,70 @@ function DocumentsListScreen({ navigation }: Props) {
 				icon: 'success',
 				duration: 4000,
 			});
-		} else {
-			console.error('[DocumentsList] Download failed:', result.error);
-			showMessage({
-				message: 'Download Failed',
-				description: result.error || 'An error occurred while downloading',
-				type: 'danger',
-				icon: 'danger',
-			});
+			return;
 		}
+
+		showMessage({
+			message: 'Download Failed',
+			description: result.error || 'An error occurred while downloading',
+			type: 'danger',
+			icon: 'danger',
+		});
 	}, []);
 
-	const projects = useMemo(() => {
-		return data?.pages.flatMap((page) => page.data.data.projects) || [];
-	}, [data]);
+	const allProjects = useMemo(
+		() => data?.pages.flatMap((page) => page.data.data.projects) || [],
+		[data],
+	);
+
+	const filteredProjects = useMemo(() => {
+		return allProjects.filter((project) => {
+			if (statusFilter === 'all') {
+				return true;
+			}
+
+			return project.status === statusFilter;
+		});
+	}, [allProjects, statusFilter]);
+
+	const totalCount = useMemo(
+		() => data?.pages[0]?.data.data.pagination.totalCount || 0,
+		[data],
+	);
+
+	const counts = useMemo(
+		() => ({
+			pending: allProjects.filter((project) => project.status === 'pending')
+				.length,
+			accepted: allProjects.filter((project) => project.status === 'accepted')
+				.length,
+		}),
+		[allProjects],
+	);
+
+	const activeFilterLabel = useMemo(
+		() =>
+			statusFilters.find((filter) => filter.value === statusFilter)?.label ||
+			'All',
+		[statusFilter],
+	);
+
+	const handleSelectFilter = useCallback((value: StatusFilter) => {
+		setStatusFilter(value);
+	}, []);
+
+	const handleCreateDocument = useCallback(() => {
+		navigation.navigate('SubmitDocument', {});
+	}, [navigation]);
+
+	const handleEndReached = useCallback(() => {
+		if (hasNextPage && !isFetchingNextPage) {
+			fetchNextPage();
+		}
+	}, [fetchNextPage, hasNextPage, isFetchingNextPage]);
 
 	const renderItem = useCallback(
-		({ item }: any) => (
+		({ item }: { item: Project }) => (
 			<DocumentCard
 				project={item}
 				onDelete={handleDelete}
@@ -169,25 +259,26 @@ function DocumentsListScreen({ navigation }: Props) {
 		[handleDelete, handleDownload],
 	);
 
-	const renderFooter = () => {
+	const renderFooter = useCallback(() => {
 		if (isFetchingNextPage) {
 			return (
-				<View className="py-4">
+				<View className="py-5">
 					<ActivityIndicator
 						size="small"
-						color="#4F46E5"
+						color={colors.primary}
 					/>
 				</View>
 			);
 		}
-		return <View className="h-20" />; // Spacer
-	};
 
-	const renderEmpty = () => {
+		return <View className="h-24" />;
+	}, [colors.primary, isFetchingNextPage]);
+
+	const renderEmpty = useCallback(() => {
 		if (isLoading) {
 			return (
-				<View className="flex-1 pt-2">
-					{[...Array(5)].map((_, index) => (
+				<View className="px-5 pt-2">
+					{Array.from({ length: 4 }).map((_, index) => (
 						<DocumentCardSkeleton key={index} />
 					))}
 				</View>
@@ -196,107 +287,173 @@ function DocumentsListScreen({ navigation }: Props) {
 
 		if (isError) {
 			return (
-				<View className="flex-1 items-center justify-center py-20 px-4">
+				<View className="items-center justify-center px-6 py-24">
 					<AlertCircleIcon
 						size={48}
 						color="#ef4444"
 					/>
-					<TextComponent className="text-destructive font-medium mt-4 text-center">
+					<TextComponent className="mt-4 text-lg font-bold text-destructive">
 						Failed to load documents
 					</TextComponent>
-					<TextComponent
-						className="text-sm text-muted-foreground mt-2 text-center"
-						onPress={() => refetch()}>
-						Tap to retry
-					</TextComponent>
+					<Pressable
+						onPress={() => refetch()}
+						className="mt-3 rounded-full border border-border px-4 py-3">
+						<TextComponent className="text-sm font-semibold text-muted-foreground">
+							Tap to retry
+						</TextComponent>
+					</Pressable>
 				</View>
 			);
 		}
 
 		return (
-			<View className="flex-1 items-center justify-center py-20 px-4">
-				<View className="bg-muted p-4 rounded-full mb-4">
+			<View className="items-center justify-center px-6 py-24">
+				<View className="mb-5 rounded-full border border-border bg-card p-5">
 					<DocumentTextIcon
-						size={32}
-						color="#94a3b8"
+						size={34}
+						color={colors.primary}
 					/>
 				</View>
-				<TextComponent className="text-lg font-semibold text-foreground">
+				<TextComponent className="text-xl font-bold text-foreground">
 					No documents found
 				</TextComponent>
-				<TextComponent className="text-muted-foreground text-center mt-2 max-w-xs">
-					{searchQuery
-						? 'No documents match your search criteria.'
-						: "You haven't submitted any documents yet."}
+				<TextComponent className="mt-2 max-w-[280px] text-center text-base leading-7 text-muted-foreground">
+					{debouncedSearch
+						? 'No submissions match your current search. Try another keyword or switch filters.'
+						: statusFilter === 'all'
+							? "You haven't submitted any documents yet."
+							: `No ${activeFilterLabel.toLowerCase()} submissions yet.`}
 				</TextComponent>
 			</View>
 		);
-	};
+	}, [
+		activeFilterLabel,
+		colors.primary,
+		debouncedSearch,
+		isError,
+		isLoading,
+		refetch,
+		statusFilter,
+	]);
 
-	return (
-		<View className="flex-1 bg-background">
-			<DocumentsHeader />
-
-			<View className="flex-1 -mt-6">
-				<View className="px-4 mb-4 z-20">
-					<View className="bg-card border border-border rounded-xl flex-row items-center px-4 h-12 shadow-md">
-						<View className="mr-2">
-							<SearchIcon
-								size={20}
-								color="#94a3b8"
-							/>
-						</View>
-						<TextInput
-							placeholder="Search documents..."
-							value={searchQuery}
-							onChangeText={setSearchQuery}
-							className="flex-1 text-foreground h-full font-medium"
-							placeholderTextColor="#94a3b8"
+	const listHeaderComponent = useMemo(
+		() => (
+			<View className="px-5 pb-3 pt-4">
+				<View className="mb-4 rounded-[28px] border border-border bg-card px-4 py-4">
+					<View className="flex-row items-center rounded-[20px] border border-border bg-background px-4">
+						<SearchIcon
+							size={18}
+							color={colors.mutedForeground}
 						/>
-						{searchQuery.length > 0 && (
-							<Pressable onPress={() => setSearchQuery('')}>
+						<TextInput
+							placeholder="Search Document"
+							value={searchQuery}
+							onChangeText={handleSearchChange}
+							className="flex-1 px-3 py-4 text-base text-foreground"
+							placeholderTextColor={colors.mutedForeground}
+						/>
+						{searchQuery.length > 0 ? (
+							<Pressable
+								onPress={handleClearSearch}
+								className="min-h-[40px] min-w-[40px] items-center justify-center">
 								<CloseCircleIcon
-									size={20}
-									color="#94a3b8"
+									size={18}
+									color={colors.mutedForeground}
 								/>
 							</Pressable>
-						)}
+						) : null}
+					</View>
+
+					<View className="mt-4 flex-row items-center justify-between">
+						<View>
+							<TextComponent className="text-sm font-semibold uppercase tracking-[1.3px] text-muted-foreground">
+								Visible results
+							</TextComponent>
+							<TextComponent className="mt-1 text-2xl font-extrabold text-foreground">
+								{filteredProjects.length}
+							</TextComponent>
+						</View>
 					</View>
 				</View>
 
-				<View className="flex-1 h-full min-h-0">
-					<FlashList
-						data={projects}
-						renderItem={renderItem}
-						estimatedItemSize={150}
-						keyExtractor={(item) => item._id}
-						onEndReached={() => {
-							if (hasNextPage && !isFetchingNextPage) {
-								fetchNextPage();
-							}
-						}}
-						onEndReachedThreshold={0.5}
-						ListFooterComponent={renderFooter}
-						ListEmptyComponent={renderEmpty}
-						refreshControl={
-							<RefreshControl
-								refreshing={isRefetching && !isFetchingNextPage}
-								onRefresh={refetch}
-								tintColor="#4F46E5"
+				<View className="mb-4">
+					<ScrollView
+						horizontal
+						showsHorizontalScrollIndicator={false}
+						contentContainerStyle={{ paddingRight: 20, paddingBottom: 4 }}>
+						{statusFilters.map((filter) => (
+							<StatusFilterChip
+								key={filter.value}
+								label={filter.label}
+								active={filter.value === statusFilter}
+								onPress={() => handleSelectFilter(filter.value)}
 							/>
-						}
-						contentContainerStyle={{ paddingBottom: 100, paddingTop: 8 }}
-					/>
+						))}
+					</ScrollView>
 				</View>
 			</View>
+		),
+		[
+			colors.mutedForeground,
+			filteredProjects.length,
+			handleClearSearch,
+			handleSearchChange,
+			handleSelectFilter,
+			searchQuery,
+			statusFilter,
+		],
+	);
 
-			{/* FAB */}
+	const firstName = useMemo(
+		() => user?.name?.split(' ')[0] || 'User',
+		[user?.name],
+	);
+
+	return (
+		<View className="flex-1 bg-background">
+			<DocumentsHeader
+				firstName={firstName}
+				profilePicture={user?.profilePicture}
+				totalCount={totalCount}
+				pendingCount={counts.pending}
+				acceptedCount={counts.accepted}
+			/>
+
+			<View className="-mt-5 flex-1">
+				<FlashList
+					data={filteredProjects}
+					renderItem={renderItem}
+					estimatedItemSize={190}
+					keyExtractor={(item) => item._id}
+					onEndReached={handleEndReached}
+					onEndReachedThreshold={0.35}
+					ListHeaderComponent={listHeaderComponent}
+					ListFooterComponent={renderFooter}
+					ListEmptyComponent={renderEmpty}
+					refreshControl={
+						<RefreshControl
+							refreshing={isRefetching && !isFetchingNextPage}
+							onRefresh={refetch}
+							tintColor={colors.primary}
+						/>
+					}
+					contentContainerStyle={{ paddingBottom: 120 }}
+				/>
+			</View>
+
 			<View className="absolute bottom-6 right-6">
 				<Pressable
-					className="shadow-lg shadow-primary/40 rounded-full w-[60px] h-[60px] bg-primary items-center justify-center active:opacity-90"
-					onPress={() => navigation.navigate('SubmitDocument', {})}>
+					className="min-h-[60px] min-w-[60px] items-center justify-center rounded-full bg-primary active:opacity-90"
+					style={{
+						shadowColor: colors.primary,
+						shadowOffset: { width: 0, height: 12 },
+						shadowOpacity: 0.25,
+						shadowRadius: 20,
+						elevation: 8,
+					}}
+					onPress={handleCreateDocument}>
 					<AddIcon
-						size={30}
+						size={28}
 						color="#FFFFFF"
 					/>
 				</Pressable>
@@ -304,12 +461,12 @@ function DocumentsListScreen({ navigation }: Props) {
 
 			<AlertModal
 				isVisible={deleteModalVisible}
-				onClose={() => setDeleteModalVisible(false)}
+				onClose={handleCloseDeleteModal}
 				title="Delete Document"
 				message="Are you sure you want to delete this document? This action cannot be undone."
 				type="confirm"
 				isDestructive={true}
-				onConfirm={confirmDelete}
+				onConfirm={handleConfirmDelete}
 				confirmText={deleteMutation.isPending ? 'Deleting...' : 'Delete'}
 				cancelText="Cancel"
 			/>
@@ -317,4 +474,4 @@ function DocumentsListScreen({ navigation }: Props) {
 	);
 }
 
-export default React.memo(DocumentsListScreen);
+export default memo(DocumentsListScreen);

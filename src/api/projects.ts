@@ -19,12 +19,24 @@ export const deleteProject = async (projectId: string) => {
 export const getStudentProjects = async (
 	page: number = 1,
 	limit: number = 10,
-	search: string = '',
+	options: {
+		query?: string;
+		search?: string;
+	} = {},
 ) => {
-	const searchParams = search ? `&search=${encodeURIComponent(search)}` : '';
-	return getData<ProjectsResponse>(
-		`/api/projects/student?page=${page}&limit=${limit}${searchParams}`,
-	);
+	const params = new URLSearchParams({
+		page: String(page),
+		limit: String(limit),
+	});
+
+	const normalizedQuery = options.query?.trim() || options.search?.trim() || '';
+
+	if (normalizedQuery) {
+		params.append('query', normalizedQuery);
+		params.append('search', normalizedQuery);
+	}
+
+	return getData<ProjectsResponse>(`/api/projects/student?${params.toString()}`);
 };
 
 export const getAssignedProjects = async (
