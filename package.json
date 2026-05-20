@@ -82,6 +82,10 @@
     "sharp": "^0.34.5",
     "typescript": "~5.8.3"
   },
+  "overrides": {
+    "@react-native-async-storage/async-storage": "2.1.2",
+    "idb": "7.1.1"
+  },
   "private": true,
   "packageManager": "npm@11.3.0"
 }
