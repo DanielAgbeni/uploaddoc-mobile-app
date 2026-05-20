@@ -1,15 +1,14 @@
 import React from 'react';
 import { View, Pressable, Image } from 'react-native';
 import { TextComponent } from 'src/components';
-import { useTheme } from 'src/providers/ThemeProvider';
 import {
-	StarIcon,
-	MailIcon,
 	MapPinIcon,
 	PhoneIcon,
-	ClockIcon,
+	ShieldIcon,
+	StarIcon,
 	UsersIcon,
 } from 'src/assets/icons';
+import { useTheme } from 'src/providers/ThemeProvider';
 import { Admin } from 'src/types/navigation.types';
 
 interface VendorCardProps {
@@ -18,15 +17,29 @@ interface VendorCardProps {
 }
 
 const VendorCard: React.FC<VendorCardProps> = ({ admin, onSelect }) => {
-	const { colors } = useTheme();
+	const { colorScheme, colors } = useTheme();
+	const isActive = admin.adminStatus === 'active';
+	const statusTint = isActive
+		? colorScheme === 'dark'
+			? 'rgba(52, 211, 153, 0.16)'
+			: '#dcfce7'
+		: colorScheme === 'dark'
+			? 'rgba(148, 163, 184, 0.18)'
+			: '#e2e8f0';
+	const statusColor = isActive
+		? colorScheme === 'dark'
+			? '#86efac'
+			: '#15803d'
+		: colors.mutedForeground;
+	const verifiedTint =
+		colorScheme === 'dark' ? 'rgba(45, 212, 191, 0.14)' : '#ccfbf1';
+	const verifiedColor = colorScheme === 'dark' ? '#5eead4' : '#0f766e';
 
 	return (
-		<View className="bg-card border border-border rounded-3xl overflow-hidden shadow-md mb-5 mx-1">
-			<View className="p-5">
-				{/* Header: Avatar, Name, Status */}
-				<View className="flex-row items-center gap-4">
-					{/* Profile Picture */}
-					<View className="relative h-16 w-16 rounded-full overflow-hidden bg-muted border-2 border-border shadow-sm">
+		<View className="mb-4 flex-1 overflow-hidden rounded-[28px] border border-border bg-card shadow-sm">
+			<View className="px-4 py-5">
+				<View className="flex-row items-start">
+					<View className="relative mr-4 h-16 w-16 overflow-hidden rounded-full border border-border bg-muted shadow-sm">
 						{admin.profilePicture ? (
 							<Image
 								source={{ uri: admin.profilePicture }}
@@ -34,142 +47,129 @@ const VendorCard: React.FC<VendorCardProps> = ({ admin, onSelect }) => {
 								resizeMode="cover"
 							/>
 						) : (
-							<View className="h-full w-full flex items-center justify-center bg-muted/50">
+							<View className="h-full w-full items-center justify-center bg-muted/50">
 								<UsersIcon
 									size={32}
 									color={colors.mutedForeground}
 								/>
 							</View>
 						)}
-						{/* Status Indicator Dot - Optional Absolute Positioned */}
 						<View
 							className={`absolute bottom-0 right-0 h-4 w-4 rounded-full border-2 border-card ${
-								admin.adminStatus === 'active' ? 'bg-green-500' : 'bg-gray-400'
+								isActive ? 'bg-green-500' : 'bg-gray-400'
 							}`}
 						/>
 					</View>
 
-					{/* Name & Basic Meta */}
-					<View className="flex-1 justify-center">
-						<View className="flex-row justify-between items-start">
-							<View className="flex-1 mr-2">
+					<View className="min-w-0 flex-1">
+						<View className="mb-2 flex-row items-start justify-between gap-3">
+							<TextComponent
+								className="min-w-0 flex-1 text-lg font-extrabold leading-6 text-foreground"
+								numberOfLines={2}>
+								{admin.name}
+							</TextComponent>
+
+							<View
+								className="rounded-full px-3 py-1.5"
+								style={{ backgroundColor: statusTint }}>
 								<TextComponent
-									className="font-bold text-lg text-foreground mb-1"
-									numberOfLines={1}>
-									{admin.name}
+									className="text-xs font-bold"
+									style={{ color: statusColor }}>
+									{isActive ? 'Active' : 'Offline'}
 								</TextComponent>
-								{/* Status Text Badge */}
-								<View className="flex-row items-center">
-									<View
-										className={`px-2 py-0.5 rounded-md ${
-											admin.adminStatus === 'active'
-												? 'bg-green-100 dark:bg-green-900/30'
-												: 'bg-muted'
-										}`}>
-										<TextComponent
-											className={`text-xs font-bold uppercase tracking-wide ${
-												admin.adminStatus === 'active'
-													? 'text-green-700 dark:text-green-400'
-													: 'text-muted-foreground'
-											}`}>
-											{admin.adminStatus === 'active' ? 'Available' : 'Offline'}
-										</TextComponent>
-									</View>
-								</View>
 							</View>
+						</View>
+
+						<View
+							className="mb-4 self-start rounded-full px-3 py-1"
+							style={{ backgroundColor: verifiedTint }}>
+							<View className="flex-row items-center gap-1.5">
+								<ShieldIcon
+									size={12}
+									color={verifiedColor}
+								/>
+								<TextComponent
+									className="text-[10px] font-extrabold uppercase"
+									style={{ color: verifiedColor }}>
+									Verified Provider
+								</TextComponent>
+							</View>
+						</View>
+
+						<View className="gap-3">
+							{admin.printingLocation ? (
+								<View className="flex-row items-start">
+									<View className="mr-3 mt-0.5 h-8 w-8 items-center justify-center rounded-full bg-background">
+										<MapPinIcon
+											size={15}
+											color={colors.primary}
+										/>
+									</View>
+									<TextComponent
+										className="flex-1 text-sm leading-5 text-muted-foreground"
+										numberOfLines={2}>
+										{admin.printingLocation}
+									</TextComponent>
+								</View>
+							) : null}
+
+							{admin.supportContact ? (
+								<View className="flex-row items-center">
+									<View className="mr-3 h-8 w-8 items-center justify-center rounded-full bg-background">
+										<PhoneIcon
+											size={15}
+											color={colors.primary}
+										/>
+									</View>
+									<TextComponent
+										className="flex-1 text-sm text-muted-foreground"
+										numberOfLines={1}>
+										{admin.supportContact}
+									</TextComponent>
+								</View>
+							) : null}
+
+							{admin.rating ? (
+								<View className="flex-row items-center">
+									<View className="mr-3 h-8 w-8 items-center justify-center rounded-full bg-background">
+										<StarIcon
+											size={15}
+											color="#f59e0b"
+										/>
+									</View>
+									<TextComponent className="text-sm text-muted-foreground">
+										{admin.rating.toFixed(1)} rating
+									</TextComponent>
+								</View>
+							) : null}
 						</View>
 					</View>
 				</View>
-
-				{/* Divider */}
-				<View className="h-[1px] bg-border my-4" />
-
-				{/* Info Rows - Compact & Aligned */}
-				<View className="space-y-3">
-					{admin.email && (
-						<View className="flex-row items-center">
-							<View className="w-6 items-center justify-center mr-3">
-								<MailIcon
-									size={16}
-									color={colors.primary}
-								/>
-							</View>
-							<TextComponent
-								className="text-sm text-muted-foreground flex-1"
-								numberOfLines={1}>
-								{admin.email}
-							</TextComponent>
-						</View>
-					)}
-
-					{admin.printingLocation && (
-						<View className="flex-row items-start">
-							<View className="w-6 items-center justify-center mr-3 mt-0.5">
-								<MapPinIcon
-									size={16}
-									color={colors.primary}
-								/>
-							</View>
-							<TextComponent
-								className="text-sm text-muted-foreground flex-1"
-								numberOfLines={2}>
-								{admin.printingLocation}
-							</TextComponent>
-						</View>
-					)}
-
-					{admin.supportContact && (
-						<View className="flex-row items-center">
-							<View className="w-6 items-center justify-center mr-3">
-								<PhoneIcon
-									size={16}
-									color={colors.primary}
-								/>
-							</View>
-							<TextComponent className="text-sm text-muted-foreground">
-								{admin.supportContact}
-							</TextComponent>
-						</View>
-					)}
-
-					{/* {admin.openingHours && (
-						<View className="flex-row items-center">
-							<View className="w-6 items-center justify-center mr-3">
-								<ClockIcon
-									size={16}
-									color={colors.primary}
-									style={{ opacity: 0.7 }}
-								/>
-							</View>
-							<TextComponent className="text-sm text-muted-foreground">
-								{admin.openingHours}
-							</TextComponent>
-						</View>
-					)} */}
-				</View>
 			</View>
 
-			{/* Highlighted Footer Action Area */}
-			<View className="bg-muted/30 px-5 py-4 flex-row items-center justify-between border-t border-border">
+			<View className="flex-row items-center justify-between border-t border-border bg-muted/30 px-5 py-4">
 				<View>
-					<TextComponent className="text-[10px] text-muted-foreground font-bold uppercase tracking-wider mb-0.5">
-						Rate per page(pdf)
+					<TextComponent className="mb-0.5 text-[10px] font-bold uppercase tracking-[1.2px] text-muted-foreground">
+						Rate per page
 					</TextComponent>
 					<View className="flex-row items-baseline">
-						<TextComponent className="font-extrabold text-foreground text-xl">
+						<TextComponent className="text-xl font-extrabold text-foreground">
 							{admin.printingCost ? `₦${admin.printingCost}` : 'N/A'}
+						</TextComponent>
+						<TextComponent className="ml-1 text-xs text-muted-foreground">
+							/page
 						</TextComponent>
 					</View>
 				</View>
 
 				<Pressable
 					onPress={() => onSelect(admin)}
-					className="bg-primary h-10 px-6 rounded-full flex-row items-center justify-center active:bg-primary shadow-sm"
+					className="h-11 flex-row items-center justify-center rounded-full bg-primary px-5 shadow-sm active:opacity-85"
 					style={({ pressed }) => ({
 						transform: [{ scale: pressed ? 0.96 : 1 }],
 					})}>
-					<TextComponent className="text-white font-semibold text-sm">
-						Select
+					<TextComponent className="text-sm font-semibold text-white">
+						Select Vendor
 					</TextComponent>
 				</Pressable>
 			</View>

@@ -47,6 +47,7 @@
     "expo-splash-screen": "~0.30.10",
     "expo-status-bar": "~2.2.3",
     "expo-system-ui": "~5.0.10",
+    "firebase": "^12.12.1",
     "lucide-react-native": "^0.562.0",
     "nativewind": "4.1.23",
     "pdf-lib": "^1.17.1",

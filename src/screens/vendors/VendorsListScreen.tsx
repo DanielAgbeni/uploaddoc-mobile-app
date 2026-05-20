@@ -2,18 +2,20 @@ import React, { useState, useCallback } from 'react';
 import {
 	View,
 	TextInput,
-	FlatList,
 	ActivityIndicator,
 	RefreshControl,
+	Pressable,
+	StatusBar,
+	useWindowDimensions,
 } from 'react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useInfiniteQuery } from '@tanstack/react-query';
 import { useDebouncedCallback } from 'use-debounce';
 import { LinearGradient } from 'expo-linear-gradient';
+import { FlashList } from '@shopify/flash-list';
 
 import {
 	VendorsStackParamList,
-	MainTabParamList,
 	Admin,
 } from '../../types/navigation.types';
 import { fetchAdmins } from '../../api/admins';
@@ -35,18 +37,20 @@ type Props = {
 
 export default function VendorsListScreen({ navigation }: Props) {
 	const { colors } = useTheme();
+	const { width } = useWindowDimensions();
 	const [searchQuery, setSearchQuery] = useState('');
 	const [debouncedQuery, setDebouncedQuery] = useState('');
+	const numColumns = width >= 1000 ? 3 : width >= 680 ? 2 : 1;
 
 	// Debounce search
 	const debouncedSearch = useDebouncedCallback((query: string) => {
 		setDebouncedQuery(query);
 	}, 500);
 
-	const handleSearchChange = (query: string) => {
+	const handleSearchChange = useCallback((query: string) => {
 		setSearchQuery(query);
 		debouncedSearch(query);
-	};
+	}, [debouncedSearch]);
 
 	// Infinite query for admins
 	const {
@@ -73,28 +77,22 @@ export default function VendorsListScreen({ navigation }: Props) {
 	// Flatten all pages into a single array
 	const admins: Admin[] = data?.pages.flatMap((page) => page.data.admins) ?? [];
 
-	// Handle vendor selection
+	// Handle vendor selection (goes to VendorDetails page)
 	const handleSelectVendor = useCallback(
 		(admin: Admin) => {
-			navigation.navigate('SubmitDocument', {
+			navigation.navigate('VendorDetails', {
 				vendorId: admin._id,
-				vendorName: admin.name,
-				vendorEmail: admin.email,
-				vendorProfilePicture: admin.profilePicture ?? undefined,
-				vendorPrintingCost: admin.printingCost ?? undefined,
-				vendorRating: admin.rating,
-				isVendorLocked: true,
 			});
 		},
 		[navigation],
 	);
 
 	// Handle end reached for infinite scroll
-	const handleEndReached = () => {
+	const handleEndReached = useCallback(() => {
 		if (hasNextPage && !isFetchingNextPage) {
 			fetchNextPage();
 		}
-	};
+	}, [hasNextPage, isFetchingNextPage, fetchNextPage]);
 
 	// Render vendor card
 	const renderVendor = useCallback(
@@ -108,7 +106,7 @@ export default function VendorsListScreen({ navigation }: Props) {
 	);
 
 	// Footer component for loading indicator
-	const renderFooter = () => {
+	const renderFooter = useCallback(() => {
 		if (!isFetchingNextPage) return null;
 		return (
 			<View className="py-4 items-center">
@@ -118,10 +116,10 @@ export default function VendorsListScreen({ navigation }: Props) {
 				/>
 			</View>
 		);
-	};
+	}, [isFetchingNextPage, colors.primary]);
 
 	// Empty component
-	const renderEmpty = () => {
+	const renderEmpty = useCallback(() => {
 		if (isLoading) {
 			return (
 				<View className="mt-2">
@@ -149,41 +147,47 @@ export default function VendorsListScreen({ navigation }: Props) {
 				</TextComponent>
 			</View>
 		);
-	};
+	}, [isLoading, colors.mutedForeground, colors.muted, debouncedQuery]);
 
 	return (
 		<View className="flex-1 bg-background">
+			<StatusBar
+				barStyle="light-content"
+				backgroundColor="transparent"
+				translucent
+			/>
+
 			{/* Gradient Header */}
 			<LinearGradient
-				colors={[colors.primary, colors.accent]}
+				colors={[colors.gradientStart, colors.gradientEnd]}
 				start={{ x: 0, y: 0 }}
 				end={{ x: 1, y: 1 }}
-				className="pt-14 pb-10 px-6 rounded-b-3xl">
+				className="rounded-b-[32px] px-6 pb-12 pt-14">
 				<View className="items-center">
-					<View className="w-16 h-16 bg-white/20 rounded-2xl items-center justify-center mb-4">
+					<View className="mb-4 h-16 w-16 items-center justify-center rounded-2xl bg-white/20">
 						<StacksIcon
 							size={32}
 							color="#fff"
 						/>
 					</View>
-					<TextComponent className="text-white font-bold text-2xl mb-1">
-						Find Vendors
+					<TextComponent className="mb-1 text-2xl font-bold text-white">
+						Find Vendor
 					</TextComponent>
-					<TextComponent className="text-white/80 text-base text-center">
-						Browse and select a vendor for your documents
+					<TextComponent className="text-center text-base text-white/80">
+						Choose a verified provider for your document upload
 					</TextComponent>
 				</View>
 			</LinearGradient>
 
 			{/* Search Bar */}
-			<View className="px-5 -mt-5 mb-4">
-				<View className="bg-card border border-border rounded-xl flex-row items-center px-4 shadow-sm">
+			<View className="-mt-6 mb-4 px-5">
+				<View className="flex-row items-center rounded-2xl border border-border bg-card px-4 shadow-sm">
 					<SearchIcon
 						size={18}
 						color={colors.mutedForeground}
 					/>
 					<TextInput
-						className="flex-1 py-3.5 ml-3 text-foreground text-base"
+						className="ml-3 flex-1 py-4 text-base text-foreground"
 						placeholder="Search vendors by name or location"
 						placeholderTextColor={colors.mutedForeground}
 						value={searchQuery}
@@ -202,35 +206,44 @@ export default function VendorsListScreen({ navigation }: Props) {
 						<TextComponent className="text-muted-foreground text-center mb-4">
 							Failed to load vendors. Please try again.
 						</TextComponent>
-						<View
-							className="bg-primary px-6 py-3 rounded-xl"
-							onTouchEnd={() => refetch()}>
+						<Pressable
+							className="rounded-xl bg-primary px-6 py-3 active:opacity-85"
+							onPress={() => refetch()}>
 							<TextComponent className="text-white font-semibold">
 								Retry
 							</TextComponent>
-						</View>
+						</Pressable>
 					</View>
 				</View>
 			) : (
-				<FlatList
-					data={admins}
-					renderItem={renderVendor}
-					keyExtractor={(item) => item._id}
-					contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 24 }}
-					showsVerticalScrollIndicator={false}
-					onEndReached={handleEndReached}
-					onEndReachedThreshold={0.3}
-					ListFooterComponent={renderFooter}
-					ListEmptyComponent={renderEmpty}
-					refreshControl={
-						<RefreshControl
-							refreshing={isRefetching && !isFetchingNextPage}
-							onRefresh={refetch}
-							tintColor={colors.primary}
-							colors={[colors.primary]}
-						/>
-					}
-				/>
+				<View className="flex-1">
+					<FlashList
+						key={`vendors-${numColumns}`}
+						data={admins}
+						renderItem={renderVendor}
+						keyExtractor={(item) => item._id}
+						numColumns={numColumns}
+						estimatedItemSize={140}
+						contentContainerStyle={{
+							paddingHorizontal: 20,
+							paddingBottom: 24,
+							paddingTop: 4,
+						}}
+						showsVerticalScrollIndicator={false}
+						onEndReached={handleEndReached}
+						onEndReachedThreshold={0.3}
+						ListFooterComponent={renderFooter}
+						ListEmptyComponent={renderEmpty}
+						refreshControl={
+							<RefreshControl
+								refreshing={isRefetching && !isFetchingNextPage}
+								onRefresh={refetch}
+								tintColor={colors.primary}
+								colors={[colors.primary]}
+							/>
+						}
+					/>
+				</View>
 			)}
 		</View>
 	);

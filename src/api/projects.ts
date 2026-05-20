@@ -111,6 +111,55 @@ export const uploadProject = async (formData: FormData) => {
 	}
 };
 
+export const initiateDirectUpload = async (
+	files: { originalName: string; mimeType: string; size: number }[]
+) => {
+	return postData<
+		{ files: { originalName: string; mimeType: string; size: number }[] },
+		{
+			success: boolean;
+			message: string;
+			data: {
+				uploads: {
+					originalName: string;
+					uploadUrl: string;
+					key: string;
+					headers?: Record<string, string>;
+				}[];
+			};
+		}
+	>('/api/projects/upload/direct/initiate', { files });
+};
+
+export const completeDirectUpload = async (payload: {
+	title: string;
+	assignedAdmin: string;
+	description?: string;
+	pageCount: number;
+	files: {
+		key: string;
+		originalName: string;
+		mimeType: string;
+		size: number;
+	}[];
+}) => {
+	return postData<
+		{
+			title: string;
+			assignedAdmin: string;
+			description?: string;
+			pageCount: number;
+			files: {
+				key: string;
+				originalName: string;
+				mimeType: string;
+				size: number;
+			}[];
+		},
+		UploadProjectResponse
+	>('/api/projects/upload/direct/complete', payload);
+};
+
 export const searchAdmins = async (query: string = '', limit: number = 5) => {
 	const params = new URLSearchParams();
 	if (query) params.append('query', query);

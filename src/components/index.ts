@@ -8,5 +8,5 @@ export { default as PasswordStrengthIndicator } from './auth/PasswordStrengthInd
 
 // UI Components
 export { TextComponent } from './ui/TextComponent';
-export { CustomModal } from './ui/CustomModal';
-export { AlertModal } from './ui/AlertModal';
+export { default as CustomModal } from './ui/CustomModal';
+export { default as AlertModal } from './ui/AlertModal';

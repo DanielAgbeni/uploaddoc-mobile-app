@@ -103,6 +103,10 @@ function ForgotPasswordScreen({ navigation }: Props) {
 		[email, navigation],
 	);
 
+	const handleBackToSignIn = useCallback(() => {
+		navigation.navigate('SignIn');
+	}, [navigation]);
+
 	return (
 		<KeyboardAvoidingView
 			behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
@@ -160,7 +164,7 @@ function ForgotPasswordScreen({ navigation }: Props) {
 
 					{/* Back to Sign In */}
 					<Pressable
-						onPress={() => navigation.navigate('SignIn')}
+						onPress={handleBackToSignIn}
 						className="items-center py-4 active:opacity-70">
 						<View className="flex-row items-center">
 							<Text className="text-primary font-semibold text-base">

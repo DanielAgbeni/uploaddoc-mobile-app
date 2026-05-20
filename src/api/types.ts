@@ -332,6 +332,14 @@ declare global {
 			admins: AdminInfo[];
 		};
 	};
+
+	export type DocumentChatMessage = {
+		id: string;
+		senderId: string;
+		senderName: string;
+		text: string;
+		createdAt: number;
+	};
 }
 
 export {};

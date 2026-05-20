@@ -1,5 +1,5 @@
 import api from './index';
-import { AdminsResponse } from '../types/navigation.types';
+import { AdminsResponse, Admin } from '../types/navigation.types';
 
 export interface FetchAdminsParams {
 	page?: number;
@@ -26,3 +26,17 @@ export const fetchAdmins = async ({
 	);
 	return response.data;
 };
+
+export const fetchAdminById = async (id: string): Promise<{
+	success: boolean;
+	message: string;
+	data: Admin;
+}> => {
+	const response = await api.get<{
+		success: boolean;
+		message: string;
+		data: Admin;
+	}>(`/api/users/${id}`);
+	return response.data;
+};
+

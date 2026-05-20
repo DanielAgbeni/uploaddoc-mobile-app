@@ -3,12 +3,14 @@ import { Pressable, View } from 'react-native';
 import { format } from 'date-fns';
 import DocumentTextIcon from '../../../assets/icons/document-text.icon';
 import DownloadIcon from '../../../assets/icons/download.icon';
+import MailIcon from '../../../assets/icons/mail.icon';
 import TrashIcon from '../../../assets/icons/trash.icon';
 import TextComponent from '../../../components/ui/TextComponent';
 import { useTheme } from '../../../providers/ThemeProvider';
 
 type DocumentCardProps = {
 	project: Project;
+	onChat: (project: Project) => void;
 	onDelete: (id: string) => void;
 	onDownload: (project: Project) => void;
 };
@@ -29,6 +31,7 @@ const formatFileSize = (bytes: number) => {
 
 const DocumentCard = memo(function DocumentCard({
 	project,
+	onChat,
 	onDelete,
 	onDownload,
 }: DocumentCardProps) {
@@ -81,6 +84,10 @@ const DocumentCard = memo(function DocumentCard({
 	const handleDownloadPress = useCallback(() => {
 		onDownload(project);
 	}, [onDownload, project]);
+
+	const handleChatPress = useCallback(() => {
+		onChat(project);
+	}, [onChat, project]);
 
 	return (
 		<View className="mb-4 rounded-[28px] border border-border bg-card px-4 py-4 shadow-sm">
@@ -146,6 +153,18 @@ const DocumentCard = memo(function DocumentCard({
 						</View>
 
 						<View className="flex-row gap-2">
+							{project.status === 'accepted' ? (
+								<Pressable
+									onPress={handleChatPress}
+									className="min-h-[44px] min-w-[44px] items-center justify-center rounded-full active:opacity-85"
+									style={{ backgroundColor: `${colors.primary}22` }}>
+									<MailIcon
+										size={18}
+										color={colors.primary}
+									/>
+								</Pressable>
+							) : null}
+
 							{project.fileUrl ? (
 								<Pressable
 									onPress={handleDownloadPress}

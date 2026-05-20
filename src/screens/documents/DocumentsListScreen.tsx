@@ -30,6 +30,7 @@ import { DocumentsStackParamList } from '../../types/navigation.types';
 import { downloadDocument } from '../../utils/fileDownload';
 import { deleteProject, getStudentProjects } from '../../api/projects';
 import DocumentCard from './components/DocumentCard';
+import DocumentChatModal from './components/DocumentChatModal';
 import DocumentCardSkeleton from './components/DocumentCardSkeleton';
 import DocumentsHeader from './components/DocumentsHeader';
 
@@ -77,6 +78,8 @@ function DocumentsListScreen({ navigation }: Props) {
 	const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
 	const [deleteModalVisible, setDeleteModalVisible] = useState(false);
 	const [projectToDelete, setProjectToDelete] = useState<string | null>(null);
+	const [chatProject, setChatProject] = useState<Project | null>(null);
+	const [chatModalVisible, setChatModalVisible] = useState(false);
 	const [debouncedSearch] = useDebounce(searchQuery, 450);
 	const queryClient = useQueryClient();
 
@@ -140,8 +143,18 @@ function DocumentsListScreen({ navigation }: Props) {
 		setDeleteModalVisible(true);
 	}, []);
 
+	const handleOpenChat = useCallback((project: Project) => {
+		setChatProject(project);
+		setChatModalVisible(true);
+	}, []);
+
 	const handleCloseDeleteModal = useCallback(() => {
 		setDeleteModalVisible(false);
+	}, []);
+
+	const handleCloseChatModal = useCallback(() => {
+		setChatModalVisible(false);
+		setChatProject(null);
 	}, []);
 
 	const handleConfirmDelete = useCallback(() => {
@@ -252,11 +265,12 @@ function DocumentsListScreen({ navigation }: Props) {
 		({ item }: { item: Project }) => (
 			<DocumentCard
 				project={item}
+				onChat={handleOpenChat}
 				onDelete={handleDelete}
 				onDownload={handleDownload}
 			/>
 		),
-		[handleDelete, handleDownload],
+		[handleDelete, handleDownload, handleOpenChat],
 	);
 
 	const renderFooter = useCallback(() => {
@@ -469,6 +483,13 @@ function DocumentsListScreen({ navigation }: Props) {
 				onConfirm={handleConfirmDelete}
 				confirmText={deleteMutation.isPending ? 'Deleting...' : 'Delete'}
 				cancelText="Cancel"
+			/>
+
+			<DocumentChatModal
+				isVisible={chatModalVisible}
+				onClose={handleCloseChatModal}
+				project={chatProject}
+				currentUser={user ?? null}
 			/>
 		</View>
 	);
