@@ -8,6 +8,7 @@ import SocialLoginSection from '../SocialLoginSection';
 
 interface LoginFormProps {
 	onSubmit: (data: any) => void;
+	isGoogleLoading: boolean;
 	isLoading: boolean;
 	onForgotPassword: () => void;
 	onGoogleLogin: () => void;
@@ -17,6 +18,7 @@ interface LoginFormProps {
 const LoginForm = memo(
 	({
 		onSubmit,
+		isGoogleLoading,
 		isLoading,
 		onForgotPassword,
 		onGoogleLogin,
@@ -80,6 +82,7 @@ const LoginForm = memo(
 				<AuthButton
 					title="Continue"
 					onPress={handleContinuePress}
+					disabled={isGoogleLoading}
 					loading={isLoading}
 					className="mb-8"
 				/>
@@ -95,7 +98,8 @@ const LoginForm = memo(
 
 				<SocialLoginSection
 					onGoogleLogin={onGoogleLogin}
-					isLoading={isLoading}
+					disabled={isLoading}
+					isLoading={isGoogleLoading}
 				/>
 			</>
 		);

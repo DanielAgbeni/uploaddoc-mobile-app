@@ -142,6 +142,7 @@ const AuthModal = ({ isVisible, onClose }: AuthModalProps) => {
 	const pagerScrollRef = useRef<ScrollView>(null);
 	const { width: windowWidth } = useWindowDimensions();
 	const [mode, setMode] = useState<AuthMode>('login');
+	const [isGoogleLoading, setIsGoogleLoading] = useState(false);
 	const [isLoading, setIsLoading] = useState(false);
 	const [authError, setAuthError] = useState<string | null>(null);
 	const [tempEmail, setTempEmail] = useState('');
@@ -478,10 +479,11 @@ const AuthModal = ({ isVisible, onClose }: AuthModalProps) => {
 
 	const handleGoogleButtonPress = useCallback(async () => {
 		setAuthError(null);
-		setIsLoading(true);
+		setIsGoogleLoading(true);
 
 		try {
 			await GoogleSignin.hasPlayServices();
+			await GoogleSignin.signOut().catch(() => undefined);
 			const result = await GoogleSignin.signIn();
 			const userInfo = (
 				result as { data?: { idToken?: string }; idToken?: string }
@@ -545,7 +547,7 @@ const AuthModal = ({ isVisible, onClose }: AuthModalProps) => {
 				});
 			}
 		} finally {
-			setIsLoading(false);
+			setIsGoogleLoading(false);
 		}
 	}, [handleClose, setLoginData]);
 
@@ -570,7 +572,8 @@ const AuthModal = ({ isVisible, onClose }: AuthModalProps) => {
 						contentContainerStyle={{ paddingBottom: 40 }}>
 						<LoginForm
 							onSubmit={handleLogin}
-							isLoading={isAnyLoading}
+							isLoading={loginMutation.isPending}
+							isGoogleLoading={isGoogleLoading}
 							onForgotPassword={handleShowForgotPassword}
 							onGoogleLogin={handleGoogleButtonPress}
 							onSignUpPress={handleShowSignup}
@@ -587,7 +590,8 @@ const AuthModal = ({ isVisible, onClose }: AuthModalProps) => {
 						contentContainerStyle={{ paddingBottom: 40 }}>
 						<SignUpForm
 							onSubmit={handleSignup}
-							isLoading={isAnyLoading}
+							isLoading={isLoading}
+							isGoogleLoading={isGoogleLoading}
 							onLoginPress={handleShowLogin}
 							onGoogleLogin={handleGoogleButtonPress}
 						/>
@@ -603,7 +607,9 @@ const AuthModal = ({ isVisible, onClose }: AuthModalProps) => {
 			handleShowLogin,
 			handleShowSignup,
 			handleSignup,
-			isAnyLoading,
+			isGoogleLoading,
+			isLoading,
+			loginMutation.isPending,
 			pageWidth,
 		],
 	);

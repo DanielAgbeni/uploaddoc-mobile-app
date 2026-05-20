@@ -8,13 +8,20 @@ import SocialLoginSection from '../SocialLoginSection';
 
 interface SignUpFormProps {
 	onSubmit: (data: any) => void;
+	isGoogleLoading: boolean;
 	isLoading: boolean;
 	onLoginPress: () => void;
 	onGoogleLogin: () => void;
 }
 
 const SignUpForm = memo(
-	({ onSubmit, isLoading, onLoginPress, onGoogleLogin }: SignUpFormProps) => {
+	({
+		onSubmit,
+		isGoogleLoading,
+		isLoading,
+		onLoginPress,
+		onGoogleLogin,
+	}: SignUpFormProps) => {
 		const {
 			control,
 			handleSubmit,
@@ -86,6 +93,7 @@ const SignUpForm = memo(
 				<AuthButton
 					title="Continue"
 					onPress={handleContinuePress}
+					disabled={isGoogleLoading}
 					loading={isLoading}
 					className="mb-8"
 				/>
@@ -101,7 +109,8 @@ const SignUpForm = memo(
 
 				<SocialLoginSection
 					onGoogleLogin={onGoogleLogin}
-					isLoading={isLoading}
+					disabled={isLoading}
+					isLoading={isGoogleLoading}
 				/>
 			</>
 		);

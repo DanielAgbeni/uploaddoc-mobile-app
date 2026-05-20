@@ -5,20 +5,25 @@ import { GoogleIcon } from '../../assets/icons';
 
 interface SocialLoginSectionProps {
 	onGoogleLogin: () => void;
+	disabled?: boolean;
 	isLoading: boolean;
 }
 
 const SocialLoginSection = memo(
-	({ onGoogleLogin, isLoading }: SocialLoginSectionProps) => {
+	({ onGoogleLogin, disabled = false, isLoading }: SocialLoginSectionProps) => {
 		const handleGooglePress = useCallback(() => {
 			onGoogleLogin();
 		}, [onGoogleLogin]);
 
+		const isDisabled = disabled || isLoading;
+
 		return (
 			<View className="gap-3 mb-8">
 				<Pressable
-					className="min-h-[56px] flex-row items-center justify-center rounded-2xl border border-border bg-background px-4 py-4 active:bg-muted"
-					disabled={isLoading}
+					className={`min-h-[56px] flex-row items-center justify-center rounded-2xl border border-border bg-background px-4 py-4 ${
+						isDisabled ? 'opacity-50' : 'active:bg-muted'
+					}`}
+					disabled={isDisabled}
 					onPress={handleGooglePress}
 					hitSlop={6}>
 					{isLoading ? (

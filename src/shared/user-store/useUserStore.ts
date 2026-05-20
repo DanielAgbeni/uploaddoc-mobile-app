@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
+import { GoogleSignin } from '@react-native-google-signin/google-signin';
 import userTokenStorage, { deleteAuthNeededDetails, saveAuthNeededDetails } from '../../utils/storage';
 import { setHeaderAuthorization } from '../../api';
 
@@ -37,6 +38,10 @@ export const useUserStore = create<UserStore>()(
 			},
 			logout: () => {
 				deleteAuthNeededDetails();
+				GoogleSignin.signOut().catch((error) => {
+					console.warn('Failed to clear Google sign-in session:', error);
+				});
+				setHeaderAuthorization();
 				set({
 					user: null,
 					token: null,
@@ -46,6 +51,10 @@ export const useUserStore = create<UserStore>()(
 			},
 			clearStore: () => {
 				deleteAuthNeededDetails();
+				GoogleSignin.signOut().catch((error) => {
+					console.warn('Failed to clear Google sign-in session:', error);
+				});
+				setHeaderAuthorization();
 				set({
 					user: null,
 					token: null,
