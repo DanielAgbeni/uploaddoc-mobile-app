@@ -1,4 +1,4 @@
-import React, { memo, useEffect, useState } from 'react';
+import React, { memo, useCallback, useEffect, useState } from 'react';
 import {
 	View,
 	TextInput,
@@ -6,7 +6,6 @@ import {
 	ScrollView,
 	ActivityIndicator,
 	TouchableOpacity,
-	Platform,
 } from 'react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { AccountStackParamList } from '../../types/navigation.types';
@@ -72,24 +71,24 @@ const profileSchema = z.object({
 
 type ProfileFormValues = z.infer<typeof profileSchema>;
 
-const SectionTitle = ({ title, icon: Icon }: { title: string; icon?: any }) => {
+const SectionTitle = memo(function SectionTitle({ title, icon: Icon }: { title: string; icon?: any }) {
 	const { colors } = useTheme();
 	return (
 		<View className="flex-row items-center mb-3">
-			{Icon && (
+			{Icon ? (
 				<View className="mr-2 bg-primary/10 p-1.5 rounded-lg">
 					<Icon
 						size={16}
 						color={colors.primary}
 					/>
 				</View>
-			)}
+			) : null}
 			<TextComponent className="text-foreground font-bold text-base">
 				{title}
 			</TextComponent>
 		</View>
 	);
-};
+});
 
 function EditProfileScreen({ navigation }: Props) {
 	const { colors } = useTheme();
@@ -141,7 +140,11 @@ function EditProfileScreen({ navigation }: Props) {
 		}
 	}, [user, reset]);
 
-	const onSubmit = async (data: ProfileFormValues) => {
+	const handleGoBack = useCallback(() => {
+		navigation.goBack();
+	}, [navigation]);
+
+	const onSubmit = useCallback(async (data: ProfileFormValues) => {
 		if (!user) return;
 		setIsSubmitting(true);
 		try {
@@ -155,7 +158,7 @@ function EditProfileScreen({ navigation }: Props) {
 					title: 'Success',
 					message: 'Profile updated successfully',
 					type: 'success',
-					onConfirm: () => navigation.goBack(),
+					onConfirm: handleGoBack,
 				});
 			}
 		} catch (error: any) {
@@ -168,7 +171,19 @@ function EditProfileScreen({ navigation }: Props) {
 		} finally {
 			setIsSubmitting(false);
 		}
-	};
+	}, [user, setUserDetails, showAlert, handleGoBack]);
+
+	const handleAddDiscountRate = useCallback(() => {
+		append({ minPages: 0, maxPages: 0, discount: 0 });
+	}, [append]);
+
+	const handleRemoveDiscountRate = useCallback((index: number) => {
+		remove(index);
+	}, [remove]);
+
+	const handleStatusChange = useCallback((status: string, onChange: (...event: any[]) => void) => {
+		onChange(status);
+	}, []);
 
 	if (!user) return null;
 
@@ -177,10 +192,10 @@ function EditProfileScreen({ navigation }: Props) {
 			<SafeAreaView
 				edges={['top']}
 				className="flex-1">
-				<View className="px-6 py-4bg-background z-10">
+				<View className="px-6 py-4 bg-background z-10">
 					<View className="flex-row items-center justify-between">
 						<TouchableOpacity
-							onPress={() => navigation.goBack()}
+							onPress={handleGoBack}
 							className="p-2 -ml-2 rounded-full active:bg-muted/50">
 							<ChevronLeftIcon
 								size={24}
@@ -212,10 +227,13 @@ function EditProfileScreen({ navigation }: Props) {
 									<View className="flex-row gap-3">
 										{['active', 'inactive'].map((status) => {
 											const isActive = value === status;
+											const handlePressStatus = () => {
+												handleStatusChange(status, onChange);
+											};
 											return (
 												<Pressable
 													key={status}
-													onPress={() => onChange(status)}
+													onPress={handlePressStatus}
 													className={clsx(
 														'flex-1 py-3 px-4 rounded-xl border-2 flex-row items-center justify-center gap-2 transition-all',
 														isActive
@@ -302,11 +320,11 @@ function EditProfileScreen({ navigation }: Props) {
 										</View>
 									)}
 								/>
-								{errors.printingCost && (
+								{errors.printingCost ? (
 									<TextComponent className="text-destructive text-xs ml-1">
 										{errors.printingCost.message}
 									</TextComponent>
-								)}
+								) : null}
 							</View>
 
 							{/* Location */}
@@ -336,11 +354,11 @@ function EditProfileScreen({ navigation }: Props) {
 										</View>
 									)}
 								/>
-								{errors.printingLocation && (
+								{errors.printingLocation ? (
 									<TextComponent className="text-destructive text-xs ml-1">
 										{errors.printingLocation.message}
 									</TextComponent>
-								)}
+								) : null}
 							</View>
 
 							{/* Slug */}
@@ -374,11 +392,11 @@ function EditProfileScreen({ navigation }: Props) {
 								<TextComponent className="text-[10px] text-muted-foreground ml-1">
 									uploaddoc.app/submit/{watch('slug') || 'your-slug'}
 								</TextComponent>
-								{errors.slug && (
+								{errors.slug ? (
 									<TextComponent className="text-destructive text-xs ml-1">
 										{errors.slug.message}
 									</TextComponent>
-								)}
+								) : null}
 							</View>
 						</View>
 
@@ -471,9 +489,7 @@ function EditProfileScreen({ navigation }: Props) {
 									icon={DollarSign}
 								/>
 								<Pressable
-									onPress={() =>
-										append({ minPages: 0, maxPages: 0, discount: 0 })
-									}
+									onPress={handleAddDiscountRate}
 									className="flex-row items-center bg-primary px-3 py-1.5 rounded-full shadow-sm active:opacity-90">
 									<Plus
 										size={14}
@@ -486,75 +502,80 @@ function EditProfileScreen({ navigation }: Props) {
 							</View>
 
 							<View className="space-y-3">
-								{fields.map((field, index) => (
-									<View
-										key={field.id}
-										className="bg-muted/30 border border-border rounded-xl p-3">
-										<View className="flex-row items-end gap-3">
-											<View className="flex-1 space-y-1.5">
-												<TextComponent className="text-[10px] uppercase font-bold text-muted-foreground ml-1">
-													Min Pages
-												</TextComponent>
-												<Controller
-													control={control}
-													name={`discountRates.${index}.minPages`}
-													render={({ field: { onChange, value } }) => (
-														<TextInput
-															className="bg-background border border-border rounded-lg px-3 py-2 text-foreground font-medium text-center"
-															keyboardType="numeric"
-															value={value?.toString() ?? ''}
-															onChangeText={onChange}
-														/>
-													)}
-												/>
+								{fields.map((field, index) => {
+									const handleRemove = () => {
+										handleRemoveDiscountRate(index);
+									};
+									return (
+										<View
+											key={field.id}
+											className="bg-muted/30 border border-border rounded-xl p-3">
+											<View className="flex-row items-end gap-3">
+												<View className="flex-1 space-y-1.5">
+													<TextComponent className="text-[10px] uppercase font-bold text-muted-foreground ml-1">
+														Min Pages
+													</TextComponent>
+													<Controller
+														control={control}
+														name={`discountRates.${index}.minPages`}
+														render={({ field: { onChange, value } }) => (
+															<TextInput
+																className="bg-background border border-border rounded-lg px-3 py-2 text-foreground font-medium text-center"
+																keyboardType="numeric"
+																value={value?.toString() ?? ''}
+																onChangeText={onChange}
+															/>
+														)}
+													/>
+												</View>
+												<View className="flex-1 space-y-1.5">
+													<TextComponent className="text-[10px] uppercase font-bold text-muted-foreground ml-1">
+														Max Pages
+													</TextComponent>
+													<Controller
+														control={control}
+														name={`discountRates.${index}.maxPages`}
+														render={({ field: { onChange, value } }) => (
+															<TextInput
+																className="bg-background border border-border rounded-lg px-3 py-2 text-foreground font-medium text-center"
+																keyboardType="numeric"
+																value={value?.toString() ?? ''}
+																onChangeText={onChange}
+															/>
+														)}
+													/>
+												</View>
+												<View className="flex-1 space-y-1.5">
+													<TextComponent className="text-[10px] uppercase font-bold text-muted-foreground ml-1">
+														Discount %
+													</TextComponent>
+													<Controller
+														control={control}
+														name={`discountRates.${index}.discount`}
+														render={({ field: { onChange, value } }) => (
+															<TextInput
+																className="bg-background border border-border rounded-lg px-3 py-2 font-bold text-green-600 text-center"
+																keyboardType="numeric"
+																value={value?.toString() ?? ''}
+																onChangeText={onChange}
+															/>
+														)}
+													/>
+												</View>
+												<Pressable
+													onPress={handleRemove}
+													className="h-[42px] width-[42px] bg-destructive/10 items-center justify-center rounded-lg px-3 ml-1 active:bg-destructive/20">
+													<Trash2
+														size={18}
+														color={colors.destructive}
+													/>
+												</Pressable>
 											</View>
-											<View className="flex-1 space-y-1.5">
-												<TextComponent className="text-[10px] uppercase font-bold text-muted-foreground ml-1">
-													Max Pages
-												</TextComponent>
-												<Controller
-													control={control}
-													name={`discountRates.${index}.maxPages`}
-													render={({ field: { onChange, value } }) => (
-														<TextInput
-															className="bg-background border border-border rounded-lg px-3 py-2 text-foreground font-medium text-center"
-															keyboardType="numeric"
-															value={value?.toString() ?? ''}
-															onChangeText={onChange}
-														/>
-													)}
-												/>
-											</View>
-											<View className="flex-1 space-y-1.5">
-												<TextComponent className="text-[10px] uppercase font-bold text-muted-foreground ml-1">
-													Discount %
-												</TextComponent>
-												<Controller
-													control={control}
-													name={`discountRates.${index}.discount`}
-													render={({ field: { onChange, value } }) => (
-														<TextInput
-															className="bg-background border border-border rounded-lg px-3 py-2 font-bold text-green-600 text-center"
-															keyboardType="numeric"
-															value={value?.toString() ?? ''}
-															onChangeText={onChange}
-														/>
-													)}
-												/>
-											</View>
-											<Pressable
-												onPress={() => remove(index)}
-												className="h-[42px] width-[42px] bg-destructive/10 items-center justify-center rounded-lg px-3 ml-1 active:bg-destructive/20">
-												<Trash2
-													size={18}
-													color={colors.destructive}
-												/>
-											</Pressable>
 										</View>
-									</View>
-								))}
+									);
+								})}
 
-								{fields.length === 0 && (
+								{fields.length === 0 ? (
 									<View className="items-center justify-center py-8 bg-muted/20 border border-dashed border-border rounded-xl">
 										<TextComponent className="text-muted-foreground text-sm font-medium">
 											No discount rates configured
@@ -563,7 +584,7 @@ function EditProfileScreen({ navigation }: Props) {
 											Add rates to offer bulk discounts
 										</TextComponent>
 									</View>
-								)}
+								) : null}
 							</View>
 						</View>
 					</View>
@@ -593,4 +614,5 @@ function EditProfileScreen({ navigation }: Props) {
 		</View>
 	);
 }
+
 export default memo(EditProfileScreen);

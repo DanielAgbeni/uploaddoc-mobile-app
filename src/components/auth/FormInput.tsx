@@ -1,4 +1,4 @@
-import React, { memo, useState } from 'react';
+import React, { memo, useCallback, useState } from 'react';
 import {
 	View,
 	Text,
@@ -8,7 +8,7 @@ import {
 	StyleSheet,
 } from 'react-native';
 import { Controller, Control, FieldValues, Path } from 'react-hook-form';
-import { EyeIcon, EyeOffIcon, AlertCircleIcon } from 'src/assets/icons';
+import { EyeIcon, EyeOffIcon, AlertCircleIcon } from '../../assets/icons';
 
 interface FormInputProps<T extends FieldValues> extends Omit<
 	TextInputProps,
@@ -45,10 +45,22 @@ function FormInput<T extends FieldValues>({
 	const isPassword = secureTextEntry;
 	const showPasswordToggle = isPassword;
 
+	const handleTogglePasswordVisibility = useCallback(() => {
+		setIsPasswordVisible((prev) => !prev);
+	}, []);
+
+	const handleFocus = useCallback(() => {
+		setIsFocused(true);
+	}, []);
+
+	const handleBlurState = useCallback(() => {
+		setIsFocused(false);
+	}, []);
+
 	return (
 		<View className={`mb-5 ${containerClassName}`}>
 			{/* Label */}
-			<Text className="text-foreground font-semibold mb-2 text-base">
+			<Text className="mb-2 text-base font-semibold text-foreground">
 				{label}
 			</Text>
 
@@ -60,7 +72,7 @@ function FormInput<T extends FieldValues>({
 					<View>
 						{/* Input Container */}
 						<View
-							className={`flex-row items-center bg-card border pl-4 pr-2 rounded-xl overflow-hidden ${
+							className={`min-h-[58px] flex-row items-center overflow-hidden rounded-2xl border bg-card pl-4 pr-2 ${
 								error
 									? 'border-destructive'
 									: isFocused
@@ -70,7 +82,7 @@ function FormInput<T extends FieldValues>({
 							style={styles.inputContainer}>
 							{/* Text Input */}
 							<TextInput
-								className={`flex-1 py-4 text-foreground text-base ${
+								className={`flex-1 py-4 text-base text-foreground ${
 									!icon ? 'pl-4' : ''
 								} ${!showPasswordToggle ? 'pr-4' : ''} ${className}`}
 								placeholder={placeholder}
@@ -79,9 +91,9 @@ function FormInput<T extends FieldValues>({
 								onChangeText={onChange}
 								onBlur={() => {
 									onBlur();
-									setIsFocused(false);
+									handleBlurState();
 								}}
-								onFocus={() => setIsFocused(true)}
+								onFocus={handleFocus}
 								secureTextEntry={isPassword && !isPasswordVisible}
 								{...textInputProps}
 							/>
@@ -89,8 +101,8 @@ function FormInput<T extends FieldValues>({
 							{/* Password Visibility Toggle */}
 							{showPasswordToggle && (
 								<Pressable
-									onPress={() => setIsPasswordVisible(!isPasswordVisible)}
-									className="px-4 active:opacity-70"
+									onPress={handleTogglePasswordVisibility}
+									className="min-h-[48px] min-w-[48px] items-center justify-center px-3 active:opacity-70"
 									hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
 									{isPasswordVisible ? (
 										<EyeOffIcon

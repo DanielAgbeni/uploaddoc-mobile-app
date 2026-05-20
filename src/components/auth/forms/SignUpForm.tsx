@@ -1,4 +1,4 @@
-import React, { memo } from 'react';
+import React, { memo, useCallback } from 'react';
 import { View, Pressable } from 'react-native';
 import { useForm } from 'react-hook-form';
 import FormInput from '../FormInput';
@@ -14,12 +14,7 @@ interface SignUpFormProps {
 }
 
 const SignUpForm = memo(
-	({
-		onSubmit,
-		isLoading,
-		onLoginPress,
-		onGoogleLogin,
-	}: SignUpFormProps) => {
+	({ onSubmit, isLoading, onLoginPress, onGoogleLogin }: SignUpFormProps) => {
 		const {
 			control,
 			handleSubmit,
@@ -29,6 +24,15 @@ const SignUpForm = memo(
 			defaultValues: { name: '', email: '', password: '', confirmPassword: '' },
 		});
 		const signupPassword = watch('password');
+
+		const handleContinuePress = useCallback(handleSubmit(onSubmit), [
+			handleSubmit,
+			onSubmit,
+		]);
+
+		const handleLoginPress = useCallback(() => {
+			onLoginPress();
+		}, [onLoginPress]);
 
 		return (
 			<>
@@ -81,7 +85,7 @@ const SignUpForm = memo(
 				/>
 				<AuthButton
 					title="Continue"
-					onPress={handleSubmit(onSubmit)}
+					onPress={handleContinuePress}
 					loading={isLoading}
 					className="mb-8"
 				/>
@@ -99,17 +103,6 @@ const SignUpForm = memo(
 					onGoogleLogin={onGoogleLogin}
 					isLoading={isLoading}
 				/>
-
-				<View className="flex-row justify-center pb-8">
-					<TextComponent className="text-muted-foreground text-base mr-1">
-						Already have an account?
-					</TextComponent>
-					<Pressable onPress={onLoginPress}>
-						<TextComponent className="text-primary/50 font-bold text-base">
-							Log in
-						</TextComponent>
-					</Pressable>
-				</View>
 			</>
 		);
 	},

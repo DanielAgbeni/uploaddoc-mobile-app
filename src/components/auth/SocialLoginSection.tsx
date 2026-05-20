@@ -1,7 +1,7 @@
-import React, { memo } from 'react';
+import React, { memo, useCallback } from 'react';
 import { View, Pressable, ActivityIndicator } from 'react-native';
-import { GoogleIcon } from 'src/assets/icons';
 import { TextComponent } from '../ui/TextComponent';
+import { GoogleIcon } from '../../assets/icons';
 
 interface SocialLoginSectionProps {
 	onGoogleLogin: () => void;
@@ -10,12 +10,17 @@ interface SocialLoginSectionProps {
 
 const SocialLoginSection = memo(
 	({ onGoogleLogin, isLoading }: SocialLoginSectionProps) => {
+		const handleGooglePress = useCallback(() => {
+			onGoogleLogin();
+		}, [onGoogleLogin]);
+
 		return (
 			<View className="gap-3 mb-8">
 				<Pressable
-					className="flex-row items-center border border-border rounded-xl p-4 bg-background active:bg-muted justify-center"
+					className="min-h-[56px] flex-row items-center justify-center rounded-2xl border border-border bg-background px-4 py-4 active:bg-muted"
 					disabled={isLoading}
-					onPress={onGoogleLogin}>
+					onPress={handleGooglePress}
+					hitSlop={6}>
 					{isLoading ? (
 						<View className="flex-row items-center justify-center gap-2">
 							<ActivityIndicator
@@ -29,7 +34,7 @@ const SocialLoginSection = memo(
 					) : (
 						<>
 							<GoogleIcon size={24} />
-							<TextComponent className="flex-1 text-center font-semibold text-foreground ml-3">
+							<TextComponent className="ml-3 flex-1 text-center text-base font-semibold text-foreground">
 								Continue with Google
 							</TextComponent>
 						</>

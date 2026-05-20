@@ -132,18 +132,36 @@ function DashboardScreen({ navigation }: Props) {
 	// Handlers
 	const handleAccept = useCallback((id: string) => {
 		acceptMutation.mutate(id);
-	}, []);
+	}, [acceptMutation]);
 
 	const handleDelete = useCallback((id: string) => {
 		setProjectToDelete(id);
 		setDeleteModalVisible(true);
 	}, []);
 
-	const confirmDelete = () => {
+	const confirmDelete = useCallback(() => {
 		if (projectToDelete) {
 			deleteMutation.mutate(projectToDelete);
 		}
-	};
+	}, [deleteMutation, projectToDelete]);
+
+	const handleSearchChange = useCallback((text: string) => {
+		setSearchQuery(text);
+	}, []);
+
+	const handleClearSearch = useCallback(() => {
+		setSearchQuery('');
+	}, []);
+
+	const handleCloseDeleteModal = useCallback(() => {
+		setDeleteModalVisible(false);
+	}, []);
+
+	const handleEndReached = useCallback(() => {
+		if (hasNextPage && !isFetchingNextPage) {
+			fetchNextPage();
+		}
+	}, [hasNextPage, isFetchingNextPage, fetchNextPage]);
 
 	const handleDownload = useCallback(async (project: Project) => {
 		if (!project.fileUrl) {
@@ -205,7 +223,7 @@ function DashboardScreen({ navigation }: Props) {
 		[handleAccept, handleDelete, handleDownload, acceptMutation.isPending],
 	);
 
-	const renderFooter = () => {
+	const renderFooter = useCallback(() => {
 		if (isFetchingNextPage) {
 			return (
 				<View className="py-4">
@@ -217,9 +235,9 @@ function DashboardScreen({ navigation }: Props) {
 			);
 		}
 		return <View className="h-20" />;
-	};
+	}, [isFetchingNextPage]);
 
-	const renderEmpty = () => {
+	const renderEmpty = useCallback(() => {
 		if (isLoading) {
 			return (
 				<View className="py-2">
@@ -238,7 +256,7 @@ function DashboardScreen({ navigation }: Props) {
 				</TextComponent>
 			</View>
 		);
-	};
+	}, [isLoading, debouncedSearch]);
 
 	return (
 		<View className="flex-1 bg-background">
@@ -282,10 +300,10 @@ function DashboardScreen({ navigation }: Props) {
 						placeholder="Search documents..."
 						placeholderTextColor={colors.mutedForeground}
 						value={searchQuery}
-						onChangeText={setSearchQuery}
+						onChangeText={handleSearchChange}
 					/>
 					{searchQuery.length > 0 && (
-						<View onTouchEnd={() => setSearchQuery('')}>
+						<View onTouchEnd={handleClearSearch}>
 							<CloseCircleIcon
 								size={18}
 								color={colors.mutedForeground}
@@ -301,11 +319,7 @@ function DashboardScreen({ navigation }: Props) {
 				estimatedItemSize={120}
 				keyExtractor={(item) => item._id}
 				ListHeaderComponent={<DashboardHeader />}
-				onEndReached={() => {
-					if (hasNextPage && !isFetchingNextPage) {
-						fetchNextPage();
-					}
-				}}
+				onEndReached={handleEndReached}
 				onEndReachedThreshold={0.5}
 				ListFooterComponent={renderFooter}
 				ListEmptyComponent={renderEmpty}
@@ -322,7 +336,7 @@ function DashboardScreen({ navigation }: Props) {
 
 			<AlertModal
 				isVisible={deleteModalVisible}
-				onClose={() => setDeleteModalVisible(false)}
+				onClose={handleCloseDeleteModal}
 				title="Delete Project"
 				message="Are you sure you want to delete this project? This action cannot be undone."
 				type="confirm"

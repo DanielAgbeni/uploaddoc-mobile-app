@@ -1,4 +1,4 @@
-import React, { memo } from 'react';
+import React, { memo, useCallback, useEffect, useState } from 'react';
 import { View, Text, Pressable, ScrollView, Switch } from 'react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -11,7 +11,6 @@ import {
 	SunIcon,
 	MonitorIcon,
 	BellIcon,
-	UserIcon,
 	LogOutIcon,
 	ChevronRightIcon,
 	ExternalLinkIcon,
@@ -39,7 +38,7 @@ interface SettingRowProps {
 	isDestructive?: boolean;
 }
 
-const SettingRow: React.FC<SettingRowProps> = ({
+const SettingRow = memo(function SettingRow({
 	icon,
 	title,
 	subtitle,
@@ -47,7 +46,7 @@ const SettingRow: React.FC<SettingRowProps> = ({
 	rightElement,
 	showChevron = true,
 	isDestructive = false,
-}) => {
+}: SettingRowProps) {
 	const { colors } = useTheme();
 
 	return (
@@ -68,51 +67,52 @@ const SettingRow: React.FC<SettingRowProps> = ({
 					}`}>
 					{title}
 				</Text>
-				{subtitle && (
+				{subtitle ? (
 					<Text className="text-muted-foreground text-sm mt-0.5">
 						{subtitle}
 					</Text>
-				)}
+				) : null}
 			</View>
 			{rightElement}
-			{showChevron && onPress && (
+			{showChevron && onPress ? (
 				<ChevronRightIcon
 					size={20}
 					color={isDestructive ? colors.destructive : colors.mutedForeground}
 				/>
-			)}
+			) : null}
 		</Pressable>
 	);
-};
+});
 
 // Separator component
-const Separator = () => <View className="h-px bg-border" />;
+const Separator = memo(function Separator() {
+	return <View className="h-px bg-border" />;
+});
 
 function ProfileScreen({ navigation }: Props) {
 	const { theme, setTheme, colors, colorScheme } = useTheme();
 	const { showAlert } = useModal();
 	const user = useUserStore((state) => state.user);
 	const logout = useUserStore((state) => state.logout);
-	const [notifications, setNotifications] = React.useState(false);
+	const [notifications, setNotifications] = useState(false);
 
-	React.useEffect(() => {
-		checkNotificationStatus();
-	}, []);
-
-	const checkNotificationStatus = async () => {
+	const checkNotificationStatus = useCallback(async () => {
 		const token = await SecureStore.getItemAsync('push_token');
 		setNotifications(!!token);
-	};
+	}, []);
+
+	useEffect(() => {
+		checkNotificationStatus();
+	}, [checkNotificationStatus]);
 
 	const isVendor = user?.isAdmin || false;
 
-	const handleToggleNotifications = async () => {
+	const handleToggleNotifications = useCallback(async () => {
 		try {
 			const newValue = !notifications;
 			setNotifications(newValue);
 
 			if (newValue) {
-				// Turning on
 				const token = await registerForPushNotificationsAsync();
 				if (token && user?.id) {
 					await subscribeToPushNotifications(user.id, token);
@@ -123,7 +123,6 @@ function ProfileScreen({ navigation }: Props) {
 						type: 'success',
 					});
 				} else {
-					// Failed to get token or permission denied
 					setNotifications(false);
 					showAlert({
 						title: 'Permission Required',
@@ -132,7 +131,6 @@ function ProfileScreen({ navigation }: Props) {
 					});
 				}
 			} else {
-				// Turning off
 				const token = await SecureStore.getItemAsync('push_token');
 				if (token && user?.id) {
 					await unsubscribeFromPushNotifications(user.id, token);
@@ -141,17 +139,16 @@ function ProfileScreen({ navigation }: Props) {
 			}
 		} catch (error) {
 			console.error('Error toggling notifications:', error);
-			// Revert state on error
-			setNotifications(!notifications);
+			setNotifications((prev) => !prev);
 			showAlert({
 				title: 'Error',
 				message: 'Failed to update notification settings',
 				type: 'error',
 			});
 		}
-	};
+	}, [notifications, user?.id, showAlert]);
 
-	const handleLogout = () => {
+	const handleLogout = useCallback(() => {
 		showAlert({
 			title: 'Logout',
 			message: 'Are you sure you want to logout?',
@@ -161,12 +158,11 @@ function ProfileScreen({ navigation }: Props) {
 			cancelText: 'Cancel',
 			onConfirm: () => {
 				logout();
-				// Navigation will be handled automatically by RootNavigator
 			},
 		});
-	};
+	}, [logout, showAlert]);
 
-	const handleOpenLink = (url: string, title: string) => {
+	const handleOpenLink = useCallback((url: string, title: string) => {
 		showAlert({
 			title: title,
 			message: `This will open ${url} in your browser.`,
@@ -176,53 +172,38 @@ function ProfileScreen({ navigation }: Props) {
 				// TODO: Implement linking with Linking.openURL(url)
 			},
 		});
-	};
+	}, [showAlert]);
 
-	const themeOptions: {
-		value: ThemeMode;
-		label: string;
-		icon: React.ReactNode;
-	}[] = [
-		{
-			value: 'light',
-			label: 'Light',
-			icon: (
-				<SunIcon
-					size={18}
-					color={
-						theme === 'light' ? colors.primaryForeground : colors.foreground
-					}
-				/>
-			),
-		},
-		{
-			value: 'dark',
-			label: 'Dark',
-			icon: (
-				<MoonIcon
-					size={18}
-					color={
-						theme === 'dark' ? colors.primaryForeground : colors.foreground
-					}
-				/>
-			),
-		},
-		{
-			value: 'system',
-			label: 'Auto',
-			icon: (
-				<MonitorIcon
-					size={18}
-					color={
-						theme === 'system' ? colors.primaryForeground : colors.foreground
-					}
-				/>
-			),
-		},
-	];
+	const handleNavigateToEditProfile = useCallback(() => {
+		navigation.navigate('EditProfile');
+	}, [navigation]);
+
+	const handleNavigateToTransactionHistory = useCallback(() => {
+		navigation.navigate('TransactionHistory');
+	}, [navigation]);
+
+	const handleOpenPrivacyPolicy = useCallback(() => {
+		handleOpenLink('https://uploaddoc.app/privacy-policy', 'Privacy Policy');
+	}, [handleOpenLink]);
+
+	const handleOpenTermsOfService = useCallback(() => {
+		handleOpenLink('https://uploaddoc.app/terms-of-service', 'Terms of Service');
+	}, [handleOpenLink]);
+
+	const handleSetThemeLight = useCallback(() => {
+		setTheme('light');
+	}, [setTheme]);
+
+	const handleSetThemeDark = useCallback(() => {
+		setTheme('dark');
+	}, [setTheme]);
+
+	const handleSetThemeSystem = useCallback(() => {
+		setTheme('system');
+	}, [setTheme]);
 
 	if (!user) {
-		return null; // Should never happen if authenticated
+		return null;
 	}
 
 	return (
@@ -263,7 +244,7 @@ function ProfileScreen({ navigation }: Props) {
 
 			<View className="px-5 pt-6 pb-8">
 				{/* Vendor-Only Options */}
-				{isVendor && (
+				{isVendor ? (
 					<View className="mb-6">
 						<TextComponent className="text-muted-foreground text-xs font-semibold uppercase tracking-wider mb-3 px-1">
 							Vendor Options
@@ -279,7 +260,7 @@ function ProfileScreen({ navigation }: Props) {
 								}
 								title="Edit Profile"
 								subtitle="Update vendor information"
-								onPress={() => navigation.navigate('EditProfile')}
+								onPress={handleNavigateToEditProfile}
 							/>
 							<Separator />
 							<SettingRow
@@ -291,11 +272,11 @@ function ProfileScreen({ navigation }: Props) {
 								}
 								title="Transaction History"
 								subtitle="View token purchases & usage"
-								onPress={() => navigation.navigate('TransactionHistory')}
+								onPress={handleNavigateToTransactionHistory}
 							/>
 						</View>
 					</View>
-				)}
+				) : null}
 
 				{/* Preferences Section */}
 				<View className="mb-6">
@@ -357,27 +338,68 @@ function ProfileScreen({ navigation }: Props) {
 
 							{/* Theme Toggle Buttons */}
 							<View className="flex-row bg-muted rounded-xl p-1">
-								{themeOptions.map((option) => (
-									<Pressable
-										key={option.value}
-										onPress={() => setTheme(option.value)}
-										className={`flex-1 flex-row items-center justify-center py-2.5 px-2 rounded-lg ${
-											theme === option.value ? 'bg-primary' : ''
-										}`}
-										style={({ pressed }) => ({
-											opacity: pressed ? 0.8 : 1,
-										})}>
-										<View className="mr-1.5">{option.icon}</View>
-										<TextComponent
-											className={`font-semibold text-sm ${
-												theme === option.value
-													? 'text-primary-foreground'
-													: 'text-foreground'
-											}`}>
-											{option.label}
-										</TextComponent>
-									</Pressable>
-								))}
+								<Pressable
+									onPress={handleSetThemeLight}
+									className={`flex-1 flex-row items-center justify-center py-2.5 px-2 rounded-lg ${
+										theme === 'light' ? 'bg-primary' : ''
+									}`}>
+									<View className="mr-1.5">
+										<SunIcon
+											size={18}
+											color={theme === 'light' ? colors.primaryForeground : colors.foreground}
+										/>
+									</View>
+									<TextComponent
+										className={`font-semibold text-sm ${
+											theme === 'light'
+												? 'text-primary-foreground'
+												: 'text-foreground'
+										}`}>
+										Light
+									</TextComponent>
+								</Pressable>
+
+								<Pressable
+									onPress={handleSetThemeDark}
+									className={`flex-1 flex-row items-center justify-center py-2.5 px-2 rounded-lg ${
+										theme === 'dark' ? 'bg-primary' : ''
+									}`}>
+									<View className="mr-1.5">
+										<MoonIcon
+											size={18}
+											color={theme === 'dark' ? colors.primaryForeground : colors.foreground}
+										/>
+									</View>
+									<TextComponent
+										className={`font-semibold text-sm ${
+											theme === 'dark'
+												? 'text-primary-foreground'
+												: 'text-foreground'
+										}`}>
+										Dark
+									</TextComponent>
+								</Pressable>
+
+								<Pressable
+									onPress={handleSetThemeSystem}
+									className={`flex-1 flex-row items-center justify-center py-2.5 px-2 rounded-lg ${
+										theme === 'system' ? 'bg-primary' : ''
+									}`}>
+									<View className="mr-1.5">
+										<MonitorIcon
+											size={18}
+											color={theme === 'system' ? colors.primaryForeground : colors.foreground}
+										/>
+									</View>
+									<TextComponent
+										className={`font-semibold text-sm ${
+											theme === 'system'
+												? 'text-primary-foreground'
+												: 'text-foreground'
+										}`}>
+										Auto
+									</TextComponent>
+								</Pressable>
 							</View>
 						</View>
 					</View>
@@ -398,12 +420,7 @@ function ProfileScreen({ navigation }: Props) {
 								/>
 							}
 							title="Privacy Policy"
-							onPress={() =>
-								handleOpenLink(
-									'https://uploaddoc.app/privacy-policy',
-									'Privacy Policy',
-								)
-							}
+							onPress={handleOpenPrivacyPolicy}
 						/>
 						<Separator />
 						<SettingRow
@@ -414,12 +431,7 @@ function ProfileScreen({ navigation }: Props) {
 								/>
 							}
 							title="Terms of Service"
-							onPress={() =>
-								handleOpenLink(
-									'https://uploaddoc.app/terms-of-service',
-									'Terms of Service',
-								)
-							}
+							onPress={handleOpenTermsOfService}
 						/>
 					</View>
 				</View>

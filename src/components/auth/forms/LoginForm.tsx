@@ -1,4 +1,4 @@
-import React, { memo } from 'react';
+import React, { memo, useCallback } from 'react';
 import { View, Pressable } from 'react-native';
 import { useForm } from 'react-hook-form';
 import FormInput from '../FormInput';
@@ -30,6 +30,19 @@ const LoginForm = memo(
 			defaultValues: { email: '', password: '' },
 		});
 
+		const handleContinuePress = useCallback(handleSubmit(onSubmit), [
+			handleSubmit,
+			onSubmit,
+		]);
+
+		const handleForgotPasswordPress = useCallback(() => {
+			onForgotPassword();
+		}, [onForgotPassword]);
+
+		const handleSignupPress = useCallback(() => {
+			onSignUpPress();
+		}, [onSignUpPress]);
+
 		return (
 			<>
 				<FormInput
@@ -56,9 +69,9 @@ const LoginForm = memo(
 						containerClassName="mb-1"
 					/>
 					<Pressable
-						onPress={onForgotPassword}
-						className="self-end p-1">
-						<TextComponent className="text-primary font-semibold text-sm">
+						onPress={handleForgotPasswordPress}
+						className="min-h-[44px] self-end justify-center px-2">
+						<TextComponent className="text-sm font-semibold text-primary">
 							Forgot Password?
 						</TextComponent>
 					</Pressable>
@@ -66,7 +79,7 @@ const LoginForm = memo(
 
 				<AuthButton
 					title="Continue"
-					onPress={handleSubmit(onSubmit)}
+					onPress={handleContinuePress}
 					loading={isLoading}
 					className="mb-8"
 				/>
@@ -84,17 +97,6 @@ const LoginForm = memo(
 					onGoogleLogin={onGoogleLogin}
 					isLoading={isLoading}
 				/>
-
-				<View className="flex-row justify-center pb-8">
-					<TextComponent className="text-muted-foreground text-base mr-1">
-						Don't have an account?
-					</TextComponent>
-					<Pressable onPress={onSignUpPress}>
-						<TextComponent className="text-primary font-bold text-base">
-							Sign up
-						</TextComponent>
-					</Pressable>
-				</View>
 			</>
 		);
 	},

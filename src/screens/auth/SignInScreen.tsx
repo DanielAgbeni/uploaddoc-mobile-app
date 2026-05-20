@@ -1,4 +1,4 @@
-import React, { memo } from 'react';
+import React, { memo, useCallback } from 'react';
 import {
 	View,
 	Text,
@@ -43,7 +43,7 @@ function SignInScreen({ navigation }: Props) {
 		},
 	});
 
-	const onSubmit = (data: SignInFormData) => {
+	const onSubmit = useCallback((data: SignInFormData) => {
 		loginMutation.mutate(
 			{ email: data.email.trim(), password: data.password.trim() },
 			{
@@ -73,7 +73,15 @@ function SignInScreen({ navigation }: Props) {
 				},
 			},
 		);
-	};
+	}, [loginMutation]);
+
+	const handleNavigateToForgotPassword = useCallback(() => {
+		navigation.navigate('ForgotPassword');
+	}, [navigation]);
+
+	const handleNavigateToSignUp = useCallback(() => {
+		navigation.navigate('SignUp');
+	}, [navigation]);
 
 	return (
 		<KeyboardAvoidingView
@@ -171,7 +179,7 @@ function SignInScreen({ navigation }: Props) {
 									Password
 								</Text>
 								<Pressable
-									onPress={() => navigation.navigate('ForgotPassword')}
+									onPress={handleNavigateToForgotPassword}
 									disabled={loginMutation.isPending}
 									className="active:opacity-70 py-1">
 									<Text className="text-primary font-semibold text-sm">
@@ -214,7 +222,7 @@ function SignInScreen({ navigation }: Props) {
 									Don't have an account?
 								</Text>
 								<Pressable
-									onPress={() => navigation.navigate('SignUp')}
+									onPress={handleNavigateToSignUp}
 									disabled={loginMutation.isPending}
 									className="active:opacity-70 py-1">
 									<Text className="text-primary font-bold text-base">

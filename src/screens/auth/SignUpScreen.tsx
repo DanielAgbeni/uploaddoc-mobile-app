@@ -38,6 +38,7 @@ type SignUpFormData = {
 type OTPFormData = {
 	otp: string;
 };
+
 function SignUpScreen({ navigation }: Props) {
 	const { colorScheme } = useTheme();
 	const setLoginData = useUserStore((state) => state.setLoginData);
@@ -172,6 +173,18 @@ function SignUpScreen({ navigation }: Props) {
 		}
 	}, [email]);
 
+	const handleOpenHelpModal = useCallback(() => {
+		setIsHelpModalOpen(true);
+	}, []);
+
+	const handleCloseHelpModal = useCallback(() => {
+		setIsHelpModalOpen(false);
+	}, []);
+
+	const handleGoBackToRegister = useCallback(() => {
+		setView('register');
+	}, []);
+
 	return (
 		<KeyboardAvoidingView
 			behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
@@ -232,8 +245,8 @@ function SignUpScreen({ navigation }: Props) {
 							<OtpVerificationForm
 								onSubmit={onVerifyOTP}
 								onResend={handleResendCode}
-								onHelp={() => setIsHelpModalOpen(true)}
-								onBack={() => setView('register')}
+								onHelp={handleOpenHelpModal}
+								onBack={handleGoBackToRegister}
 								isLoading={isLoading}
 								canResend={canResend}
 							/>
@@ -243,7 +256,7 @@ function SignUpScreen({ navigation }: Props) {
 
 				<CustomModal
 					isVisible={isHelpModalOpen}
-					onClose={() => setIsHelpModalOpen(false)}>
+					onClose={handleCloseHelpModal}>
 					<View className="py-4">
 						<Text className="text-xl font-bold text-foreground mb-4">
 							Help & Support
@@ -260,7 +273,7 @@ function SignUpScreen({ navigation }: Props) {
 						</Text>
 						<AuthButton
 							title="Close"
-							onPress={() => setIsHelpModalOpen(false)}
+							onPress={handleCloseHelpModal}
 						/>
 					</View>
 				</CustomModal>

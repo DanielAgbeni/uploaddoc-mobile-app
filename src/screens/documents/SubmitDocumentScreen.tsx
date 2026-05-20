@@ -1,44 +1,43 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
-	View,
-	Text,
-	TextInput,
+	ActivityIndicator,
+	Keyboard,
 	Pressable,
 	ScrollView,
-	ActivityIndicator,
-	FlatList,
-	Keyboard,
-	TouchableOpacity,
+	StatusBar,
+	TextInput,
+	View,
 } from 'react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import * as DocumentPicker from 'expo-document-picker';
 import * as FileSystem from 'expo-file-system';
 import { PDFDocument } from 'pdf-lib';
 import { LinearGradient } from 'expo-linear-gradient';
+import { Controller, useForm } from 'react-hook-form';
+import { useDebouncedCallback } from 'use-debounce';
+import { useQueryClient } from '@tanstack/react-query';
 import {
 	DocumentsStackParamList,
 	VendorsStackParamList,
 } from '../../types/navigation.types';
-import { uploadProject, searchAdmins } from '../../api/projects';
-import { useUserStore } from '../../shared/user-store/useUserStore';
-import { onError, onSuccess } from '../../utils/toast';
-import { useDebouncedCallback } from 'use-debounce';
-import { useQueryClient } from '@tanstack/react-query';
+import { searchAdmins, initiateDirectUpload, completeDirectUpload } from '../../api/projects';
 import { useTheme } from '../../providers/ThemeProvider';
-import { TextComponent } from 'src/components';
+import { useUserStore } from '../../shared/user-store/useUserStore';
+import { onError } from '../../utils/toast';
+import { sendNotification } from '../../api/notifications';
+import { showMessage } from 'react-native-flash-message';
+import TextComponent from '../../components/ui/TextComponent';
 import {
-	UploadIcon,
-	SearchIcon,
+	CloseIcon,
+	DocumentTextIcon,
+	FileImageIcon,
 	FilePdfIcon,
 	FileWordIcon,
-	FileImageIcon,
-	DocumentTextIcon,
-	CloseIcon,
-	LightbulbIcon,
 	PlusIcon,
+	SearchIcon,
 	TrashIcon,
-} from 'src/assets/icons';
-import { useForm, Controller } from 'react-hook-form';
+	UploadIcon,
+} from '../../assets/icons';
 
 type Props = NativeStackScreenProps<
 	DocumentsStackParamList | VendorsStackParamList,
@@ -60,7 +59,39 @@ type FormValues = {
 	files: SelectedFile[];
 };
 
-export default function SubmitDocumentScreen({ navigation, route }: Props) {
+const SectionHeading = memo(function SectionHeading({
+	label,
+	required = false,
+	supportingText,
+}: {
+	label: string;
+	required?: boolean;
+	supportingText?: string;
+}) {
+	return (
+		<View className="mb-3">
+			<TextComponent className="text-base font-bold text-foreground">
+				{label}
+				{required ? (
+					<TextComponent className="text-base font-bold text-destructive">
+						{' '}
+						*
+					</TextComponent>
+				) : null}
+			</TextComponent>
+			{supportingText ? (
+				<TextComponent className="mt-1 text-sm leading-6 text-muted-foreground">
+					{supportingText}
+				</TextComponent>
+			) : null}
+		</View>
+	);
+});
+
+function SubmitDocumentScreen({
+	navigation,
+	route,
+}: Props) {
 	const {
 		vendorId,
 		vendorName,
@@ -70,11 +101,12 @@ export default function SubmitDocumentScreen({ navigation, route }: Props) {
 		vendorRating,
 		isVendorLocked,
 	} = route.params || {};
-	const { colors } = useTheme();
+
+	const { colors, colorScheme } = useTheme();
 	const { user } = useUserStore();
 	const queryClient = useQueryClient();
+	const searchInputRef = useRef<TextInput>(null);
 
-	// React Hook Form
 	const {
 		control,
 		handleSubmit,
@@ -104,24 +136,49 @@ export default function SubmitDocumentScreen({ navigation, route }: Props) {
 	const selectedVendor = watch('vendor');
 
 	const [loading, setLoading] = useState(false);
-
-	// Vendor search state (inline dropdown like web version)
+	const [uploadStatus, setUploadStatus] = useState('');
+	const [uploadProgress, setUploadProgress] = useState(0);
 	const [vendorSearchQuery, setVendorSearchQuery] = useState('');
-	const [vendorSearchResults, setVendorSearchResults] = useState<AdminInfo[]>(
-		[],
-	);
+	const [vendorSearchResults, setVendorSearchResults] = useState<AdminInfo[]>([]);
 	const [searchingVendors, setSearchingVendors] = useState(false);
 	const [showDropdown, setShowDropdown] = useState(false);
-	const searchInputRef = useRef<TextInput>(null);
 
-	// Debounced vendor search
+	const getPdfPageCount = useCallback(
+		async (fileUri: string): Promise<number | undefined> => {
+			try {
+				const base64 = await FileSystem.readAsStringAsync(fileUri, {
+					encoding: FileSystem.EncodingType.Base64,
+				});
+
+				const binaryString = atob(base64);
+				const bytes = new Uint8Array(binaryString.length);
+
+				for (let i = 0; i < binaryString.length; i += 1) {
+					bytes[i] = binaryString.charCodeAt(i);
+				}
+
+				const pdfDoc = await PDFDocument.load(bytes, {
+					ignoreEncryption: true,
+				});
+
+				return pdfDoc.getPageCount();
+			} catch (error) {
+				console.error('Error getting PDF page count:', error);
+				return undefined;
+			}
+		},
+		[],
+	);
+
 	const debouncedSearch = useDebouncedCallback(async (query: string) => {
 		if (query.trim().length < 2) {
 			setVendorSearchResults([]);
 			setShowDropdown(false);
 			return;
 		}
+
 		setSearchingVendors(true);
+
 		try {
 			const response = await searchAdmins(query);
 
@@ -130,15 +187,12 @@ export default function SubmitDocumentScreen({ navigation, route }: Props) {
 				'data' in response.data &&
 				Array.isArray(response.data.data?.admins)
 			) {
-				// Handle standard API response structure
 				setVendorSearchResults(response.data.data.admins);
 				setShowDropdown(true);
 			} else if (Array.isArray(response)) {
-				// Handle if response is directly an array
 				setVendorSearchResults(response);
 				setShowDropdown(true);
 			} else {
-				// Fallback or empty
 				setVendorSearchResults([]);
 			}
 		} catch (error) {
@@ -147,42 +201,13 @@ export default function SubmitDocumentScreen({ navigation, route }: Props) {
 		} finally {
 			setSearchingVendors(false);
 		}
-	}, 500);
+	}, 450);
 
 	useEffect(() => {
 		debouncedSearch(vendorSearchQuery);
-	}, [vendorSearchQuery]);
+	}, [debouncedSearch, vendorSearchQuery]);
 
-	// Function to get PDF page count using pdf-lib
-	const getPdfPageCount = async (
-		fileUri: string,
-	): Promise<number | undefined> => {
-		try {
-			// Read the file as base64
-			const base64 = await FileSystem.readAsStringAsync(fileUri, {
-				encoding: FileSystem.EncodingType.Base64,
-			});
-
-			// Convert base64 to Uint8Array
-			const binaryString = atob(base64);
-			const bytes = new Uint8Array(binaryString.length);
-			for (let i = 0; i < binaryString.length; i++) {
-				bytes[i] = binaryString.charCodeAt(i);
-			}
-
-			// Load the PDF document
-			const pdfDoc = await PDFDocument.load(bytes, {
-				ignoreEncryption: true,
-			});
-
-			return pdfDoc.getPageCount();
-		} catch (error) {
-			console.error('Error getting PDF page count:', error);
-			return undefined;
-		}
-	};
-
-	const handleSelectFile = async () => {
+	const handleSelectFile = useCallback(async () => {
 		try {
 			const result = await DocumentPicker.getDocumentAsync({
 				type: [
@@ -195,340 +220,491 @@ export default function SubmitDocumentScreen({ navigation, route }: Props) {
 				multiple: true,
 			});
 
-			if (!result.canceled && result.assets) {
-				const newFiles: SelectedFile[] = [];
-
-				for (const file of result.assets) {
-					// Check for duplicates
-					if (files.some((f) => f.uri === file.uri)) continue;
-
-					const newFile: SelectedFile = {
-						uri: file.uri,
-						name: file.name,
-						size: file.size,
-						mimeType: file.mimeType,
-					};
-
-					// Get page count if it's a PDF
-					if (file.mimeType?.includes('pdf')) {
-						const pages = await getPdfPageCount(file.uri);
-						newFile.pageCount = pages;
-					} else {
-						// For non-PDF files (images), set page count to 1
-						newFile.pageCount = 1;
-					}
-					newFiles.push(newFile);
-				}
-
-				// If no files were previously selected and we just added some, auto-fill title
-				const currentTitle = watch('title');
-				if (!currentTitle && newFiles.length > 0) {
-					const firstFile = newFiles[0];
-					const fileName =
-						firstFile.name.substring(0, firstFile.name.lastIndexOf('.')) ||
-						firstFile.name;
-					setValue('title', fileName);
-				}
-
-				setValue('files', [...files, ...newFiles]);
+			if (result.canceled || !result.assets) {
+				return;
 			}
+
+			const newFiles: SelectedFile[] = [];
+
+			for (const file of result.assets) {
+				if (files.some((existingFile) => existingFile.uri === file.uri)) {
+					continue;
+				}
+
+				const nextFile: SelectedFile = {
+					uri: file.uri,
+					name: file.name,
+					size: file.size,
+					mimeType: file.mimeType,
+				};
+
+				if (file.mimeType?.includes('pdf')) {
+					nextFile.pageCount = await getPdfPageCount(file.uri);
+				} else {
+					nextFile.pageCount = 1;
+				}
+
+				newFiles.push(nextFile);
+			}
+
+			const currentTitle = watch('title');
+			if (!currentTitle && newFiles.length > 0) {
+				const firstFile = newFiles[0];
+				const fileName =
+					firstFile.name.substring(0, firstFile.name.lastIndexOf('.')) ||
+					firstFile.name;
+				setValue('title', fileName);
+			}
+
+			setValue('files', [...files, ...newFiles]);
 		} catch (error) {
 			console.error('File picker error:', error);
 			onError('Error', 'Failed to select file');
 		}
-	};
+	}, [files, getPdfPageCount, setValue, watch]);
 
-	const removeFile = (index: number) => {
-		const newFiles = [...files];
-		newFiles.splice(index, 1);
-		setValue('files', newFiles);
-	};
+	const handleRemoveFile = useCallback(
+		(index: number) => {
+			const nextFiles = [...files];
+			nextFiles.splice(index, 1);
+			setValue('files', nextFiles);
+		},
+		[files, setValue],
+	);
 
-	const onSubmit = async (data: FormValues) => {
-		if (!user) {
-			onError('Error', 'You must be logged in to submit documents');
-			return;
-		}
+	const handleSelectVendor = useCallback(
+		(vendor: AdminInfo) => {
+			setValue('vendor', vendor);
+			setVendorSearchQuery('');
+			setShowDropdown(false);
+			Keyboard.dismiss();
+		},
+		[setValue],
+	);
 
-		if (!data.vendor) {
-			onError('Validation Error', 'Please select a vendor');
-			return;
-		}
-
-		if (data.files.length === 0) {
-			onError('Validation Error', 'Please select at least one file');
-			return;
-		}
-
-		setLoading(true);
-		try {
-			const formData = new FormData();
-			formData.append('title', data.title.trim());
-			formData.append('assignedAdmin', data.vendor._id);
-
-			if (data.description.trim()) {
-				formData.append('description', data.description.trim());
-			}
-
-			// Aggregate page count
-			const totalPageCount = data.files.reduce((acc, file) => {
-				return acc + (file.pageCount || 0);
-			}, 0);
-
-			if (totalPageCount > 0) {
-				formData.append('pageCount', totalPageCount.toString());
-			}
-
-			// Append files
-			data.files.forEach((file) => {
-				// Using 'files' as key to match backend array config (likely upload.array('files'))
-				formData.append('files', {
-					uri: file.uri,
-					name: file.name,
-					type: file.mimeType || 'application/octet-stream',
-				} as any);
-			});
-
-			console.log('Submitting document:', {
-				title: data.title.trim(),
-				assignedAdmin: data.vendor._id,
-				fileCount: data.files.length,
-			});
-
-			await uploadProject(formData);
-			// Invalidate the student projects query so the list refreshes when navigating back
-			queryClient.invalidateQueries({ queryKey: ['studentProjects'] });
-			// Navigate back after successful upload
-			navigation.goBack();
-		} catch (error: any) {
-			console.error('Submit error:', error);
-			const message =
-				error?.response?.data?.message ||
-				error?.message ||
-				'Failed to submit document';
-			onError('Error', message);
-		} finally {
-			setLoading(false);
-		}
-	};
-
-	const handleSelectVendor = (vendor: AdminInfo) => {
-		setValue('vendor', vendor);
-		setVendorSearchQuery('');
-		setShowDropdown(false);
-		Keyboard.dismiss();
-	};
-
-	const handleClearVendor = () => {
+	const handleClearVendor = useCallback(() => {
 		setValue('vendor', null);
 		setVendorSearchQuery('');
-	};
+		setShowDropdown(false);
+		searchInputRef.current?.focus();
+	}, [setValue]);
 
-	const formatFileSize = (bytes?: number) => {
+	const formatFileSize = useCallback((bytes?: number) => {
 		if (!bytes) return 'Size unknown';
 		if (bytes < 1024) return `${bytes} B`;
 		if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
 		return `${(bytes / 1024 / 1024).toFixed(2)} MB`;
-	};
+	}, []);
 
-	const renderFileIcon = (mimeType?: string, size: number = 28) => {
-		if (mimeType?.includes('pdf'))
-			return (
-				<FilePdfIcon
-					size={size}
-					color={colors.primary}
-				/>
-			);
-		if (mimeType?.includes('word') || mimeType?.includes('document'))
-			return (
-				<FileWordIcon
-					size={size}
-					color={colors.primary}
-				/>
-			);
-		if (mimeType?.includes('image'))
-			return (
-				<FileImageIcon
-					size={size}
-					color={colors.primary}
-				/>
-			);
-		return (
-			<DocumentTextIcon
-				size={size}
-				color={colors.primary}
-			/>
-		);
-	};
+	const renderFileIcon = useCallback(
+		(mimeType?: string, size: number = 28) => {
+			if (mimeType?.includes('pdf')) {
+				return (
+					<FilePdfIcon
+						size={size}
+						color={colors.primary}
+					/>
+				);
+			}
 
-	const getFileTypeLabel = (mimeType?: string) => {
-		if (mimeType?.includes('pdf')) return 'PDF Document';
-		if (mimeType?.includes('word') || mimeType?.includes('document'))
-			return 'Word Document';
-		if (mimeType?.includes('image')) return 'Image File';
+			if (mimeType?.includes('word') || mimeType?.includes('document')) {
+				return (
+					<FileWordIcon
+						size={size}
+						color={colors.primary}
+					/>
+				);
+			}
+
+			if (mimeType?.includes('image')) {
+				return (
+					<FileImageIcon
+						size={size}
+						color={colors.primary}
+					/>
+				);
+			}
+
+			return (
+				<DocumentTextIcon
+					size={size}
+					color={colors.primary}
+				/>
+			);
+		},
+		[colors.primary],
+	);
+
+	const getFileTypeLabel = useCallback((mimeType?: string) => {
+		if (mimeType?.includes('pdf')) return 'PDF';
+		if (mimeType?.includes('word') || mimeType?.includes('document')) {
+			return 'Word';
+		}
+		if (mimeType?.includes('image')) return 'Image';
 		return 'Document';
-	};
+	}, []);
+
+	const filesSummary = useMemo(() => {
+		const totalPages = files.reduce(
+			(count, file) => count + (file.pageCount || 0),
+			0,
+		);
+
+		return {
+			count: files.length,
+			totalPages,
+		};
+	}, [files]);
+
+	const handleVendorSearchFocus = useCallback(() => {
+		if (vendorSearchQuery.length >= 2) {
+			setShowDropdown(true);
+		}
+	}, [vendorSearchQuery.length]);
+
+	const handleVendorSearchChange = useCallback((value: string) => {
+		setVendorSearchQuery(value);
+	}, []);
+
+	const handleCancel = useCallback(() => {
+		navigation.goBack();
+	}, [navigation]);
+
+	const onSubmit = useCallback(
+		async (data: FormValues) => {
+			if (!user) {
+				onError('Error', 'You must be logged in to submit documents');
+				return;
+			}
+
+			if (!data.vendor) {
+				onError('Validation Error', 'Please select a vendor');
+				return;
+			}
+
+			if (data.files.length === 0) {
+				onError('Validation Error', 'Please select at least one file');
+				return;
+			}
+
+			setLoading(true);
+			setUploadStatus('Preparing files for secure upload...');
+			setUploadProgress(0);
+
+			try {
+				// 1. Initiate upload
+				const fileMetadata = data.files.map((file) => ({
+					originalName: file.name,
+					mimeType: file.mimeType || 'application/octet-stream',
+					size: file.size || 0,
+				}));
+
+				const initiateRes = await initiateDirectUpload(fileMetadata);
+				if (!initiateRes.data.success) {
+					throw new Error(initiateRes.data.message || 'Failed to initiate upload');
+				}
+
+				const { uploads } = initiateRes.data.data;
+				const uploadedFiles: {
+					key: string;
+					originalName: string;
+					mimeType: string;
+					size: number;
+				}[] = [];
+
+				// 2. Upload file bytes to signed PUT URLs
+				for (let i = 0; i < data.files.length; i += 1) {
+					const file = data.files[i];
+					const uploadInfo = uploads.find((u) => u.originalName === file.name);
+
+					if (!uploadInfo) {
+						throw new Error(`Upload info missing for file: ${file.name}`);
+					}
+
+					setUploadStatus(`Uploading ${file.name}...`);
+
+					const headers = {
+						'Content-Type': file.mimeType || 'application/octet-stream',
+						...(uploadInfo.headers || {}),
+					};
+
+					const uploadTask = await FileSystem.uploadAsync(
+						uploadInfo.uploadUrl,
+						file.uri,
+						{
+							httpMethod: 'PUT',
+							headers,
+							uploadType: FileSystem.FileSystemUploadType.BINARY_CONTENT,
+						},
+					);
+
+					if (uploadTask.status < 200 || uploadTask.status >= 300) {
+						console.error('R2 Direct Upload PUT failed:', uploadTask);
+						throw new Error(`Failed to upload ${file.name} to storage.`);
+					}
+
+					const nextProgress = Math.round(((i + 1) / data.files.length) * 100);
+					setUploadProgress(nextProgress);
+
+					uploadedFiles.push({
+						key: uploadInfo.key,
+						originalName: file.name,
+						mimeType: file.mimeType || 'application/octet-stream',
+						size: file.size || 0,
+					});
+				}
+
+				// 3. Complete registration
+				setUploadStatus('Finalizing submission...');
+
+				const totalPageCount = data.files.reduce((count, file) => {
+					return count + (file.pageCount || 0);
+				}, 0);
+
+				const completePayload = {
+					title: data.title.trim(),
+					assignedAdmin: data.vendor._id,
+					description: data.description.trim() || undefined,
+					pageCount: totalPageCount,
+					files: uploadedFiles,
+				};
+
+				const completeRes = await completeDirectUpload(completePayload);
+				if (!completeRes.data.success) {
+					throw new Error(completeRes.data.message || 'Failed to finalize upload');
+				}
+
+				// 4. Send notification
+				try {
+					const docName = data.title.trim() || data.files[0]?.name || 'document';
+					await sendNotification(
+						data.vendor._id,
+						user.name,
+						`has submitted a document "${docName}"`,
+					);
+				} catch (notificationError) {
+					console.error('Failed to send notification:', notificationError);
+				}
+
+				showMessage({
+					message: 'Success',
+					description: 'Document submitted successfully!',
+					type: 'success',
+					icon: 'success',
+				});
+
+				queryClient.invalidateQueries({ queryKey: ['studentProjects'] });
+				navigation.goBack();
+			} catch (error: any) {
+				console.error('Submit error:', error);
+				const message =
+					error?.response?.data?.message ||
+					error?.message ||
+					'Failed to submit document';
+				onError('Error', message);
+			} finally {
+				setLoading(false);
+			}
+		},
+		[navigation, queryClient, user],
+	);
 
 	return (
-		<ScrollView
-			className="flex-1 bg-background"
-			keyboardShouldPersistTaps="handled"
-			showsVerticalScrollIndicator={false}>
-			{/* Gradient Header */}
+		<View className="flex-1 bg-background">
+			<StatusBar
+				barStyle="light-content"
+				backgroundColor="transparent"
+				translucent
+			/>
+
 			<LinearGradient
 				colors={[colors.primary, colors.accent]}
 				start={{ x: 0, y: 0 }}
 				end={{ x: 1, y: 1 }}
-				className="pt-14 pb-10 px-6 rounded-b-3xl">
-				<View className="items-center">
-					<View className="w-16 h-16 bg-white/20 rounded-2xl items-center justify-center mb-4">
-						<UploadIcon
-							size={32}
-							color="#fff"
-						/>
+				className="rounded-b-[34px] px-5 pb-9 pt-14">
+				<View className="flex-row items-center justify-between">
+					<View className="flex-row items-center">
+						<View className="mr-3 rounded-[20px] bg-white/15 p-3">
+							<UploadIcon
+								size={26}
+								color="#fff"
+							/>
+						</View>
+						<View>
+							<TextComponent className="text-sm font-medium text-white/70">
+								Document intake
+							</TextComponent>
+							<TextComponent className="text-3xl font-extrabold tracking-tight text-white">
+								Submit documents
+							</TextComponent>
+						</View>
 					</View>
-					<TextComponent className="text-white font-bold text-2xl mb-1">
-						Submit Document
-					</TextComponent>
-					<TextComponent className="text-white/80 text-base text-center">
-						Upload multiple files and send to a vendor
-					</TextComponent>
+
+					<Pressable
+						onPress={handleCancel}
+						className="min-h-[44px] min-w-[44px] items-center justify-center rounded-full bg-white/12">
+						<CloseIcon
+							size={18}
+							color="#FFFFFF"
+						/>
+					</Pressable>
 				</View>
+
+				<TextComponent className="mt-5 max-w-[310px] text-base leading-7 text-white/78">
+					Choose who should receive the submission, give it a clear name, and
+					upload every file needed for review.
+				</TextComponent>
 			</LinearGradient>
 
-			<View className="px-5 pt-6 pb-8 -mt-4">
-				{/* Main Form Card */}
-				<View className="card-3d rounded-2xl p-5 mb-5 bg-card shadow-sm">
-					{/* Vendor Selection */}
-					<View className="mb-5">
-						<TextComponent className="text-foreground font-semibold text-base mb-2.5">
-							Select Vendor{' '}
-							<TextComponent className="text-destructive">*</TextComponent>
+			<ScrollView
+				className="flex-1"
+				keyboardShouldPersistTaps="handled"
+				showsVerticalScrollIndicator={false}
+				contentContainerStyle={{ paddingBottom: 40 }}>
+				<View className="-mt-5 px-5 pb-10">
+				<View className="rounded-[30px] border border-border bg-card px-4 py-5 shadow-sm">
+					<View className="mb-6 rounded-[24px] border border-border bg-background px-4 py-4">
+						<TextComponent className="text-xs font-semibold uppercase tracking-[1.5px] text-muted-foreground">
+							Submission overview
 						</TextComponent>
+						<View className="mt-4 flex-row gap-3">
+							<View className="flex-1 rounded-[20px] bg-card px-4 py-4">
+								<TextComponent className="text-xs font-semibold uppercase tracking-[1.3px] text-muted-foreground">
+									Files
+								</TextComponent>
+								<TextComponent className="mt-2 text-3xl font-extrabold text-foreground">
+									{filesSummary.count}
+								</TextComponent>
+							</View>
+							<View className="flex-1 rounded-[20px] bg-card px-4 py-4">
+								<TextComponent className="text-xs font-semibold uppercase tracking-[1.3px] text-muted-foreground">
+									Pages
+								</TextComponent>
+								<TextComponent className="mt-2 text-3xl font-extrabold text-foreground">
+									{filesSummary.totalPages}
+								</TextComponent>
+							</View>
+						</View>
+					</View>
+
+					<View className="mb-6">
+						<SectionHeading
+							label="Recipient"
+							required
+							supportingText="Pick the person or team who should receive and handle this submission."
+						/>
 
 						{selectedVendor ? (
-							// Selected Vendor Preview
-							<View className="bg-secondary/30 border border-border rounded-xl p-4">
+							<View className="rounded-[22px] border border-border bg-background px-4 py-4">
 								<View className="flex-row items-center justify-between">
-									<View className="flex-1">
-										<TextComponent className="text-muted-foreground text-xs mb-1">
-											Selected Vendor
+									<View className="flex-1 pr-3">
+										<TextComponent className="text-xs font-semibold uppercase tracking-[1.2px] text-muted-foreground">
+											Selected vendor
 										</TextComponent>
-										<TextComponent className="text-foreground font-bold text-base">
+										<TextComponent className="mt-2 text-lg font-bold text-foreground">
 											{selectedVendor.name}
 										</TextComponent>
-										{selectedVendor.email && (
-											<TextComponent className="text-muted-foreground text-sm mt-0.5">
-												{selectedVendor.email}
-											</TextComponent>
-										)}
 									</View>
-									{!isVendorLocked && (
-										<TouchableOpacity
+
+									{!isVendorLocked ? (
+										<Pressable
 											onPress={handleClearVendor}
-											className="bg-destructive/10 px-4 py-2.5 rounded-xl active:opacity-70">
-											<TextComponent className="text-destructive font-semibold text-sm">
+											className="min-h-[44px] rounded-full border border-border px-4 py-2.5">
+											<TextComponent className="text-sm font-semibold text-primary">
 												Change
 											</TextComponent>
-										</TouchableOpacity>
-									)}
+										</Pressable>
+									) : null}
 								</View>
 							</View>
 						) : (
-							// Vendor Search Input
 							<View className="relative">
 								<View
-									className={`flex-row items-center bg-input border rounded-xl px-4 ${
+									className={`flex-row items-center rounded-[22px] border bg-background px-4 ${
 										errors.vendor ? 'border-destructive' : 'border-border'
 									}`}>
-									<View className="mr-2">
-										<SearchIcon
-											size={18}
-											color={colors.mutedForeground}
-										/>
-									</View>
+									<SearchIcon
+										size={18}
+										color={colors.mutedForeground}
+									/>
 									<TextInput
 										ref={searchInputRef}
-										className="flex-1 py-3.5 text-foreground text-base"
-										placeholder="Search vendor by name..."
+										className="flex-1 px-3 py-4 text-base text-foreground"
+										placeholder="Search recipient name"
 										placeholderTextColor={colors.mutedForeground}
 										value={vendorSearchQuery}
-										onChangeText={setVendorSearchQuery}
-										onFocus={() => {
-											if (vendorSearchQuery.length >= 2) setShowDropdown(true);
-										}}
+										onChangeText={handleVendorSearchChange}
+										onFocus={handleVendorSearchFocus}
 									/>
-									{searchingVendors && (
+									{searchingVendors ? (
 										<ActivityIndicator
 											size="small"
 											color={colors.primary}
 										/>
-									)}
+									) : null}
 								</View>
-								{errors.vendor && (
-									<TextComponent className="text-destructive text-xs mt-1">
-										Please select a vendor
-									</TextComponent>
-								)}
 
-								{/* Dropdown Results */}
-								{showDropdown && (
-									<View className="absolute top-14 left-0 right-0 bg-card border border-border rounded-xl shadow-lg z-50 max-h-48 overflow-hidden">
+								{errors.vendor ? (
+									<TextComponent className="mt-2 text-xs text-destructive">
+										Please select a recipient
+									</TextComponent>
+								) : null}
+
+								{showDropdown ? (
+									<View className="absolute left-0 right-0 top-[60px] z-50 overflow-hidden rounded-[22px] border border-border bg-card shadow-lg">
 										{vendorSearchResults.length > 0 ? (
 											<ScrollView
 												nestedScrollEnabled
-												showsVerticalScrollIndicator={false}>
+												showsVerticalScrollIndicator={false}
+												contentContainerStyle={{ paddingVertical: 6 }}>
 												{vendorSearchResults.map((admin) => (
 													<Pressable
 														key={admin._id}
 														onPress={() => handleSelectVendor(admin)}
-														className="p-3.5 border-b border-border active:bg-muted">
-														<TextComponent className="text-foreground font-semibold text-sm">
+														className="px-4 py-3 active:bg-muted">
+														<TextComponent className="text-sm font-semibold text-foreground">
 															{admin.name}
-														</TextComponent>
-														<TextComponent className="text-muted-foreground text-xs mt-0.5">
-															{admin.email}
 														</TextComponent>
 													</Pressable>
 												))}
 											</ScrollView>
 										) : (
-											<View className="p-4 items-center">
-												<TextComponent className="text-muted-foreground text-sm">
-													No vendors found.
+											<View className="px-4 py-4">
+												<TextComponent className="text-sm text-muted-foreground">
+													No recipients found.
 												</TextComponent>
 											</View>
 										)}
 									</View>
-								)}
+								) : null}
 							</View>
 						)}
 
 						{!selectedVendor &&
-							vendorSearchQuery.length < 2 &&
-							vendorSearchQuery.length > 0 && (
-								<TextComponent className="text-muted-foreground text-xs mt-2">
-									Type at least 2 characters to search
-								</TextComponent>
-							)}
+						vendorSearchQuery.length > 0 &&
+						vendorSearchQuery.length < 2 ? (
+							<TextComponent className="mt-2 text-xs text-muted-foreground">
+								Type at least 2 characters to search recipients.
+							</TextComponent>
+						) : null}
 					</View>
 
-					{/* Document Title */}
-					<View className="mb-5">
-						<TextComponent className="text-foreground font-semibold text-base mb-2.5">
-							Title{' '}
-							<TextComponent className="text-destructive">*</TextComponent>
-						</TextComponent>
+					<View className="mb-6">
+						<SectionHeading
+							label="Document title"
+							required
+							supportingText="Use a clear title the recipient can recognize quickly."
+						/>
 						<Controller
 							control={control}
 							name="title"
 							rules={{ required: 'Document title is required' }}
 							render={({ field: { onChange, onBlur, value } }) => (
 								<TextInput
-									className={`bg-input border rounded-xl px-4 py-3.5 text-foreground text-base ${
+									className={`rounded-[22px] border bg-background px-4 py-4 text-base text-foreground ${
 										errors.title ? 'border-destructive' : 'border-border'
 									}`}
-									placeholder="e.g., Final Year Thesis"
+									placeholder="Example: Final year project print request"
 									placeholderTextColor={colors.mutedForeground}
 									onBlur={onBlur}
 									onChangeText={onChange}
@@ -536,216 +712,206 @@ export default function SubmitDocumentScreen({ navigation, route }: Props) {
 								/>
 							)}
 						/>
-						{errors.title && (
-							<TextComponent className="text-destructive text-xs mt-1">
+						{errors.title ? (
+							<TextComponent className="mt-2 text-xs text-destructive">
 								{errors.title.message}
 							</TextComponent>
-						)}
+						) : null}
 					</View>
 
-					{/* Description */}
-					<View className="mb-5">
-						<TextComponent className="text-foreground font-semibold text-base mb-2.5">
-							Description{' '}
-							<TextComponent className="text-muted-foreground text-sm font-normal">
-								(Optional)
-							</TextComponent>
-						</TextComponent>
+					<View className="mb-6">
+						<SectionHeading
+							label="Description"
+							supportingText="Add any handling notes, delivery context, or instructions for the recipient."
+						/>
 						<Controller
 							control={control}
 							name="description"
 							render={({ field: { onChange, onBlur, value } }) => (
 								<TextInput
-									className="bg-input border border-border rounded-xl px-4 py-3.5 text-foreground text-base min-h-[100px]"
-									placeholder="Any specific instructions or notes..."
+									className="min-h-[120px] rounded-[22px] border border-border bg-background px-4 py-4 text-base text-foreground"
+									placeholder="Example: These files belong to the April admissions batch and should be reviewed together."
 									placeholderTextColor={colors.mutedForeground}
 									onBlur={onBlur}
 									onChangeText={onChange}
 									value={value}
 									multiline
-									numberOfLines={4}
+									numberOfLines={5}
 									textAlignVertical="top"
 								/>
 							)}
 						/>
 					</View>
 
-					{/* File Upload */}
-					<View className="mb-6">
-						<View className="flex-row items-center justify-between mb-2.5">
-							<TextComponent className="text-foreground font-semibold text-base">
-								Documents{' '}
-								<TextComponent className="text-destructive">*</TextComponent>
-							</TextComponent>
-							{files.length > 0 && (
-								<TouchableOpacity
+					<View className="mb-7">
+						<View className="mb-3 flex-row items-center justify-between">
+							<SectionHeading
+								label="Files"
+								required
+								supportingText="Upload PDFs, Word files, or images for this submission."
+							/>
+
+							{files.length > 0 ? (
+								<Pressable
 									onPress={handleSelectFile}
-									className="flex-row items-center bg-primary/10 px-3 py-1.5 rounded-lg active:opacity-70">
+									className="min-h-[40px] flex-row items-center rounded-full border border-border px-4 py-2">
 									<PlusIcon
 										size={14}
 										color={colors.primary}
 									/>
-									<TextComponent className="text-primary font-bold text-xs ml-1">
-										Add File
+									<TextComponent className="ml-1 text-xs font-bold uppercase tracking-[1px] text-primary">
+										Add file
 									</TextComponent>
-								</TouchableOpacity>
-							)}
+								</Pressable>
+							) : null}
 						</View>
 
 						{files.length > 0 ? (
-							<View className="space-y-3">
+							<View>
 								{files.map((file, index) => (
 									<View
 										key={`${file.uri}-${index}`}
-										className="bg-secondary/30 border border-border rounded-xl p-3">
+										className="mb-3 rounded-[22px] border border-border bg-background px-4 py-4">
 										<View className="flex-row items-center">
-											<View className="w-12 h-12 bg-primary/10 rounded-xl items-center justify-center">
+											<View
+												className="mr-3 h-12 w-12 items-center justify-center rounded-[18px]"
+												style={{
+													backgroundColor:
+														colorScheme === 'dark'
+															? `${colors.primary}18`
+															: `${colors.primary}12`,
+												}}>
 												{renderFileIcon(file.mimeType, 24)}
 											</View>
-											<View className="flex-1 ml-3">
+
+											<View className="flex-1">
 												<TextComponent
-													className="text-foreground font-semibold text-sm"
+													className="text-sm font-bold text-foreground"
 													numberOfLines={1}>
 													{file.name}
 												</TextComponent>
-												<View className="flex-row items-center mt-0.5">
-													<TextComponent className="text-muted-foreground text-[10px]">
-														{getFileTypeLabel(file.mimeType)}
-													</TextComponent>
-													<TextComponent className="text-muted-foreground text-[10px] mx-1.5">
-														•
-													</TextComponent>
-													<TextComponent className="text-muted-foreground text-[10px]">
-														{formatFileSize(file.size)}
-													</TextComponent>
-													{file.pageCount !== undefined && (
-														<>
-															<TextComponent className="text-muted-foreground text-[10px] mx-1.5">
-																•
-															</TextComponent>
-															<TextComponent className="text-muted-foreground text-[10px]">
-																{file.pageCount} pages
-															</TextComponent>
-														</>
-													)}
-												</View>
+												<TextComponent className="mt-1 text-xs text-muted-foreground">
+													{getFileTypeLabel(file.mimeType)} • {formatFileSize(file.size)}
+													{file.pageCount !== undefined
+														? ` • ${file.pageCount} pages`
+														: ''}
+												</TextComponent>
 											</View>
-											<TouchableOpacity
-												onPress={() => removeFile(index)}
-												className="bg-destructive/10 p-2 rounded-lg active:opacity-70 ml-2">
+
+											<Pressable
+												onPress={() => handleRemoveFile(index)}
+												className="ml-3 min-h-[42px] min-w-[42px] items-center justify-center rounded-full"
+												style={{
+													backgroundColor:
+														colorScheme === 'dark'
+															? 'rgba(239, 68, 68, 0.14)'
+															: '#fee2e2',
+												}}>
 												<TrashIcon
 													size={16}
 													color={colors.destructive}
 												/>
-											</TouchableOpacity>
+											</Pressable>
 										</View>
 									</View>
 								))}
 							</View>
 						) : (
 							<Pressable
-								className={`border-2 border-dashed rounded-xl p-8 items-center active:opacity-80 bg-muted/30 ${
+								className={`items-center rounded-[24px] border-2 border-dashed px-6 py-10 ${
 									errors.files ? 'border-destructive' : 'border-border'
 								}`}
+								style={{
+									backgroundColor:
+										colorScheme === 'dark'
+											? 'rgba(255,255,255,0.03)'
+											: colors.muted,
+								}}
 								onPress={handleSelectFile}>
-								<View className="w-16 h-16 bg-primary/15 rounded-2xl items-center justify-center mb-4">
+								<View
+									className="mb-4 h-16 w-16 items-center justify-center rounded-[22px]"
+									style={{ backgroundColor: `${colors.primary}16` }}>
 									<DocumentTextIcon
-										size={32}
+										size={30}
 										color={colors.primary}
 									/>
 								</View>
-								<TextComponent className="text-foreground font-bold text-base mb-1">
-									Tap to select files
+								<TextComponent className="text-base font-bold text-foreground">
+									Select files to upload
 								</TextComponent>
-								<TextComponent className="text-muted-foreground text-sm text-center">
-									PDF, Word documents, or images up to 15MB
+								<TextComponent className="mt-2 text-center text-sm leading-6 text-muted-foreground">
+									Add PDF, Word, or image files for this request.
 								</TextComponent>
 							</Pressable>
 						)}
-						{errors.files && (
-							<TextComponent className="text-destructive text-xs mt-1">
+
+						{errors.files ? (
+							<TextComponent className="mt-2 text-xs text-destructive">
 								Please select at least one file
 							</TextComponent>
-						)}
+						) : null}
 					</View>
 
-					{/* Submit Button */}
-					<TouchableOpacity
-						className={`rounded-xl p-4 items-center flex-row justify-center ${
-							loading ? 'bg-primary' : 'bg-primary'
-						}`}
+					<Pressable
+						className="min-h-[56px] flex-row items-center justify-center rounded-[22px] bg-primary active:opacity-90"
 						onPress={handleSubmit(onSubmit)}
-						disabled={loading}
-						activeOpacity={0.8}>
+						disabled={loading}>
 						{loading ? (
 							<>
 								<ActivityIndicator
 									size="small"
 									color="#fff"
 								/>
-								<TextComponent className="text-primary-foreground font-bold text-lg ml-2">
+								<TextComponent className="ml-2 text-lg font-bold text-primary-foreground">
 									Submitting...
 								</TextComponent>
 							</>
 						) : (
-							<TextComponent className="text-primary-foreground font-bold text-lg">
-								Submit Document
-								{files.length > 1 ? `s (${files.length})` : ''}
+							<TextComponent className="text-lg font-bold text-primary-foreground">
+								Submit document{files.length > 1 ? `s (${files.length})` : ''}
 							</TextComponent>
 						)}
-					</TouchableOpacity>
+					</Pressable>
 
-					{/* Cancel */}
-					<TouchableOpacity
-						className="mt-3 py-3 items-center"
-						onPress={() => navigation.goBack()}>
-						<TextComponent className="text-muted-foreground font-semibold">
+					<Pressable
+						className="mt-3 min-h-[48px] items-center justify-center rounded-[18px]"
+						onPress={handleCancel}>
+						<TextComponent className="font-semibold text-muted-foreground">
 							Cancel
 						</TextComponent>
-					</TouchableOpacity>
+					</Pressable>
 				</View>
+				</View>
+			</ScrollView>
 
-				{/* Tips Section */}
-				<View className="bg-blue-50 dark:bg-blue-950/30 p-5 rounded-2xl border border-blue-100 dark:border-blue-900/50 mb-8">
-					<View className="flex-row items-center mb-3">
-						<View className="mr-2">
-							<LightbulbIcon
-								size={20}
-								color="#1e40af"
-							/>
-						</View>
-						<TextComponent className="font-bold text-blue-900 dark:text-blue-100">
-							Submission Tips
+			{loading ? (
+				<View className="absolute inset-0 bg-black/60 items-center justify-center z-50 px-6">
+					<View className="bg-card w-full max-w-sm rounded-[32px] p-6 border border-border items-center shadow-2xl">
+						<ActivityIndicator size="large" color={colors.primary} className="mb-5" />
+						<TextComponent className="text-lg font-bold text-foreground text-center mb-2">
+							Submitting Documents
 						</TextComponent>
-					</View>
-					<View className="space-y-2">
-						<View className="flex-row items-start">
-							<TextComponent className="text-blue-600 dark:text-blue-300 mr-2">
-								•
+						<TextComponent className="text-sm text-muted-foreground text-center mb-5">
+							{uploadStatus}
+						</TextComponent>
+						{uploadProgress > 0 ? (
+							<View className="w-full bg-muted h-2.5 rounded-full overflow-hidden mb-3">
+								<View
+									className="bg-primary h-full rounded-full"
+									style={{ width: `${uploadProgress}%` }}
+								/>
+							</View>
+						) : null}
+						{uploadProgress > 0 ? (
+							<TextComponent className="text-xs font-semibold text-primary">
+								{uploadProgress}%
 							</TextComponent>
-							<TextComponent className="text-blue-800 dark:text-blue-200 text-sm flex-1">
-								Ensure your files are under 15MB each
-							</TextComponent>
-						</View>
-						<View className="flex-row items-start">
-							<TextComponent className="text-blue-600 dark:text-blue-300 mr-2">
-								•
-							</TextComponent>
-							<TextComponent className="text-blue-800 dark:text-blue-200 text-sm flex-1">
-								You can upload multiple files at once
-							</TextComponent>
-						</View>
-						<View className="flex-row items-start">
-							<TextComponent className="text-blue-600 dark:text-blue-300 mr-2">
-								•
-							</TextComponent>
-							<TextComponent className="text-blue-800 dark:text-blue-200 text-sm flex-1">
-								PDFs are best for accurate page counts
-							</TextComponent>
-						</View>
+						) : null}
 					</View>
 				</View>
-			</View>
-		</ScrollView>
+			) : null}
+		</View>
 	);
 }
+
+export default SubmitDocumentScreen;

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useCallback } from 'react';
 import {
 	Pressable,
 	ActivityIndicator,
@@ -30,7 +30,7 @@ function AuthButton({
 }: AuthButtonProps) {
 	const isDisabled = disabled || loading;
 
-	const renderContent = () => (
+	const renderContent = useCallback(() => (
 		<View className="flex-row items-center justify-center gap-2">
 			{loading ? (
 				<>
@@ -56,7 +56,7 @@ function AuthButton({
 				</>
 			)}
 		</View>
-	);
+	), [loading, title, variant]);
 
 	if (variant === 'primary') {
 		return (
@@ -136,7 +136,8 @@ const styles = StyleSheet.create({
 		elevation: 4,
 	},
 	gradient: {
-		paddingVertical: 20,
+		minHeight: 56,
+		paddingVertical: 16,
 		paddingHorizontal: 24,
 		alignItems: 'center',
 		justifyContent: 'center',
