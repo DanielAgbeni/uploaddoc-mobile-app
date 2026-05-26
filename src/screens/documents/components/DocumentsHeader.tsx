@@ -1,8 +1,11 @@
 import React, { memo } from 'react';
 import { View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { LinearGradient } from 'expo-linear-gradient';
+import { FileText, Clock, CheckCircle } from 'lucide-react-native';
 import CustomImage from '../../../components/common/CustomImage';
 import TextComponent from '../../../components/ui/TextComponent';
+import { useTheme } from '../../../providers/ThemeProvider';
 
 interface DocumentsHeaderProps {
 	acceptedCount: number;
@@ -12,25 +15,6 @@ interface DocumentsHeaderProps {
 	totalCount: number;
 }
 
-const StatCard = memo(function StatCard({
-	label,
-	value,
-}: {
-	label: string;
-	value: number;
-}) {
-	return (
-		<View className="flex-1 rounded-[22px] border border-white/15 bg-white/10 px-4 py-4">
-			<TextComponent className="text-xs font-medium uppercase tracking-[1.4px] text-white/65">
-				{label}
-			</TextComponent>
-			<TextComponent className="mt-3 text-3xl font-extrabold text-white">
-				{value}
-			</TextComponent>
-		</View>
-	);
-});
-
 const DocumentsHeader = memo(function DocumentsHeader({
 	acceptedCount,
 	firstName,
@@ -39,14 +23,19 @@ const DocumentsHeader = memo(function DocumentsHeader({
 	totalCount,
 }: DocumentsHeaderProps) {
 	const insets = useSafeAreaInsets();
+	const { colors } = useTheme();
 
 	return (
-		<View
-			className="rounded-b-[36px] bg-primary px-5 pb-7"
-			style={{ paddingTop: insets.top + 14 }}>
-			<View className="mb-6 flex-row items-center justify-between">
-				<View className="flex-row items-center">
-					<View className="mr-3 h-14 w-14 overflow-hidden rounded-full border border-white/15 bg-white/10">
+		<LinearGradient
+			colors={[colors.gradientStart, colors.gradientEnd]}
+			start={{ x: 0, y: 0 }}
+			end={{ x: 1, y: 1 }}
+			className="rounded-b-[28px] px-5 pb-5 shadow-md"
+			style={{ paddingTop: insets.top + 10 }}>
+			{/* Top Bar: Profile Row */}
+			<View className="mb-4 flex-row items-center justify-between">
+				<View className="flex-row items-center gap-3">
+					<View className="h-11 w-11 overflow-hidden rounded-full border border-white/20 bg-white/10 shadow-sm">
 						<CustomImage
 							source={
 								profilePicture
@@ -58,51 +47,79 @@ const DocumentsHeader = memo(function DocumentsHeader({
 						/>
 					</View>
 					<View>
-						<TextComponent className="text-sm font-medium text-white/70">
+						<TextComponent className="text-[11px] font-bold uppercase tracking-[0.8px] text-white/60">
 							Good to see you,
 						</TextComponent>
-						<TextComponent className="text-xl font-extrabold text-white">
+						<TextComponent className="text-base font-extrabold text-white leading-5">
 							{firstName}
 						</TextComponent>
 					</View>
 				</View>
 
-				<View className="flex-row items-center rounded-full border border-white/15 bg-white/10 px-3 py-2">
+				{/* UploadDoc App Badge */}
+				<View className="flex-row items-center rounded-full border border-white/20 bg-white/10 px-3 py-1.5 shadow-sm">
 					<CustomImage
 						source={require('../../../assets/app-images/icon.png')}
-						className="mr-2 h-7 w-7 rounded-full"
+						className="mr-1.5 h-5 w-5 rounded-full"
 						contentFit="cover"
 					/>
-					<TextComponent className="text-xs font-semibold uppercase tracking-[1.6px] text-white/75">
+					<TextComponent className="text-[10px] font-black uppercase tracking-[1px] text-white">
 						UploadDoc
 					</TextComponent>
 				</View>
 			</View>
 
-			<View className="mb-5">
-				<TextComponent className="text-[34px] font-extrabold leading-10 tracking-tight text-white">
-					Your documents,
-				</TextComponent>
-				<TextComponent className="mt-1 text-[34px] font-extrabold leading-10 tracking-tight text-white/80">
-					beautifully organized.
-				</TextComponent>
-			</View>
+			{/* Unified Dashboard Stat Bar */}
+			<View className="flex-row items-center justify-between divide-x divide-white/10 rounded-[20px] border border-white/15 bg-white/10 py-3.5 shadow-sm">
+				{/* Total Stat */}
+				<View className="flex-1 items-center justify-center gap-1">
+					<View className="flex-row items-center gap-1.5">
+						<FileText
+							size={13}
+							color="rgba(255, 255, 255, 0.65)"
+						/>
+						<TextComponent className="text-[10px] font-bold uppercase tracking-[0.8px] text-white/65">
+							Total
+						</TextComponent>
+					</View>
+					<TextComponent className="text-xl font-black text-white">
+						{totalCount}
+					</TextComponent>
+				</View>
 
-			<View className="flex-row gap-3">
-				<StatCard
-					label="Total"
-					value={totalCount}
-				/>
-				<StatCard
-					label="Pending"
-					value={pendingCount}
-				/>
-				<StatCard
-					label="Accepted"
-					value={acceptedCount}
-				/>
+				{/* Pending Stat */}
+				<View className="flex-1 items-center justify-center gap-1">
+					<View className="flex-row items-center gap-1.5">
+						<Clock
+							size={13}
+							color="rgba(255, 255, 255, 0.65)"
+						/>
+						<TextComponent className="text-[10px] font-bold uppercase tracking-[0.8px] text-white/65">
+							Pending
+						</TextComponent>
+					</View>
+					<TextComponent className="text-xl font-black text-white">
+						{pendingCount}
+					</TextComponent>
+				</View>
+
+				{/* Accepted Stat */}
+				<View className="flex-1 items-center justify-center gap-1">
+					<View className="flex-row items-center gap-1.5">
+						<CheckCircle
+							size={13}
+							color="rgba(255, 255, 255, 0.65)"
+						/>
+						<TextComponent className="text-[10px] font-bold uppercase tracking-[0.8px] text-white/65">
+							Accepted
+						</TextComponent>
+					</View>
+					<TextComponent className="text-xl font-black text-white">
+						{acceptedCount}
+					</TextComponent>
+				</View>
 			</View>
-		</View>
+		</LinearGradient>
 	);
 });
 

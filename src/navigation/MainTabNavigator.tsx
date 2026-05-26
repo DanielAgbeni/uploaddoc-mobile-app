@@ -1,4 +1,5 @@
 import React, { memo } from 'react';
+import { View } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { MainTabParamList } from '../types/navigation.types';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -17,6 +18,26 @@ import AccountStack from './stacks/AccountStack';
 import DashboardScreen from '../screens/dashboard/DashboardScreen';
 import { useUserStore } from '../shared/user-store/useUserStore';
 
+interface TabIconContainerProps {
+	focused: boolean;
+	primaryColor: string;
+	children: React.ReactNode;
+}
+
+const TabIconContainer = memo(function TabIconContainer({
+	focused,
+	primaryColor,
+	children,
+}: TabIconContainerProps) {
+	return (
+		<View
+			className="items-center justify-center rounded-full px-4 py-1"
+			style={focused ? { backgroundColor: `${primaryColor}1A` } : undefined}>
+			{children}
+		</View>
+	);
+});
+
 const Tab = createBottomTabNavigator<MainTabParamList>();
 
 function MainTabNavigator() {
@@ -25,12 +46,16 @@ function MainTabNavigator() {
 	const insets = useSafeAreaInsets();
 	const { colors, colorScheme } = useTheme();
 
+	const activeColor = colors.primary;
+	const inactiveColor =
+		colorScheme === 'dark' ? 'rgba(248, 249, 252, 0.4)' : 'rgba(3, 4, 7, 0.4)';
+
 	return (
 		<Tab.Navigator
 			screenOptions={{
 				headerShown: false,
-				tabBarActiveTintColor: colors.primary,
-				tabBarInactiveTintColor: colors.mutedForeground,
+				tabBarActiveTintColor: activeColor,
+				tabBarInactiveTintColor: inactiveColor,
 				tabBarShowLabel: true,
 				// @ts-ignore: 'animation' is a valid option in v7 but might not be in the types yet if mismatch
 				animation: 'shift', // Adds transition animation between tabs
@@ -38,18 +63,19 @@ function MainTabNavigator() {
 				sceneStyle: { backgroundColor: colors.background },
 				tabBarStyle: {
 					backgroundColor: colors.background,
-					height: 60 + Math.max(insets.bottom, 18),
-					paddingBottom: Math.max(insets.bottom, 20),
+					height: 60 + Math.max(insets.bottom, 12),
+					paddingBottom: Math.max(insets.bottom, 12),
 					paddingTop: 8,
 					elevation: 0,
-					shadowColor: colorScheme === 'dark' ? '#000' : '#000',
-					shadowOffset: { width: 0, height: 1 },
-					shadowOpacity: colorScheme === 'dark' ? 0.2 : 0.05,
-					shadowRadius: 4,
-					borderTopWidth: 0,
+					shadowColor: '#000',
+					shadowOffset: { width: 0, height: -2 },
+					shadowOpacity: colorScheme === 'dark' ? 0.15 : 0.03,
+					shadowRadius: 8,
+					borderTopWidth: 1,
+					borderTopColor: colorScheme === 'dark' ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.05)',
 				},
 				tabBarLabelStyle: {
-					fontSize: 12,
+					fontSize: 11,
 					fontWeight: '600',
 					marginTop: 4,
 				},
@@ -60,10 +86,14 @@ function MainTabNavigator() {
 				options={{
 					tabBarLabel: 'Documents',
 					tabBarIcon: ({ color, focused }) => (
-						<StacksIcon
-							size={24}
-							color={color}
-						/>
+						<TabIconContainer
+							focused={focused}
+							primaryColor={activeColor}>
+							<StacksIcon
+								size={20}
+								color={color}
+							/>
+						</TabIconContainer>
 					),
 				}}
 			/>
@@ -74,15 +104,18 @@ function MainTabNavigator() {
 				options={{
 					tabBarLabel: 'Find Vendor',
 					tabBarIcon: ({ color, focused }) => (
-						<SearchIcon
-							size={24}
-							color={color}
-						/>
+						<TabIconContainer
+							focused={focused}
+							primaryColor={activeColor}>
+							<SearchIcon
+								size={20}
+								color={color}
+							/>
+						</TabIconContainer>
 					),
 				}}
 			/>
 
-			{/* Showing Dashboard for everyone for now or based on isVendor logic */}
 			{isVendor && (
 				<Tab.Screen
 					name="DashboardTab"
@@ -90,10 +123,14 @@ function MainTabNavigator() {
 					options={{
 						tabBarLabel: 'Dashboard',
 						tabBarIcon: ({ color, focused }) => (
-							<DashboardIcon
-								size={24}
-								color={color}
-							/>
+							<TabIconContainer
+								focused={focused}
+								primaryColor={activeColor}>
+								<DashboardIcon
+									size={20}
+									color={color}
+								/>
+							</TabIconContainer>
 						),
 					}}
 				/>
@@ -105,14 +142,19 @@ function MainTabNavigator() {
 				options={{
 					tabBarLabel: 'Account',
 					tabBarIcon: ({ color, focused }) => (
-						<AccountIcon
-							size={24}
-							color={color}
-						/>
+						<TabIconContainer
+							focused={focused}
+							primaryColor={activeColor}>
+							<AccountIcon
+								size={20}
+								color={color}
+							/>
+						</TabIconContainer>
 					),
 				}}
 			/>
 		</Tab.Navigator>
 	);
 }
+
 export default memo(MainTabNavigator);

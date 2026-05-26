@@ -69,18 +69,18 @@ const SectionHeading = memo(function SectionHeading({
 	supportingText?: string;
 }) {
 	return (
-		<View className="mb-3">
-			<TextComponent className="text-base font-bold text-foreground">
+		<View className="mb-2">
+			<TextComponent className="text-sm font-bold text-foreground">
 				{label}
 				{required ? (
-					<TextComponent className="text-base font-bold text-destructive">
+					<TextComponent className="text-sm font-bold text-destructive">
 						{' '}
 						*
 					</TextComponent>
 				) : null}
 			</TextComponent>
 			{supportingText ? (
-				<TextComponent className="mt-1 text-sm leading-6 text-muted-foreground">
+				<TextComponent className="mt-0.5 text-xs leading-5 text-muted-foreground">
 					{supportingText}
 				</TextComponent>
 			) : null}
@@ -412,10 +412,10 @@ function SubmitDocumentScreen({
 					size: number;
 				}[] = [];
 
-				// 2. Upload file bytes to signed PUT URLs
+				// 2. Upload file bytes to signed PUT URLs (mapped by index from initiateDirectUpload)
 				for (let i = 0; i < data.files.length; i += 1) {
 					const file = data.files[i];
-					const uploadInfo = uploads.find((u) => u.originalName === file.name);
+					const uploadInfo = uploads[i];
 
 					if (!uploadInfo) {
 						throw new Error(`Upload info missing for file: ${file.name}`);
@@ -517,24 +517,25 @@ function SubmitDocumentScreen({
 				translucent
 			/>
 
+			{/* LinearGradient Header: Compact and Slim */}
 			<LinearGradient
 				colors={[colors.primary, colors.accent]}
 				start={{ x: 0, y: 0 }}
 				end={{ x: 1, y: 1 }}
-				className="rounded-b-[34px] px-5 pb-9 pt-14">
+				className="rounded-b-2xl px-5 pb-5 pt-14 shadow-sm">
 				<View className="flex-row items-center justify-between">
 					<View className="flex-row items-center">
-						<View className="mr-3 rounded-[20px] bg-white/15 p-3">
+						<View className="mr-3 rounded-lg bg-white/15 p-2.5">
 							<UploadIcon
-								size={26}
+								size={22}
 								color="#fff"
 							/>
 						</View>
 						<View>
-							<TextComponent className="text-sm font-medium text-white/70">
+							<TextComponent className="text-[10px] font-bold uppercase tracking-[0.8px] text-white/60">
 								Document intake
 							</TextComponent>
-							<TextComponent className="text-3xl font-extrabold tracking-tight text-white">
+							<TextComponent className="text-xl font-extrabold tracking-tight text-white leading-6">
 								Submit documents
 							</TextComponent>
 						</View>
@@ -542,15 +543,15 @@ function SubmitDocumentScreen({
 
 					<Pressable
 						onPress={handleCancel}
-						className="min-h-[44px] min-w-[44px] items-center justify-center rounded-full bg-white/12">
+						className="min-h-[40px] min-w-[40px] items-center justify-center rounded-full bg-white/12 active:opacity-95">
 						<CloseIcon
-							size={18}
+							size={16}
 							color="#FFFFFF"
 						/>
 					</Pressable>
 				</View>
 
-				<TextComponent className="mt-5 max-w-[310px] text-base leading-7 text-white/78">
+				<TextComponent className="mt-3 text-xs leading-5 text-white/75">
 					Choose who should receive the submission, give it a clear name, and
 					upload every file needed for review.
 				</TextComponent>
@@ -561,47 +562,48 @@ function SubmitDocumentScreen({
 				keyboardShouldPersistTaps="handled"
 				showsVerticalScrollIndicator={false}
 				contentContainerStyle={{ paddingBottom: 40 }}>
-				<View className="-mt-5 px-5 pb-10">
-				<View className="rounded-[30px] border border-border bg-card px-4 py-5 shadow-sm">
-					<View className="mb-6 rounded-[24px] border border-border bg-background px-4 py-4">
-						<TextComponent className="text-xs font-semibold uppercase tracking-[1.5px] text-muted-foreground">
+				<View className="px-5 py-6 space-y-6">
+					{/* Submission Overview Block */}
+					<View className="rounded-xl border border-border bg-card p-4 shadow-sm">
+						<TextComponent className="text-xs font-bold uppercase tracking-[1px] text-muted-foreground">
 							Submission overview
 						</TextComponent>
-						<View className="mt-4 flex-row gap-3">
-							<View className="flex-1 rounded-[20px] bg-card px-4 py-4">
-								<TextComponent className="text-xs font-semibold uppercase tracking-[1.3px] text-muted-foreground">
+						<View className="mt-3 flex-row gap-3">
+							<View className="flex-1 rounded-lg bg-background border border-border/40 p-3 items-center">
+								<TextComponent className="text-[10px] font-bold uppercase tracking-[0.8px] text-muted-foreground">
 									Files
 								</TextComponent>
-								<TextComponent className="mt-2 text-3xl font-extrabold text-foreground">
+								<TextComponent className="mt-1 text-2xl font-black text-foreground">
 									{filesSummary.count}
 								</TextComponent>
 							</View>
-							<View className="flex-1 rounded-[20px] bg-card px-4 py-4">
-								<TextComponent className="text-xs font-semibold uppercase tracking-[1.3px] text-muted-foreground">
+							<View className="flex-1 rounded-lg bg-background border border-border/40 p-3 items-center">
+								<TextComponent className="text-[10px] font-bold uppercase tracking-[0.8px] text-muted-foreground">
 									Pages
 								</TextComponent>
-								<TextComponent className="mt-2 text-3xl font-extrabold text-foreground">
+								<TextComponent className="mt-1 text-2xl font-black text-foreground">
 									{filesSummary.totalPages}
 								</TextComponent>
 							</View>
 						</View>
 					</View>
 
-					<View className="mb-6">
+					{/* Recipient Selection Section */}
+					<View>
 						<SectionHeading
 							label="Recipient"
 							required
-							supportingText="Pick the person or team who should receive and handle this submission."
+							supportingText="Pick the vendor or team who should handle this submission."
 						/>
 
 						{selectedVendor ? (
-							<View className="rounded-[22px] border border-border bg-background px-4 py-4">
+							<View className="rounded-xl border border-border bg-card px-4 py-3">
 								<View className="flex-row items-center justify-between">
 									<View className="flex-1 pr-3">
-										<TextComponent className="text-xs font-semibold uppercase tracking-[1.2px] text-muted-foreground">
+										<TextComponent className="text-[10px] font-bold uppercase tracking-[0.8px] text-muted-foreground">
 											Selected vendor
 										</TextComponent>
-										<TextComponent className="mt-2 text-lg font-bold text-foreground">
+										<TextComponent className="mt-1 text-base font-extrabold text-foreground">
 											{selectedVendor.name}
 										</TextComponent>
 									</View>
@@ -609,8 +611,8 @@ function SubmitDocumentScreen({
 									{!isVendorLocked ? (
 										<Pressable
 											onPress={handleClearVendor}
-											className="min-h-[44px] rounded-full border border-border px-4 py-2.5">
-											<TextComponent className="text-sm font-semibold text-primary">
+											className="min-h-[38px] items-center justify-center rounded-lg border border-border bg-background px-4 py-1.5 active:opacity-90">
+											<TextComponent className="text-xs font-bold uppercase tracking-[0.8px] text-primary">
 												Change
 											</TextComponent>
 										</Pressable>
@@ -620,7 +622,7 @@ function SubmitDocumentScreen({
 						) : (
 							<View className="relative">
 								<View
-									className={`flex-row items-center rounded-[22px] border bg-background px-4 ${
+									className={`flex-row items-center rounded-xl border bg-card px-4 ${
 										errors.vendor ? 'border-destructive' : 'border-border'
 									}`}>
 									<SearchIcon
@@ -629,7 +631,7 @@ function SubmitDocumentScreen({
 									/>
 									<TextInput
 										ref={searchInputRef}
-										className="flex-1 px-3 py-4 text-base text-foreground"
+										className="flex-1 px-3 py-3 text-base text-foreground"
 										placeholder="Search recipient name"
 										placeholderTextColor={colors.mutedForeground}
 										value={vendorSearchQuery}
@@ -645,13 +647,13 @@ function SubmitDocumentScreen({
 								</View>
 
 								{errors.vendor ? (
-									<TextComponent className="mt-2 text-xs text-destructive">
+									<TextComponent className="mt-1.5 text-xs text-destructive px-1">
 										Please select a recipient
 									</TextComponent>
 								) : null}
 
 								{showDropdown ? (
-									<View className="absolute left-0 right-0 top-[60px] z-50 overflow-hidden rounded-[22px] border border-border bg-card shadow-lg">
+									<View className="absolute left-0 right-0 top-[52px] z-50 overflow-hidden rounded-xl border border-border bg-card shadow-lg">
 										{vendorSearchResults.length > 0 ? (
 											<ScrollView
 												nestedScrollEnabled
@@ -683,13 +685,14 @@ function SubmitDocumentScreen({
 						{!selectedVendor &&
 						vendorSearchQuery.length > 0 &&
 						vendorSearchQuery.length < 2 ? (
-							<TextComponent className="mt-2 text-xs text-muted-foreground">
+							<TextComponent className="mt-2 text-xs text-muted-foreground px-1">
 								Type at least 2 characters to search recipients.
 							</TextComponent>
 						) : null}
 					</View>
 
-					<View className="mb-6">
+					{/* Document Title Section */}
+					<View>
 						<SectionHeading
 							label="Document title"
 							required
@@ -701,7 +704,7 @@ function SubmitDocumentScreen({
 							rules={{ required: 'Document title is required' }}
 							render={({ field: { onChange, onBlur, value } }) => (
 								<TextInput
-									className={`rounded-[22px] border bg-background px-4 py-4 text-base text-foreground ${
+									className={`rounded-xl border bg-card px-4 py-3 text-base text-foreground ${
 										errors.title ? 'border-destructive' : 'border-border'
 									}`}
 									placeholder="Example: Final year project print request"
@@ -713,13 +716,14 @@ function SubmitDocumentScreen({
 							)}
 						/>
 						{errors.title ? (
-							<TextComponent className="mt-2 text-xs text-destructive">
+							<TextComponent className="mt-1.5 text-xs text-destructive px-1">
 								{errors.title.message}
 							</TextComponent>
 						) : null}
 					</View>
 
-					<View className="mb-6">
+					{/* Description Section */}
+					<View>
 						<SectionHeading
 							label="Description"
 							supportingText="Add any handling notes, delivery context, or instructions for the recipient."
@@ -729,37 +733,41 @@ function SubmitDocumentScreen({
 							name="description"
 							render={({ field: { onChange, onBlur, value } }) => (
 								<TextInput
-									className="min-h-[120px] rounded-[22px] border border-border bg-background px-4 py-4 text-base text-foreground"
+									className="min-h-[100px] rounded-xl border border-border bg-card px-4 py-3 text-base text-foreground"
 									placeholder="Example: These files belong to the April admissions batch and should be reviewed together."
 									placeholderTextColor={colors.mutedForeground}
 									onBlur={onBlur}
 									onChangeText={onChange}
 									value={value}
 									multiline
-									numberOfLines={5}
+									numberOfLines={4}
 									textAlignVertical="top"
 								/>
 							)}
 						/>
 					</View>
 
-					<View className="mb-7">
-						<View className="mb-3 flex-row items-center justify-between">
-							<SectionHeading
-								label="Files"
-								required
-								supportingText="Upload PDFs, Word files, or images for this submission."
-							/>
+					{/* Files Upload Section */}
+					<View>
+						<View className="flex-row items-center justify-between mb-3">
+							<View className="flex-1">
+								<TextComponent className="text-sm font-bold text-foreground">
+									Files <TextComponent className="text-destructive">*</TextComponent>
+								</TextComponent>
+								<TextComponent className="mt-0.5 text-xs text-muted-foreground">
+									Upload PDFs, Word files, or images for review.
+								</TextComponent>
+							</View>
 
 							{files.length > 0 ? (
 								<Pressable
 									onPress={handleSelectFile}
-									className="min-h-[40px] flex-row items-center rounded-full border border-border px-4 py-2">
+									className="min-h-[38px] flex-row items-center rounded-lg border border-border bg-card px-3 py-1.5 active:opacity-90">
 									<PlusIcon
-										size={14}
+										size={12}
 										color={colors.primary}
 									/>
-									<TextComponent className="ml-1 text-xs font-bold uppercase tracking-[1px] text-primary">
+									<TextComponent className="ml-1 text-xs font-bold uppercase tracking-[0.8px] text-primary">
 										Add file
 									</TextComponent>
 								</Pressable>
@@ -771,17 +779,17 @@ function SubmitDocumentScreen({
 								{files.map((file, index) => (
 									<View
 										key={`${file.uri}-${index}`}
-										className="mb-3 rounded-[22px] border border-border bg-background px-4 py-4">
+										className="mb-3 rounded-xl border border-border bg-card px-3.5 py-3 shadow-sm">
 										<View className="flex-row items-center">
 											<View
-												className="mr-3 h-12 w-12 items-center justify-center rounded-[18px]"
+												className="mr-3 h-10 w-10 items-center justify-center rounded-lg"
 												style={{
 													backgroundColor:
 														colorScheme === 'dark'
 															? `${colors.primary}18`
 															: `${colors.primary}12`,
 												}}>
-												{renderFileIcon(file.mimeType, 24)}
+												{renderFileIcon(file.mimeType, 20)}
 											</View>
 
 											<View className="flex-1">
@@ -790,7 +798,7 @@ function SubmitDocumentScreen({
 													numberOfLines={1}>
 													{file.name}
 												</TextComponent>
-												<TextComponent className="mt-1 text-xs text-muted-foreground">
+												<TextComponent className="mt-0.5 text-xs text-muted-foreground">
 													{getFileTypeLabel(file.mimeType)} • {formatFileSize(file.size)}
 													{file.pageCount !== undefined
 														? ` • ${file.pageCount} pages`
@@ -800,7 +808,7 @@ function SubmitDocumentScreen({
 
 											<Pressable
 												onPress={() => handleRemoveFile(index)}
-												className="ml-3 min-h-[42px] min-w-[42px] items-center justify-center rounded-full"
+												className="ml-3 h-9 w-9 items-center justify-center rounded-lg"
 												style={{
 													backgroundColor:
 														colorScheme === 'dark'
@@ -808,7 +816,7 @@ function SubmitDocumentScreen({
 															: '#fee2e2',
 												}}>
 												<TrashIcon
-													size={16}
+													size={14}
 													color={colors.destructive}
 												/>
 											</Pressable>
@@ -818,84 +826,87 @@ function SubmitDocumentScreen({
 							</View>
 						) : (
 							<Pressable
-								className={`items-center rounded-[24px] border-2 border-dashed px-6 py-10 ${
+								className={`items-center rounded-xl border-2 border-dashed px-5 py-8 ${
 									errors.files ? 'border-destructive' : 'border-border'
 								}`}
 								style={{
 									backgroundColor:
 										colorScheme === 'dark'
-											? 'rgba(255,255,255,0.03)'
+											? 'rgba(255,255,255,0.02)'
 											: colors.muted,
 								}}
 								onPress={handleSelectFile}>
 								<View
-									className="mb-4 h-16 w-16 items-center justify-center rounded-[22px]"
-									style={{ backgroundColor: `${colors.primary}16` }}>
+									className="mb-3 h-14 w-14 items-center justify-center rounded-xl"
+									style={{ backgroundColor: `${colors.primary}12` }}>
 									<DocumentTextIcon
-										size={30}
+										size={26}
 										color={colors.primary}
 									/>
 								</View>
-								<TextComponent className="text-base font-bold text-foreground">
+								<TextComponent className="text-sm font-bold text-foreground">
 									Select files to upload
 								</TextComponent>
-								<TextComponent className="mt-2 text-center text-sm leading-6 text-muted-foreground">
+								<TextComponent className="mt-1 text-center text-xs leading-5 text-muted-foreground">
 									Add PDF, Word, or image files for this request.
 								</TextComponent>
 							</Pressable>
 						)}
 
 						{errors.files ? (
-							<TextComponent className="mt-2 text-xs text-destructive">
+							<TextComponent className="mt-1.5 text-xs text-destructive px-1">
 								Please select at least one file
 							</TextComponent>
 						) : null}
 					</View>
 
-					<Pressable
-						className="min-h-[56px] flex-row items-center justify-center rounded-[22px] bg-primary active:opacity-90"
-						onPress={handleSubmit(onSubmit)}
-						disabled={loading}>
-						{loading ? (
-							<>
-								<ActivityIndicator
-									size="small"
-									color="#fff"
-								/>
-								<TextComponent className="ml-2 text-lg font-bold text-primary-foreground">
-									Submitting...
+					{/* Action Buttons */}
+					<View className="pt-2">
+						<Pressable
+							className="min-h-[50px] flex-row items-center justify-center rounded-xl bg-primary active:opacity-90 shadow-sm"
+							onPress={handleSubmit(onSubmit)}
+							disabled={loading}>
+							{loading ? (
+								<>
+									<ActivityIndicator
+										size="small"
+										color="#fff"
+									/>
+									<TextComponent className="ml-2 text-base font-bold text-primary-foreground">
+										Submitting...
+									</TextComponent>
+								</>
+							) : (
+								<TextComponent className="text-base font-bold text-primary-foreground">
+									Submit document{files.length > 1 ? `s (${files.length})` : ''}
 								</TextComponent>
-							</>
-						) : (
-							<TextComponent className="text-lg font-bold text-primary-foreground">
-								Submit document{files.length > 1 ? `s (${files.length})` : ''}
-							</TextComponent>
-						)}
-					</Pressable>
+							)}
+						</Pressable>
 
-					<Pressable
-						className="mt-3 min-h-[48px] items-center justify-center rounded-[18px]"
-						onPress={handleCancel}>
-						<TextComponent className="font-semibold text-muted-foreground">
-							Cancel
-						</TextComponent>
-					</Pressable>
-				</View>
+						<Pressable
+							className="mt-3 min-h-[44px] items-center justify-center rounded-xl border border-border bg-card active:opacity-90"
+							onPress={handleCancel}>
+							<TextComponent className="font-semibold text-foreground text-sm">
+								Cancel
+							</TextComponent>
+						</Pressable>
+					</View>
 				</View>
 			</ScrollView>
 
+			{/* Submitting Status Modal */}
 			{loading ? (
-				<View className="absolute inset-0 bg-black/60 items-center justify-center z-50 px-6">
-					<View className="bg-card w-full max-w-sm rounded-[32px] p-6 border border-border items-center shadow-2xl">
-						<ActivityIndicator size="large" color={colors.primary} className="mb-5" />
-						<TextComponent className="text-lg font-bold text-foreground text-center mb-2">
+				<View className="absolute inset-0 bg-black/65 items-center justify-center z-50 px-6">
+					<View className="bg-card w-full max-w-xs rounded-xl p-5 border border-border items-center shadow-2xl">
+						<ActivityIndicator size="large" color={colors.primary} className="mb-4" />
+						<TextComponent className="text-base font-bold text-foreground text-center mb-1">
 							Submitting Documents
 						</TextComponent>
-						<TextComponent className="text-sm text-muted-foreground text-center mb-5">
+						<TextComponent className="text-xs text-muted-foreground text-center mb-4">
 							{uploadStatus}
 						</TextComponent>
 						{uploadProgress > 0 ? (
-							<View className="w-full bg-muted h-2.5 rounded-full overflow-hidden mb-3">
+							<View className="w-full bg-muted h-2 rounded-full overflow-hidden mb-2">
 								<View
 									className="bg-primary h-full rounded-full"
 									style={{ width: `${uploadProgress}%` }}

@@ -11,14 +11,14 @@ import {
 	KeyboardAvoidingView,
 	Platform,
 	Pressable,
-	ScrollView,
 	TextInput,
 	View,
 } from 'react-native';
 import Modal from 'react-native-modal';
 import { format } from 'date-fns';
 import { onValue, push, ref, serverTimestamp } from 'firebase/database';
-import { CloseIcon } from '../../../assets/icons';
+import { FlashList } from '@shopify/flash-list';
+import { CloseIcon, SendIcon } from '../../../assets/icons';
 import { sendNotification } from '../../../api/notifications';
 import TextComponent from '../../../components/ui/TextComponent';
 import { useTheme } from '../../../providers/ThemeProvider';
@@ -38,6 +38,10 @@ type FirebaseChatMessageRecord = {
 	timestamp?: number | null;
 };
 
+type ChatListItem =
+	| { type: 'message'; message: DocumentChatMessage; id: string }
+	| { type: 'dateDivider'; dateString: string; id: string };
+
 const CHAT_LOAD_TIMEOUT_MS = 10000;
 
 const logChatEvent = (message: string, details?: unknown) => {
@@ -53,6 +57,18 @@ const logChatEvent = (message: string, details?: unknown) => {
 	console.log(`[DocumentChat] ${message}`, details);
 };
 
+const DateDivider = memo(function DateDivider({ dateString }: { dateString: string }) {
+	return (
+		<View className="my-5 items-center justify-center">
+			<View className="rounded-full bg-muted/40 px-3.5 py-1.5 border border-border/10">
+				<TextComponent className="text-[11px] font-semibold text-muted-foreground">
+					{dateString}
+				</TextComponent>
+			</View>
+		</View>
+	);
+});
+
 const MessageBubble = memo(function MessageBubble({
 	isCurrentUser,
 	message,
@@ -60,28 +76,61 @@ const MessageBubble = memo(function MessageBubble({
 	isCurrentUser: boolean;
 	message: DocumentChatMessage;
 }) {
+	const isSending = message.status === 'sending';
+	const isError = message.status === 'error';
+
 	return (
-		<View className={`mb-3 ${isCurrentUser ? 'items-end' : 'items-start'}`}>
-			<View
-				className={`max-w-[82%] rounded-[24px] px-4 py-3 ${
-					isCurrentUser ? 'bg-primary' : 'border border-border bg-card'
-				}`}>
-				<TextComponent
-					className={`text-xs font-semibold ${
-						isCurrentUser ? 'text-primary-foreground/80' : 'text-muted-foreground'
-					}`}>
-					{message.senderName}
-				</TextComponent>
-				<TextComponent
-					className={`mt-1 text-sm leading-6 ${
-						isCurrentUser ? 'text-primary-foreground' : 'text-foreground'
-					}`}>
-					{message.text}
-				</TextComponent>
+		<View className={`mb-3 flex-row ${isCurrentUser ? 'justify-end' : 'justify-start'}`}>
+			<View className="flex-col">
+				{!isCurrentUser && (
+					<TextComponent className="text-[11px] font-bold text-muted-foreground mb-1 px-1">
+						{message.senderName}
+					</TextComponent>
+				)}
+				<View
+					className={`px-4 py-2.5 max-w-[280px] shadow-sm ${
+						isCurrentUser
+							? 'bg-primary rounded-[20px] rounded-br-[4px]'
+							: 'bg-card border border-border/60 rounded-[20px] rounded-bl-[4px]'
+					}`}
+					style={{
+						opacity: isSending ? 0.6 : 1,
+					}}>
+					<TextComponent
+						className={`text-sm leading-6 ${
+							isCurrentUser ? 'text-primary-foreground' : 'text-foreground'
+						}`}>
+						{message.text}
+					</TextComponent>
+					<View className="flex-row items-center justify-end gap-1 mt-1">
+						<TextComponent
+							className={`text-[9px] ${
+								isCurrentUser ? 'text-primary-foreground/70' : 'text-muted-foreground'
+							}`}>
+							{format(new Date(message.createdAt), 'h:mm a')}
+						</TextComponent>
+
+						{isCurrentUser && (
+							<View className="w-3 h-3 items-center justify-center">
+								{isSending ? (
+									<ActivityIndicator
+										size={8}
+										color="#FFFFFF"
+									/>
+								) : isError ? (
+									<TextComponent className="text-[9px] text-destructive-foreground font-bold">
+										!
+									</TextComponent>
+								) : (
+									<TextComponent className="text-[9px] text-primary-foreground/70">
+										✓
+									</TextComponent>
+								)}
+							</View>
+						)}
+					</View>
+				</View>
 			</View>
-			<TextComponent className="mt-1 px-1 text-xs text-muted-foreground">
-				{format(new Date(message.createdAt), 'MMM d, h:mm a')}
-			</TextComponent>
 		</View>
 	);
 });
@@ -95,11 +144,11 @@ const DocumentChatModal = memo(function DocumentChatModal({
 	const { colors } = useTheme();
 	const [messageText, setMessageText] = useState('');
 	const [messages, setMessages] = useState<DocumentChatMessage[]>([]);
+	const [optimisticMessages, setOptimisticMessages] = useState<DocumentChatMessage[]>([]);
 	const [isLoadingMessages, setIsLoadingMessages] = useState(false);
-	const [isSending, setIsSending] = useState(false);
 	const [chatError, setChatError] = useState<string | null>(null);
 	const [retryCount, setRetryCount] = useState(0);
-	const scrollViewRef = useRef<ScrollView>(null);
+	const flashListRef = useRef<FlashList<ChatListItem>>(null);
 
 	const chatRoomId = project?._id ?? null;
 
@@ -107,9 +156,43 @@ const DocumentChatModal = memo(function DocumentChatModal({
 		setMessageText(value);
 	}, []);
 
+	// Local optimistic messages are merged and duplicates are filtered out
+	const mergedMessages = useMemo(() => {
+		const firebaseTextSet = new Set(messages.map((m) => `${m.senderId}_${m.text}`));
+		const filteredOptimistic = optimisticMessages.filter(
+			(om) => !firebaseTextSet.has(`${om.senderId}_${om.text}`),
+		);
+		return [...messages, ...filteredOptimistic].sort((a, b) => a.createdAt - b.createdAt);
+	}, [messages, optimisticMessages]);
+
+	// Transform merged messages into heterogeneous list containing date dividers
+	const chatItems = useMemo(() => {
+		const items: ChatListItem[] = [];
+		let lastDateStr = '';
+		for (const msg of mergedMessages) {
+			const dateStr = format(new Date(msg.createdAt), 'yyyy-MM-dd');
+			if (dateStr !== lastDateStr) {
+				lastDateStr = dateStr;
+				items.push({
+					type: 'dateDivider',
+					dateString: format(new Date(msg.createdAt), 'MMMM d, yyyy'),
+					id: `divider-${msg.id || msg.createdAt}`,
+				});
+			}
+			items.push({
+				type: 'message',
+				message: msg,
+				id: msg.id || `msg-${msg.createdAt}`,
+			});
+		}
+		return items.toReversed();
+	}, [mergedMessages]);
+
 	const handleScrollToBottom = useCallback(() => {
-		scrollViewRef.current?.scrollToEnd({ animated: true });
-	}, []);
+		if (chatItems.length > 0) {
+			flashListRef.current?.scrollToIndex({ index: 0, animated: true });
+		}
+	}, [chatItems.length]);
 
 	const handleRetry = useCallback(() => {
 		setRetryCount((current) => current + 1);
@@ -118,6 +201,7 @@ const DocumentChatModal = memo(function DocumentChatModal({
 	useEffect(() => {
 		if (!isVisible || !chatRoomId) {
 			setMessages([]);
+			setOptimisticMessages([]);
 			setChatError(null);
 			setIsLoadingMessages(false);
 			return;
@@ -227,14 +311,17 @@ const DocumentChatModal = memo(function DocumentChatModal({
 	}, [chatRoomId, isVisible, project?.title, retryCount]);
 
 	useEffect(() => {
-		if (messages.length > 0) {
-			const timer = setTimeout(() => {
-				handleScrollToBottom();
-			}, 80);
-
-			return () => clearTimeout(timer);
+		if (mergedMessages.length > 0) {
+			const lastMessage = mergedMessages[mergedMessages.length - 1];
+			const isMyMessage = lastMessage?.senderId === (currentUser?.id || currentUser?._id);
+			if (isMyMessage) {
+				const timer = setTimeout(() => {
+					handleScrollToBottom();
+				}, 80);
+				return () => clearTimeout(timer);
+			}
 		}
-	}, [handleScrollToBottom, messages]);
+	}, [handleScrollToBottom, mergedMessages, currentUser?.id, currentUser?._id]);
 
 	const handleClose = useCallback(() => {
 		setMessageText('');
@@ -251,7 +338,18 @@ const DocumentChatModal = memo(function DocumentChatModal({
 			return;
 		}
 
-		setIsSending(true);
+		const tempId = `temp-${Date.now()}`;
+		const newOptimisticMsg: DocumentChatMessage = {
+			id: tempId,
+			senderId: currentUser.id || currentUser._id,
+			senderName: currentUser.name,
+			text: trimmedMessage,
+			createdAt: Date.now(),
+			status: 'sending',
+		};
+
+		setOptimisticMessages((current) => [...current, newOptimisticMsg]);
+		setMessageText('');
 
 		try {
 			const messagesRef = ref(firebaseDatabase, `chats/${chatRoomId}`);
@@ -266,7 +364,8 @@ const DocumentChatModal = memo(function DocumentChatModal({
 				chatRoomId,
 				projectTitle: project.title,
 			});
-			setMessageText('');
+
+			setOptimisticMessages((current) => current.filter((om) => om.id !== tempId));
 
 			if (project.assignedAdmin) {
 				await sendNotification(
@@ -278,10 +377,33 @@ const DocumentChatModal = memo(function DocumentChatModal({
 		} catch (error) {
 			logChatEvent('send failed', error);
 			console.error('Failed to send chat message:', error);
-		} finally {
-			setIsSending(false);
+			setOptimisticMessages((current) =>
+				current.map((om) => (om.id === tempId ? { ...om, status: 'error' } : om)),
+			);
 		}
 	}, [chatRoomId, currentUser, messageText, project]);
+
+	const getItemType = useCallback((item: ChatListItem) => {
+		return item.type;
+	}, []);
+
+	const keyExtractor = useCallback((item: ChatListItem) => {
+		return item.id;
+	}, []);
+
+	const renderItem = useCallback(({ item }: { item: ChatListItem }) => {
+		if (item.type === 'dateDivider') {
+			return <DateDivider dateString={item.dateString} />;
+		}
+
+		const isCurrentUser = item.message.senderId === (currentUser?.id || currentUser?._id);
+		return (
+			<MessageBubble
+				message={item.message}
+				isCurrentUser={isCurrentUser}
+			/>
+		);
+	}, [currentUser?.id, currentUser?._id]);
 
 	const emptyState = useMemo(() => {
 		if (isLoadingMessages) {
@@ -369,21 +491,21 @@ const DocumentChatModal = memo(function DocumentChatModal({
 				</View>
 
 				<View className="flex-1 px-5 py-4">
-					<ScrollView
-						ref={scrollViewRef}
-						showsVerticalScrollIndicator={false}
-						contentContainerStyle={{ flexGrow: 1, paddingBottom: 12 }}>
-						{messages.length === 0 ? emptyState : null}
-						{messages.map((message) => (
-							<MessageBubble
-								key={message.id}
-								message={message}
-								isCurrentUser={
-									message.senderId === (currentUser?.id || currentUser?._id)
-								}
-							/>
-						))}
-					</ScrollView>
+					{chatItems.length === 0 ? (
+						emptyState
+					) : (
+						<FlashList
+							ref={flashListRef}
+							data={chatItems}
+							renderItem={renderItem}
+							keyExtractor={keyExtractor}
+							getItemType={getItemType}
+							estimatedItemSize={84}
+							inverted
+							showsVerticalScrollIndicator={false}
+							contentContainerStyle={{ paddingBottom: 12 }}
+						/>
+					)}
 				</View>
 
 				<View className="border-t border-border px-5 pb-6 pt-4">
@@ -402,19 +524,13 @@ const DocumentChatModal = memo(function DocumentChatModal({
 
 						<Pressable
 							onPress={handleSendMessage}
-							disabled={isSending || !messageText.trim()}
-							className="min-h-[48px] rounded-full bg-primary px-5 py-3 active:opacity-90"
-							style={{ opacity: isSending || !messageText.trim() ? 0.5 : 1 }}>
-							{isSending ? (
-								<ActivityIndicator
-									size="small"
-									color="#FFFFFF"
-								/>
-							) : (
-								<TextComponent className="text-sm font-bold text-primary-foreground">
-									Send
-								</TextComponent>
-							)}
+							disabled={!messageText.trim()}
+							className="h-12 w-12 items-center justify-center rounded-full bg-primary active:opacity-90"
+							style={{ opacity: !messageText.trim() ? 0.5 : 1 }}>
+							<SendIcon
+								size={18}
+								color={colors.primaryForeground}
+							/>
 						</Pressable>
 					</View>
 				</View>

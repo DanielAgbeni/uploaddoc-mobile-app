@@ -36,6 +36,7 @@ import GoogleIcon from './google.icon';
 import AddIcon from './add.icon';
 import TrashIcon from './trash.icon';
 import AlertCircleIcon from './alert-circle.icon';
+import SendIcon from './send.icon';
 
 export {
 	icon,
@@ -76,4 +77,5 @@ export {
 	AddIcon as PlusIcon,
 	TrashIcon,
 	AlertCircleIcon,
+	SendIcon,
 };

@@ -339,6 +339,7 @@ declare global {
 		senderName: string;
 		text: string;
 		createdAt: number;
+		status?: 'sending' | 'sent' | 'error';
 	};
 }
 
