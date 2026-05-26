@@ -52,7 +52,7 @@ const WelcomeScreen = memo(function WelcomeScreen(_props: Props) {
 
 				<Pressable
 					onPress={handleOpenModal}
-					className="flex-row items-center justify-center rounded-full px-6 py-5 active:opacity-95"
+					className="flex-row items-center justify-center rounded-md px-6 py-5 active:opacity-95"
 					style={{ backgroundColor: colors.primary }}>
 					<Text className="mr-3 text-lg font-extrabold tracking-tight text-white">
 						Get Started
