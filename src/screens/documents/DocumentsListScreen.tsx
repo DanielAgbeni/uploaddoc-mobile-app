@@ -291,7 +291,7 @@ function DocumentsListScreen({ navigation }: Props) {
 	const renderEmpty = useCallback(() => {
 		if (isLoading) {
 			return (
-				<View className="px-5 pt-2">
+				<View className=" pt-2">
 					{Array.from({ length: 4 }).map((_, index) => (
 						<DocumentCardSkeleton key={index} />
 					))}
@@ -352,58 +352,55 @@ function DocumentsListScreen({ navigation }: Props) {
 
 	const listHeaderComponent = useMemo(
 		() => (
-			<View className="px-5 pb-3 pt-4">
-				<View className="mb-4 rounded-[28px] border border-border bg-card px-4 py-4">
-					<View className="flex-row items-center rounded-[20px] border border-border bg-background px-4">
-						<SearchIcon
-							size={18}
-							color={colors.mutedForeground}
-						/>
-						<TextInput
-							placeholder="Search Document"
-							value={searchQuery}
-							onChangeText={handleSearchChange}
-							className="flex-1 px-3 py-4 text-base text-foreground"
-							placeholderTextColor={colors.mutedForeground}
-						/>
-						{searchQuery.length > 0 ? (
-							<Pressable
-								onPress={handleClearSearch}
-								className="min-h-[40px] min-w-[40px] items-center justify-center">
-								<CloseCircleIcon
-									size={18}
-									color={colors.mutedForeground}
-								/>
-							</Pressable>
-						) : null}
-					</View>
-
-					<View className="mt-4 flex-row items-center justify-between">
-						<View>
-							<TextComponent className="text-sm font-semibold uppercase tracking-[1.3px] text-muted-foreground">
-								Visible results
-							</TextComponent>
-							<TextComponent className="mt-1 text-2xl font-extrabold text-foreground">
-								{filteredProjects.length}
-							</TextComponent>
-						</View>
-					</View>
+			<View className="px-5 pb-2 pt-4">
+				{/* Sleek Search Capsule */}
+				<View className="mb-4 flex-row items-center rounded-2xl border border-border bg-card px-4 shadow-sm">
+					<SearchIcon
+						size={18}
+						color={colors.mutedForeground}
+					/>
+					<TextInput
+						placeholder="Search submissions"
+						value={searchQuery}
+						onChangeText={handleSearchChange}
+						className="flex-1 px-3 py-3.5 text-base text-foreground"
+						placeholderTextColor={colors.mutedForeground}
+					/>
+					{searchQuery.length > 0 ? (
+						<Pressable
+							onPress={handleClearSearch}
+							className="min-h-[40px] min-w-[40px] items-center justify-center">
+							<CloseCircleIcon
+								size={18}
+								color={colors.mutedForeground}
+							/>
+						</Pressable>
+					) : null}
 				</View>
 
-				<View className="mb-4">
-					<ScrollView
-						horizontal
-						showsHorizontalScrollIndicator={false}
-						contentContainerStyle={{ paddingRight: 20, paddingBottom: 4 }}>
-						{statusFilters.map((filter) => (
-							<StatusFilterChip
-								key={filter.value}
-								label={filter.label}
-								active={filter.value === statusFilter}
-								onPress={() => handleSelectFilter(filter.value)}
-							/>
-						))}
-					</ScrollView>
+				{/* Filter Row and Results Count */}
+				<View className="mb-2 flex-row items-center justify-between">
+					<View className="flex-1 mr-3">
+						<ScrollView
+							horizontal
+							showsHorizontalScrollIndicator={false}
+							contentContainerStyle={{ paddingRight: 10, paddingBottom: 2 }}>
+							{statusFilters.map((filter) => (
+								<StatusFilterChip
+									key={filter.value}
+									label={filter.label}
+									active={filter.value === statusFilter}
+									onPress={() => handleSelectFilter(filter.value)}
+								/>
+							))}
+						</ScrollView>
+					</View>
+
+					<View className="pl-1">
+						<TextComponent className="text-xs font-bold text-muted-foreground uppercase tracking-[0.5px]">
+							{filteredProjects.length} {filteredProjects.length === 1 ? 'doc' : 'docs'}
+						</TextComponent>
+					</View>
 				</View>
 			</View>
 		),
@@ -433,7 +430,7 @@ function DocumentsListScreen({ navigation }: Props) {
 				acceptedCount={counts.accepted}
 			/>
 
-			<View className="-mt-5 flex-1">
+			<View className="flex-1">
 				<FlashList
 					data={filteredProjects}
 					renderItem={renderItem}
@@ -451,27 +448,10 @@ function DocumentsListScreen({ navigation }: Props) {
 							tintColor={colors.primary}
 						/>
 					}
-					contentContainerStyle={{ paddingBottom: 120 }}
+					contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 120 }}
 				/>
 			</View>
 
-			<View className="absolute bottom-6 right-6">
-				<Pressable
-					className="min-h-[60px] min-w-[60px] items-center justify-center rounded-full bg-primary active:opacity-90"
-					style={{
-						shadowColor: colors.primary,
-						shadowOffset: { width: 0, height: 12 },
-						shadowOpacity: 0.25,
-						shadowRadius: 20,
-						elevation: 8,
-					}}
-					onPress={handleCreateDocument}>
-					<AddIcon
-						size={28}
-						color="#FFFFFF"
-					/>
-				</Pressable>
-			</View>
 
 			<AlertModal
 				isVisible={deleteModalVisible}

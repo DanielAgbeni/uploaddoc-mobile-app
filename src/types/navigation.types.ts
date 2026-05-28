@@ -71,6 +71,7 @@ export type AuthStackParamList = {
 export type MainTabParamList = {
 	DocumentsTab: NavigatorScreenParams<DocumentsStackParamList>;
 	VendorsTab: NavigatorScreenParams<VendorsStackParamList>;
+	SubmitTab: undefined; // Floating Plus Tab
 	DashboardTab: undefined; // Only visible for vendors
 	AccountTab: NavigatorScreenParams<AccountStackParamList>;
 };

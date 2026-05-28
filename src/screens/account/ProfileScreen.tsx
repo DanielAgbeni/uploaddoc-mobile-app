@@ -61,16 +61,18 @@ const SettingRow = memo(function SettingRow({
 				{icon}
 			</View>
 			<View className="flex-1 ml-3">
-				<Text
-					className={`font-semibold text-base ${
+				<TextComponent
+					className={`font-bold text-base ${
 						isDestructive ? 'text-destructive' : 'text-foreground'
 					}`}>
 					{title}
-				</Text>
+				</TextComponent>
 				{subtitle ? (
-					<Text className="text-muted-foreground text-sm mt-0.5">
+					<TextComponent 
+						className="text-muted-foreground text-sm mt-0.5 font-medium"
+						style={{ opacity: 0.7 }}>
 						{subtitle}
-					</Text>
+					</TextComponent>
 				) : null}
 			</View>
 			{rightElement}
@@ -209,7 +211,8 @@ function ProfileScreen({ navigation }: Props) {
 	return (
 		<ScrollView
 			className="flex-1 bg-background"
-			showsVerticalScrollIndicator={false}>
+			showsVerticalScrollIndicator={false}
+			contentContainerStyle={{ paddingBottom: 120 }}>
 			{/* Gradient Header with Avatar */}
 			<LinearGradient
 				colors={[colors.primary, colors.accent]}
@@ -218,7 +221,7 @@ function ProfileScreen({ navigation }: Props) {
 				className="pt-14 pb-8 px-6 rounded-b-3xl">
 				<View className="items-center">
 					{/* Avatar */}
-					<View className="w-24 h-24 bg-white/20 rounded-full items-center justify-center mb-4 border-4 border-white/30 overflow-hidden">
+					<View className="w-24 h-24 bg-white/20 rounded-full items-center justify-center mb-4 border-4 border-white/30 overflow-hidden shadow-md">
 						<CustomImage
 							source={user?.profilePicture}
 							className="w-full h-full"
@@ -226,31 +229,31 @@ function ProfileScreen({ navigation }: Props) {
 					</View>
 
 					{/* User Info */}
-					<TextComponent className="text-white font-bold text-2xl mb-1">
+					<TextComponent className="text-white font-black text-2xl mb-1 tracking-tight">
 						{user?.name}
 					</TextComponent>
-					<TextComponent className="text-white/80 text-base mb-3">
+					<TextComponent className="text-white/80 text-sm font-semibold mb-3">
 						{user?.email}
 					</TextComponent>
 
 					{/* Account Badge */}
-					<View className="bg-white/20 px-4 py-1.5 rounded-full">
-						<TextComponent className="text-white font-semibold text-sm">
+					<View className="bg-white/15 px-3 py-1 rounded-full border border-white/10 shadow-sm">
+						<TextComponent className="text-white font-bold text-xs uppercase tracking-[0.8px]">
 							{isVendor ? '✓ Vendor Account' : 'User Account'}
 						</TextComponent>
 					</View>
 				</View>
 			</LinearGradient>
 
-			<View className="px-5 pt-6 pb-8">
+			<View className="px-5 pt-6">
 				{/* Vendor-Only Options */}
 				{isVendor ? (
 					<View className="mb-6">
-						<TextComponent className="text-muted-foreground text-xs font-semibold uppercase tracking-wider mb-3 px-1">
+						<TextComponent className="text-muted-foreground text-xs font-bold uppercase tracking-wider mb-3 px-1">
 							Vendor Options
 						</TextComponent>
 
-						<View className="card-3d rounded-2xl px-4">
+						<View className="bg-card border border-border rounded-[24px] px-5 shadow-sm">
 							<SettingRow
 								icon={
 									<EditIcon
@@ -280,11 +283,11 @@ function ProfileScreen({ navigation }: Props) {
 
 				{/* Preferences Section */}
 				<View className="mb-6">
-					<TextComponent className="text-muted-foreground text-xs font-semibold uppercase tracking-wider mb-3 px-1">
+					<TextComponent className="text-muted-foreground text-xs font-bold uppercase tracking-wider mb-3 px-1">
 						Preferences
 					</TextComponent>
 
-					<View className="card-3d rounded-2xl px-4">
+					<View className="bg-card border border-border rounded-[24px] px-5 shadow-sm">
 						{/* Notifications */}
 						<SettingRow
 							icon={
@@ -302,7 +305,7 @@ function ProfileScreen({ navigation }: Props) {
 									onValueChange={handleToggleNotifications}
 									trackColor={{
 										false: colors.muted,
-										true: colors.primary + '60',
+										true: colors.primary + '40',
 									}}
 									thumbColor={notifications ? colors.primary : colors.border}
 								/>
@@ -327,17 +330,19 @@ function ProfileScreen({ navigation }: Props) {
 									)}
 								</View>
 								<View className="flex-1 ml-3">
-									<TextComponent className="text-foreground font-semibold text-base">
+									<TextComponent className="text-foreground font-bold text-base">
 										Appearance
 									</TextComponent>
-									<TextComponent className="text-muted-foreground text-sm mt-0.5">
+									<TextComponent 
+										className="text-muted-foreground text-sm mt-0.5 font-medium"
+										style={{ opacity: 0.7 }}>
 										Choose your preferred theme
 									</TextComponent>
 								</View>
 							</View>
 
 							{/* Theme Toggle Buttons */}
-							<View className="flex-row bg-muted rounded-xl p-1">
+							<View className="flex-row bg-background rounded-xl p-1 border border-border/50">
 								<Pressable
 									onPress={handleSetThemeLight}
 									className={`flex-1 flex-row items-center justify-center py-2.5 px-2 rounded-lg ${
@@ -345,12 +350,12 @@ function ProfileScreen({ navigation }: Props) {
 									}`}>
 									<View className="mr-1.5">
 										<SunIcon
-											size={18}
+											size={16}
 											color={theme === 'light' ? colors.primaryForeground : colors.foreground}
 										/>
 									</View>
 									<TextComponent
-										className={`font-semibold text-sm ${
+										className={`font-bold text-sm ${
 											theme === 'light'
 												? 'text-primary-foreground'
 												: 'text-foreground'
@@ -366,12 +371,12 @@ function ProfileScreen({ navigation }: Props) {
 									}`}>
 									<View className="mr-1.5">
 										<MoonIcon
-											size={18}
+											size={16}
 											color={theme === 'dark' ? colors.primaryForeground : colors.foreground}
 										/>
 									</View>
 									<TextComponent
-										className={`font-semibold text-sm ${
+										className={`font-bold text-sm ${
 											theme === 'dark'
 												? 'text-primary-foreground'
 												: 'text-foreground'
@@ -387,12 +392,12 @@ function ProfileScreen({ navigation }: Props) {
 									}`}>
 									<View className="mr-1.5">
 										<MonitorIcon
-											size={18}
+											size={16}
 											color={theme === 'system' ? colors.primaryForeground : colors.foreground}
 										/>
 									</View>
 									<TextComponent
-										className={`font-semibold text-sm ${
+										className={`font-bold text-sm ${
 											theme === 'system'
 												? 'text-primary-foreground'
 												: 'text-foreground'
@@ -407,11 +412,11 @@ function ProfileScreen({ navigation }: Props) {
 
 				{/* Legal Section */}
 				<View className="mb-6">
-					<TextComponent className="text-muted-foreground text-xs font-semibold uppercase tracking-wider mb-3 px-1">
+					<TextComponent className="text-muted-foreground text-xs font-bold uppercase tracking-wider mb-3 px-1">
 						Legal
 					</TextComponent>
 
-					<View className="card-3d rounded-2xl px-4">
+					<View className="bg-card border border-border rounded-[24px] px-5 shadow-sm">
 						<SettingRow
 							icon={
 								<ExternalLinkIcon
@@ -438,11 +443,11 @@ function ProfileScreen({ navigation }: Props) {
 
 				{/* Danger Zone */}
 				<View className="mb-6">
-					<TextComponent className="text-muted-foreground text-xs font-semibold uppercase tracking-wider mb-3 px-1">
+					<TextComponent className="text-muted-foreground text-xs font-bold uppercase tracking-wider mb-3 px-1">
 						Account
 					</TextComponent>
 
-					<View className="card-3d rounded-2xl px-4">
+					<View className="bg-card border border-border rounded-[24px] px-5 shadow-sm">
 						<SettingRow
 							icon={
 								<LogOutIcon

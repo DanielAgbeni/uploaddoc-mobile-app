@@ -27,16 +27,8 @@ export const fetchAdmins = async ({
 	return response.data;
 };
 
-export const fetchAdminById = async (id: string): Promise<{
-	success: boolean;
-	message: string;
-	data: Admin;
-}> => {
-	const response = await api.get<{
-		success: boolean;
-		message: string;
-		data: Admin;
-	}>(`/api/users/${id}`);
+export const fetchAdminById = async (id: string): Promise<Admin> => {
+	const response = await api.get<Admin>(`/api/users/${id}`);
 	return response.data;
 };
 

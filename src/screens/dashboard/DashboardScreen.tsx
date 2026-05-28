@@ -331,7 +331,7 @@ function DashboardScreen({ navigation }: Props) {
 						colors={[colors.primary]}
 					/>
 				}
-				contentContainerStyle={{ paddingBottom: 100, paddingTop: 10 }}
+				contentContainerStyle={{ paddingBottom: insets.bottom > 0 ? insets.bottom + 100 : 120, paddingTop: 10 }}
 			/>
 
 			<AlertModal

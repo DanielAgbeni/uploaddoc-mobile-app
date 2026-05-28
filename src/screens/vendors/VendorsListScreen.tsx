@@ -9,6 +9,7 @@ import {
 	useWindowDimensions,
 } from 'react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useInfiniteQuery } from '@tanstack/react-query';
 import { useDebouncedCallback } from 'use-debounce';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -36,7 +37,8 @@ type Props = {
 };
 
 export default function VendorsListScreen({ navigation }: Props) {
-	const { colors } = useTheme();
+	const { colors, colorScheme } = useTheme();
+	const insets = useSafeAreaInsets();
 	const { width } = useWindowDimensions();
 	const [searchQuery, setSearchQuery] = useState('');
 	const [debouncedQuery, setDebouncedQuery] = useState('');
@@ -152,42 +154,51 @@ export default function VendorsListScreen({ navigation }: Props) {
 	return (
 		<View className="flex-1 bg-background">
 			<StatusBar
-				barStyle="light-content"
+				barStyle={colorScheme === 'dark' ? 'light-content' : 'dark-content'}
 				backgroundColor="transparent"
 				translucent
 			/>
 
-			{/* Gradient Header */}
-			<LinearGradient
-				colors={[colors.gradientStart, colors.gradientEnd]}
-				start={{ x: 0, y: 0 }}
-				end={{ x: 1, y: 1 }}
-				className="rounded-b-[32px] px-6 pb-12 pt-14">
-				<View className="items-center">
-					<View className="mb-4 h-16 w-16 items-center justify-center rounded-2xl bg-white/20">
-						<StacksIcon
-							size={32}
-							color="#fff"
-						/>
+			{/* Clean Neutral Header */}
+			<View
+				className="px-5 pb-4 border-b border-border/50 bg-background"
+				style={{ paddingTop: insets.top + 16 }}>
+				
+				{/* Top row: Brand */}
+				<View className="flex-row items-center justify-between mb-5">
+					<View className="flex-row items-center">
+						<View className="h-8 w-8 items-center justify-center rounded-xl bg-primary/10 border border-primary/20 mr-2.5">
+							<StacksIcon
+								size={16}
+								color={colors.primary}
+							/>
+						</View>
+						<TextComponent className="text-xl font-extrabold tracking-tight text-foreground">
+							UploadDoc
+						</TextComponent>
 					</View>
-					<TextComponent className="mb-1 text-2xl font-bold text-white">
+				</View>
+
+				{/* Welcome / Page Title */}
+				<View>
+					<TextComponent className="text-xs font-bold text-muted-foreground uppercase tracking-[0.8px]">
+						Find Provider
+					</TextComponent>
+					<TextComponent className="text-3xl font-black text-foreground mt-0.5 leading-9">
 						Find Vendor
 					</TextComponent>
-					<TextComponent className="text-center text-base text-white/80">
-						Choose a verified provider for your document upload
-					</TextComponent>
 				</View>
-			</LinearGradient>
+			</View>
 
-			{/* Search Bar */}
-			<View className="-mt-6 mb-4 px-5">
+			{/* Search Bar Capsule */}
+			<View className="px-5 pt-4 pb-2">
 				<View className="flex-row items-center rounded-2xl border border-border bg-card px-4 shadow-sm">
 					<SearchIcon
 						size={18}
 						color={colors.mutedForeground}
 					/>
 					<TextInput
-						className="ml-3 flex-1 py-4 text-base text-foreground"
+						className="ml-3 flex-1 py-3.5 text-base text-foreground"
 						placeholder="Search vendors by name or location"
 						placeholderTextColor={colors.mutedForeground}
 						value={searchQuery}
@@ -226,8 +237,8 @@ export default function VendorsListScreen({ navigation }: Props) {
 						estimatedItemSize={140}
 						contentContainerStyle={{
 							paddingHorizontal: 20,
-							paddingBottom: 24,
-							paddingTop: 4,
+							paddingBottom: 120, // Pad for the floating bottom tab bar
+							paddingTop: 8,
 						}}
 						showsVerticalScrollIndicator={false}
 						onEndReached={handleEndReached}

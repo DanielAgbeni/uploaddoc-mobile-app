@@ -9,9 +9,9 @@ import {
 	View,
 } from 'react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as DocumentPicker from 'expo-document-picker';
 import * as FileSystem from 'expo-file-system';
-import { PDFDocument } from 'pdf-lib';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Controller, useForm } from 'react-hook-form';
 import { useDebouncedCallback } from 'use-debounce';
@@ -103,6 +103,7 @@ function SubmitDocumentScreen({
 	} = route.params || {};
 
 	const { colors, colorScheme } = useTheme();
+	const insets = useSafeAreaInsets();
 	const { user } = useUserStore();
 	const queryClient = useQueryClient();
 	const searchInputRef = useRef<TextInput>(null);
@@ -143,29 +144,12 @@ function SubmitDocumentScreen({
 	const [searchingVendors, setSearchingVendors] = useState(false);
 	const [showDropdown, setShowDropdown] = useState(false);
 
+	// Page count is computed accurately on the server during upload processing.
+	// We default to 1 here to avoid reading entire PDFs into memory on the client,
+	// which causes OOM crashes when selecting multiple files.
 	const getPdfPageCount = useCallback(
-		async (fileUri: string): Promise<number | undefined> => {
-			try {
-				const base64 = await FileSystem.readAsStringAsync(fileUri, {
-					encoding: FileSystem.EncodingType.Base64,
-				});
-
-				const binaryString = atob(base64);
-				const bytes = new Uint8Array(binaryString.length);
-
-				for (let i = 0; i < binaryString.length; i += 1) {
-					bytes[i] = binaryString.charCodeAt(i);
-				}
-
-				const pdfDoc = await PDFDocument.load(bytes, {
-					ignoreEncryption: true,
-				});
-
-				return pdfDoc.getPageCount();
-			} catch (error) {
-				console.error('Error getting PDF page count:', error);
-				return undefined;
-			}
+		async (_fileUri: string): Promise<number> => {
+			return 1;
 		},
 		[],
 	);
@@ -206,6 +190,29 @@ function SubmitDocumentScreen({
 	useEffect(() => {
 		debouncedSearch(vendorSearchQuery);
 	}, [debouncedSearch, vendorSearchQuery]);
+
+	useEffect(() => {
+		if (vendorId && vendorName) {
+			setValue('vendor', {
+				_id: vendorId,
+				name: vendorName,
+				email: vendorEmail || '',
+				profilePicture: vendorProfilePicture ?? undefined,
+				printingCost: vendorPrintingCost ?? undefined,
+				rating: vendorRating,
+			});
+		} else if (vendorId === undefined) {
+			setValue('vendor', null);
+		}
+	}, [
+		vendorId,
+		vendorName,
+		vendorEmail,
+		vendorProfilePicture,
+		vendorPrintingCost,
+		vendorRating,
+		setValue,
+	]);
 
 	const handleSelectFile = useCallback(async () => {
 		try {
@@ -512,98 +519,69 @@ function SubmitDocumentScreen({
 	return (
 		<View className="flex-1 bg-background">
 			<StatusBar
-				barStyle="light-content"
+				barStyle={colorScheme === 'dark' ? 'light-content' : 'dark-content'}
 				backgroundColor="transparent"
 				translucent
 			/>
 
-			{/* LinearGradient Header: Compact and Slim */}
-			<LinearGradient
-				colors={[colors.primary, colors.accent]}
-				start={{ x: 0, y: 0 }}
-				end={{ x: 1, y: 1 }}
-				className="rounded-b-2xl px-5 pb-5 pt-14 shadow-sm">
+			{/* Clean Neutral Header */}
+			<View 
+				className="px-5 pb-5 border-b border-border/50 bg-background"
+				style={{ paddingTop: insets.top + 16 }}>
 				<View className="flex-row items-center justify-between">
 					<View className="flex-row items-center">
-						<View className="mr-3 rounded-lg bg-white/15 p-2.5">
+						<View className="mr-3 rounded-lg bg-primary/10 border border-primary/20 p-2">
 							<UploadIcon
-								size={22}
-								color="#fff"
+								size={18}
+								color={colors.primary}
 							/>
 						</View>
 						<View>
-							<TextComponent className="text-[10px] font-bold uppercase tracking-[0.8px] text-white/60">
+							<TextComponent className="text-[10px] font-bold uppercase tracking-[0.8px] text-muted-foreground">
 								Document intake
 							</TextComponent>
-							<TextComponent className="text-xl font-extrabold tracking-tight text-white leading-6">
-								Submit documents
+							<TextComponent className="text-xl font-extrabold tracking-tight text-foreground leading-6">
+								Submit Documents
 							</TextComponent>
 						</View>
 					</View>
 
 					<Pressable
 						onPress={handleCancel}
-						className="min-h-[40px] min-w-[40px] items-center justify-center rounded-full bg-white/12 active:opacity-95">
+						className="h-8 w-8 items-center justify-center rounded-full bg-card border border-border active:opacity-75">
 						<CloseIcon
-							size={16}
-							color="#FFFFFF"
+							size={14}
+							color={colors.foreground}
 						/>
 					</Pressable>
 				</View>
 
-				<TextComponent className="mt-3 text-xs leading-5 text-white/75">
-					Choose who should receive the submission, give it a clear name, and
-					upload every file needed for review.
+				<TextComponent 
+					className="mt-3 text-xs leading-5 text-foreground font-semibold"
+					style={{ opacity: 0.65 }}>
+					Choose who should receive the submission, give it a clear name, and upload every file needed for review.
 				</TextComponent>
-			</LinearGradient>
+			</View>
 
 			<ScrollView
 				className="flex-1"
 				keyboardShouldPersistTaps="handled"
 				showsVerticalScrollIndicator={false}
-				contentContainerStyle={{ paddingBottom: 40 }}>
-				<View className="px-5 py-6 space-y-6">
-					{/* Submission Overview Block */}
-					<View className="rounded-xl border border-border bg-card p-4 shadow-sm">
-						<TextComponent className="text-xs font-bold uppercase tracking-[1px] text-muted-foreground">
-							Submission overview
-						</TextComponent>
-						<View className="mt-3 flex-row gap-3">
-							<View className="flex-1 rounded-lg bg-background border border-border/40 p-3 items-center">
-								<TextComponent className="text-[10px] font-bold uppercase tracking-[0.8px] text-muted-foreground">
-									Files
-								</TextComponent>
-								<TextComponent className="mt-1 text-2xl font-black text-foreground">
-									{filesSummary.count}
-								</TextComponent>
-							</View>
-							<View className="flex-1 rounded-lg bg-background border border-border/40 p-3 items-center">
-								<TextComponent className="text-[10px] font-bold uppercase tracking-[0.8px] text-muted-foreground">
-									Pages
-								</TextComponent>
-								<TextComponent className="mt-1 text-2xl font-black text-foreground">
-									{filesSummary.totalPages}
-								</TextComponent>
-							</View>
-						</View>
-					</View>
+				contentContainerStyle={{ paddingBottom: insets.bottom > 0 ? insets.bottom + 110 : 120 }}>
+				<View className="px-5 py-6">
+					{/* Single Unified Form Card */}
+					<View className="rounded-[28px] border border-border bg-card p-6 shadow-sm mb-6">
+						
+						{/* Select Vendor Section */}
+						<View className="mb-5">
+							<TextComponent className="text-sm font-bold text-foreground mb-2">
+								Select Vendor <TextComponent className="text-destructive">*</TextComponent>
+							</TextComponent>
 
-					{/* Recipient Selection Section */}
-					<View>
-						<SectionHeading
-							label="Recipient"
-							required
-							supportingText="Pick the vendor or team who should handle this submission."
-						/>
-
-						{selectedVendor ? (
-							<View className="rounded-xl border border-border bg-card px-4 py-3">
-								<View className="flex-row items-center justify-between">
+							{selectedVendor ? (
+								<View className="rounded-xl border border-border bg-background px-4 py-3.5 flex-row items-center justify-between">
 									<View className="flex-1 pr-3">
-										<TextComponent className="text-[10px] font-bold uppercase tracking-[0.8px] text-muted-foreground">
-											Selected vendor
-										</TextComponent>
-										<TextComponent className="mt-1 text-base font-extrabold text-foreground">
+										<TextComponent className="text-base font-extrabold text-foreground">
 											{selectedVendor.name}
 										</TextComponent>
 									</View>
@@ -611,259 +589,257 @@ function SubmitDocumentScreen({
 									{!isVendorLocked ? (
 										<Pressable
 											onPress={handleClearVendor}
-											className="min-h-[38px] items-center justify-center rounded-lg border border-border bg-background px-4 py-1.5 active:opacity-90">
-											<TextComponent className="text-xs font-bold uppercase tracking-[0.8px] text-primary">
+											className="min-h-[36px] items-center justify-center rounded-xl border border-border bg-card px-4 py-1.5 active:opacity-90"
+											style={({ pressed }) => ({
+												transform: [{ scale: pressed ? 0.95 : 1 }],
+											})}>
+											<TextComponent className="text-xs font-bold uppercase tracking-[0.8px] text-white">
 												Change
 											</TextComponent>
 										</Pressable>
 									) : null}
 								</View>
-							</View>
-						) : (
-							<View className="relative">
-								<View
-									className={`flex-row items-center rounded-xl border bg-card px-4 ${
-										errors.vendor ? 'border-destructive' : 'border-border'
-									}`}>
-									<SearchIcon
-										size={18}
-										color={colors.mutedForeground}
-									/>
-									<TextInput
-										ref={searchInputRef}
-										className="flex-1 px-3 py-3 text-base text-foreground"
-										placeholder="Search recipient name"
-										placeholderTextColor={colors.mutedForeground}
-										value={vendorSearchQuery}
-										onChangeText={handleVendorSearchChange}
-										onFocus={handleVendorSearchFocus}
-									/>
-									{searchingVendors ? (
-										<ActivityIndicator
-											size="small"
-											color={colors.primary}
+							) : (
+								<View className="relative">
+									<View
+										className={`flex-row items-center rounded-xl border bg-background px-4 ${
+											errors.vendor ? 'border-destructive' : 'border-border/60'
+										}`}>
+										<SearchIcon
+											size={18}
+											color={colors.mutedForeground}
 										/>
+										<TextInput
+											ref={searchInputRef}
+											className="flex-1 px-3 py-3.5 text-base text-foreground"
+											placeholder="Search vendor by name..."
+											placeholderTextColor={colors.mutedForeground}
+											value={vendorSearchQuery}
+											onChangeText={handleVendorSearchChange}
+											onFocus={handleVendorSearchFocus}
+										/>
+										{searchingVendors ? (
+											<ActivityIndicator
+												size="small"
+												color={colors.primary}
+											/>
+										) : null}
+									</View>
+
+									{errors.vendor ? (
+										<TextComponent className="mt-1.5 text-xs text-destructive px-1">
+											Please select a vendor
+										</TextComponent>
+									) : null}
+
+									{showDropdown ? (
+										<View className="absolute left-0 right-0 top-[54px] z-50 overflow-hidden rounded-xl border border-border bg-card shadow-lg">
+											{vendorSearchResults.length > 0 ? (
+												<ScrollView
+													nestedScrollEnabled
+													showsVerticalScrollIndicator={false}
+													contentContainerStyle={{ paddingVertical: 6 }}>
+													{vendorSearchResults.map((admin) => (
+														<Pressable
+															key={admin._id}
+															onPress={() => handleSelectVendor(admin)}
+															className="px-4 py-3 active:bg-muted">
+															<TextComponent className="text-sm font-bold text-foreground">
+																{admin.name}
+															</TextComponent>
+														</Pressable>
+													))}
+												</ScrollView>
+											) : (
+												<View className="px-4 py-4">
+													<TextComponent className="text-sm text-muted-foreground font-semibold">
+														No vendors found.
+													</TextComponent>
+												</View>
+											)}
+										</View>
 									) : null}
 								</View>
-
-								{errors.vendor ? (
-									<TextComponent className="mt-1.5 text-xs text-destructive px-1">
-										Please select a recipient
-									</TextComponent>
-								) : null}
-
-								{showDropdown ? (
-									<View className="absolute left-0 right-0 top-[52px] z-50 overflow-hidden rounded-xl border border-border bg-card shadow-lg">
-										{vendorSearchResults.length > 0 ? (
-											<ScrollView
-												nestedScrollEnabled
-												showsVerticalScrollIndicator={false}
-												contentContainerStyle={{ paddingVertical: 6 }}>
-												{vendorSearchResults.map((admin) => (
-													<Pressable
-														key={admin._id}
-														onPress={() => handleSelectVendor(admin)}
-														className="px-4 py-3 active:bg-muted">
-														<TextComponent className="text-sm font-semibold text-foreground">
-															{admin.name}
-														</TextComponent>
-													</Pressable>
-												))}
-											</ScrollView>
-										) : (
-											<View className="px-4 py-4">
-												<TextComponent className="text-sm text-muted-foreground">
-													No recipients found.
-												</TextComponent>
-											</View>
-										)}
-									</View>
-								) : null}
-							</View>
-						)}
-
-						{!selectedVendor &&
-						vendorSearchQuery.length > 0 &&
-						vendorSearchQuery.length < 2 ? (
-							<TextComponent className="mt-2 text-xs text-muted-foreground px-1">
-								Type at least 2 characters to search recipients.
-							</TextComponent>
-						) : null}
-					</View>
-
-					{/* Document Title Section */}
-					<View>
-						<SectionHeading
-							label="Document title"
-							required
-							supportingText="Use a clear title the recipient can recognize quickly."
-						/>
-						<Controller
-							control={control}
-							name="title"
-							rules={{ required: 'Document title is required' }}
-							render={({ field: { onChange, onBlur, value } }) => (
-								<TextInput
-									className={`rounded-xl border bg-card px-4 py-3 text-base text-foreground ${
-										errors.title ? 'border-destructive' : 'border-border'
-									}`}
-									placeholder="Example: Final year project print request"
-									placeholderTextColor={colors.mutedForeground}
-									onBlur={onBlur}
-									onChangeText={onChange}
-									value={value}
-								/>
 							)}
-						/>
-						{errors.title ? (
-							<TextComponent className="mt-1.5 text-xs text-destructive px-1">
-								{errors.title.message}
-							</TextComponent>
-						) : null}
-					</View>
 
-					{/* Description Section */}
-					<View>
-						<SectionHeading
-							label="Description"
-							supportingText="Add any handling notes, delivery context, or instructions for the recipient."
-						/>
-						<Controller
-							control={control}
-							name="description"
-							render={({ field: { onChange, onBlur, value } }) => (
-								<TextInput
-									className="min-h-[100px] rounded-xl border border-border bg-card px-4 py-3 text-base text-foreground"
-									placeholder="Example: These files belong to the April admissions batch and should be reviewed together."
-									placeholderTextColor={colors.mutedForeground}
-									onBlur={onBlur}
-									onChangeText={onChange}
-									value={value}
-									multiline
-									numberOfLines={4}
-									textAlignVertical="top"
-								/>
-							)}
-						/>
-					</View>
-
-					{/* Files Upload Section */}
-					<View>
-						<View className="flex-row items-center justify-between mb-3">
-							<View className="flex-1">
-								<TextComponent className="text-sm font-bold text-foreground">
-									Files <TextComponent className="text-destructive">*</TextComponent>
+							{!selectedVendor &&
+							vendorSearchQuery.length > 0 &&
+							vendorSearchQuery.length < 2 ? (
+								<TextComponent className="mt-2 text-xs text-muted-foreground px-1 font-semibold">
+									Type at least 2 characters to search.
 								</TextComponent>
-								<TextComponent className="mt-0.5 text-xs text-muted-foreground">
-									Upload PDFs, Word files, or images for review.
-								</TextComponent>
-							</View>
-
-							{files.length > 0 ? (
-								<Pressable
-									onPress={handleSelectFile}
-									className="min-h-[38px] flex-row items-center rounded-lg border border-border bg-card px-3 py-1.5 active:opacity-90">
-									<PlusIcon
-										size={12}
-										color={colors.primary}
-									/>
-									<TextComponent className="ml-1 text-xs font-bold uppercase tracking-[0.8px] text-primary">
-										Add file
-									</TextComponent>
-								</Pressable>
 							) : null}
 						</View>
 
-						{files.length > 0 ? (
-							<View>
-								{files.map((file, index) => (
-									<View
-										key={`${file.uri}-${index}`}
-										className="mb-3 rounded-xl border border-border bg-card px-3.5 py-3 shadow-sm">
-										<View className="flex-row items-center">
-											<View
-												className="mr-3 h-10 w-10 items-center justify-center rounded-lg"
-												style={{
-													backgroundColor:
-														colorScheme === 'dark'
-															? `${colors.primary}18`
-															: `${colors.primary}12`,
-												}}>
-												{renderFileIcon(file.mimeType, 20)}
-											</View>
-
-											<View className="flex-1">
-												<TextComponent
-													className="text-sm font-bold text-foreground"
-													numberOfLines={1}>
-													{file.name}
-												</TextComponent>
-												<TextComponent className="mt-0.5 text-xs text-muted-foreground">
-													{getFileTypeLabel(file.mimeType)} • {formatFileSize(file.size)}
-													{file.pageCount !== undefined
-														? ` • ${file.pageCount} pages`
-														: ''}
-												</TextComponent>
-											</View>
-
-											<Pressable
-												onPress={() => handleRemoveFile(index)}
-												className="ml-3 h-9 w-9 items-center justify-center rounded-lg"
-												style={{
-													backgroundColor:
-														colorScheme === 'dark'
-															? 'rgba(239, 68, 68, 0.14)'
-															: '#fee2e2',
-												}}>
-												<TrashIcon
-													size={14}
-													color={colors.destructive}
-												/>
-											</Pressable>
-										</View>
-									</View>
-								))}
-							</View>
-						) : (
-							<Pressable
-								className={`items-center rounded-xl border-2 border-dashed px-5 py-8 ${
-									errors.files ? 'border-destructive' : 'border-border'
-								}`}
-								style={{
-									backgroundColor:
-										colorScheme === 'dark'
-											? 'rgba(255,255,255,0.02)'
-											: colors.muted,
-								}}
-								onPress={handleSelectFile}>
-								<View
-									className="mb-3 h-14 w-14 items-center justify-center rounded-xl"
-									style={{ backgroundColor: `${colors.primary}12` }}>
-									<DocumentTextIcon
-										size={26}
-										color={colors.primary}
-									/>
-								</View>
-								<TextComponent className="text-sm font-bold text-foreground">
-									Select files to upload
-								</TextComponent>
-								<TextComponent className="mt-1 text-center text-xs leading-5 text-muted-foreground">
-									Add PDF, Word, or image files for this request.
-								</TextComponent>
-							</Pressable>
-						)}
-
-						{errors.files ? (
-							<TextComponent className="mt-1.5 text-xs text-destructive px-1">
-								Please select at least one file
+						{/* Document Title Section */}
+						<View className="mb-5">
+							<TextComponent className="text-sm font-bold text-foreground mb-2">
+								Document Title <TextComponent className="text-destructive">*</TextComponent>
 							</TextComponent>
-						) : null}
+							<Controller
+								control={control}
+								name="title"
+								rules={{ required: 'Document title is required' }}
+								render={({ field: { onChange, onBlur, value } }) => (
+									<TextInput
+										className={`rounded-xl border bg-background px-4 py-3.5 text-base text-foreground ${
+											errors.title ? 'border-destructive' : 'border-border/60'
+										}`}
+										placeholder="e.g. Final Year Thesis"
+										placeholderTextColor={colors.mutedForeground}
+										onBlur={onBlur}
+										onChangeText={onChange}
+										value={value}
+									/>
+								)}
+							/>
+							{errors.title ? (
+								<TextComponent className="mt-1.5 text-xs text-destructive px-1">
+									{errors.title.message}
+								</TextComponent>
+							) : null}
+						</View>
+
+						{/* Description Section */}
+						<View className="mb-5">
+							<TextComponent className="text-sm font-bold text-foreground mb-2">
+								Description <TextComponent className="text-muted-foreground text-xs font-semibold">(Optional)</TextComponent>
+							</TextComponent>
+							<Controller
+								control={control}
+								name="description"
+								render={({ field: { onChange, onBlur, value } }) => (
+									<TextInput
+										className="min-h-[100px] rounded-xl border border-border/60 bg-background px-4 py-3.5 text-base text-foreground"
+										placeholder="Any specific descriptions..."
+										placeholderTextColor={colors.mutedForeground}
+										onBlur={onBlur}
+										onChangeText={onChange}
+										value={value}
+										multiline
+										numberOfLines={4}
+										textAlignVertical="top"
+									/>
+								)}
+							/>
+						</View>
+
+						{/* Documents Upload Section */}
+						<View className="mb-2">
+							<TextComponent className="text-sm font-bold text-foreground mb-2">
+								Documents <TextComponent className="text-destructive">*</TextComponent>
+							</TextComponent>
+
+							{files.length === 0 ? (
+								<Pressable
+									className={`items-center rounded-xl border-2 border-dashed px-5 py-8 active:opacity-95 ${
+										errors.files ? 'border-destructive' : 'border-border/60'
+									}`}
+									style={({ pressed }) => ({
+										backgroundColor: colorScheme === 'dark' ? 'rgba(255,255,255,0.02)' : 'rgba(68, 78, 187, 0.05)',
+										transform: [{ scale: pressed ? 0.98 : 1 }]
+									})}
+									onPress={handleSelectFile}>
+									<View
+										className="mb-3 h-12 w-12 items-center justify-center rounded-xl bg-primary/10 border border-primary/20">
+										<UploadIcon
+											size={22}
+											color={colors.primary}
+										/>
+									</View>
+									<TextComponent className="text-sm font-bold text-foreground">
+										Click to upload or drag and drop
+									</TextComponent>
+									<TextComponent 
+										className="mt-1 text-center text-xs leading-5 text-foreground font-semibold"
+										style={{ opacity: 0.5 }}>
+										PDF, Word, or image files. Max 10 files.
+									</TextComponent>
+								</Pressable>
+							) : (
+								<View>
+									{/* Uploaded File rows */}
+									{files.map((file, index) => (
+										<View
+											key={`${file.uri}-${index}`}
+											className="mb-3 rounded-2xl border border-border bg-background px-4 py-3.5 shadow-sm">
+											<View className="flex-row items-center">
+												<View
+													className="mr-3 h-10 w-10 items-center justify-center rounded-lg"
+													style={{
+														backgroundColor:
+															colorScheme === 'dark'
+																? `${colors.primary}18`
+																: `${colors.primary}12`,
+													}}>
+													{renderFileIcon(file.mimeType, 20)}
+												</View>
+
+												<View className="flex-1">
+													<TextComponent
+														className="text-sm font-bold text-foreground"
+														numberOfLines={1}>
+														{file.name}
+													</TextComponent>
+													<TextComponent className="mt-0.5 text-xs text-muted-foreground font-semibold">
+														{getFileTypeLabel(file.mimeType)} • {formatFileSize(file.size)}
+														{file.pageCount !== undefined
+															? ` • ${file.pageCount} pages`
+															: ''}
+													</TextComponent>
+												</View>
+
+												<Pressable
+													onPress={() => handleRemoveFile(index)}
+													className="ml-3 h-9 w-9 items-center justify-center rounded-xl active:scale-95"
+													style={{
+														backgroundColor:
+															colorScheme === 'dark'
+																? 'rgba(239, 68, 68, 0.14)'
+																: '#fee2e2',
+													}}>
+													<TrashIcon
+														size={14}
+														color={colors.destructive}
+													/>
+												</Pressable>
+											</View>
+										</View>
+									))}
+
+									{/* Add another file helper button */}
+									<Pressable
+										onPress={handleSelectFile}
+										className="mt-2 min-h-[48px] flex-row items-center justify-center rounded-xl border border-dashed border-primary/30 bg-primary/5 px-4 active:opacity-95"
+										style={({ pressed }) => ({
+											transform: [{ scale: pressed ? 0.98 : 1 }]
+										})}>
+										<PlusIcon
+											size={14}
+											color={colors.primary}
+										/>
+										<TextComponent className="ml-2 text-xs font-bold uppercase tracking-[0.8px] text-primary">
+											Add another file
+										</TextComponent>
+									</Pressable>
+								</View>
+							)}
+
+							{errors.files ? (
+								<TextComponent className="mt-1.5 text-xs text-destructive px-1">
+									Please select at least one file
+								</TextComponent>
+							) : null}
+						</View>
 					</View>
 
-					{/* Action Buttons */}
-					<View className="pt-2">
+					{/* Action Buttons Section */}
+					<View>
 						<Pressable
 							className="min-h-[50px] flex-row items-center justify-center rounded-xl bg-primary active:opacity-90 shadow-sm"
+							style={({ pressed }) => ({
+								transform: [{ scale: pressed ? 0.98 : 1 }]
+							})}
 							onPress={handleSubmit(onSubmit)}
 							disabled={loading}>
 							{loading ? (
@@ -878,13 +854,16 @@ function SubmitDocumentScreen({
 								</>
 							) : (
 								<TextComponent className="text-base font-bold text-primary-foreground">
-									Submit document{files.length > 1 ? `s (${files.length})` : ''}
+									Submit Project
 								</TextComponent>
 							)}
 						</Pressable>
 
 						<Pressable
 							className="mt-3 min-h-[44px] items-center justify-center rounded-xl border border-border bg-card active:opacity-90"
+							style={({ pressed }) => ({
+								transform: [{ scale: pressed ? 0.98 : 1 }]
+							})}
 							onPress={handleCancel}>
 							<TextComponent className="font-semibold text-foreground text-sm">
 								Cancel

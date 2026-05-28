@@ -1,15 +1,17 @@
-import React, { memo } from 'react';
+import React, { memo, useEffect } from 'react';
 import { View } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { MainTabParamList } from '../types/navigation.types';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../providers/ThemeProvider';
+import Animated, { useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
 
 // Icons
 import AccountIcon from '../assets/icons/account.icon';
 import SearchIcon from '../assets/icons/search.icon';
 import StacksIcon from '../assets/icons/stacks.icon';
 import DashboardIcon from '../assets/icons/dashboard.icon';
+import PlusIcon from '../assets/icons/add.icon';
 
 // Stack Navigators
 import DocumentsStack from './stacks/DocumentsStack';
@@ -29,12 +31,25 @@ const TabIconContainer = memo(function TabIconContainer({
 	primaryColor,
 	children,
 }: TabIconContainerProps) {
+	const scale = useSharedValue(focused ? 1.15 : 1);
+
+	useEffect(() => {
+		scale.value = withSpring(focused ? 1.15 : 1, { damping: 15 });
+	}, [focused, scale]);
+
+	const animStyle = useAnimatedStyle(() => ({
+		transform: [{ scale: scale.value }],
+	}));
+
 	return (
-		<View
-			className="items-center justify-center rounded-full px-4 py-1"
-			style={focused ? { backgroundColor: `${primaryColor}1A` } : undefined}>
+		<Animated.View
+			className="items-center justify-center rounded-full px-4 py-1.5"
+			style={[
+				focused ? { backgroundColor: `${primaryColor}1A` } : undefined,
+				animStyle,
+			]}>
 			{children}
-		</View>
+		</Animated.View>
 	);
 });
 
@@ -42,13 +57,13 @@ const Tab = createBottomTabNavigator<MainTabParamList>();
 
 function MainTabNavigator() {
 	const user = useUserStore((state) => state.user);
-	const isVendor = user?.isAdmin || false; // Using isAdmin as proxy; adjust as needed
+	const isVendor = user?.isAdmin || false; // Using isAdmin as proxy
 	const insets = useSafeAreaInsets();
 	const { colors, colorScheme } = useTheme();
 
 	const activeColor = colors.primary;
 	const inactiveColor =
-		colorScheme === 'dark' ? 'rgba(248, 249, 252, 0.4)' : 'rgba(3, 4, 7, 0.4)';
+		colorScheme === 'dark' ? '#94a3b8' : '#64748b';
 
 	return (
 		<Tab.Navigator
@@ -57,27 +72,34 @@ function MainTabNavigator() {
 				tabBarActiveTintColor: activeColor,
 				tabBarInactiveTintColor: inactiveColor,
 				tabBarShowLabel: true,
-				// @ts-ignore: 'animation' is a valid option in v7 but might not be in the types yet if mismatch
-				animation: 'shift', // Adds transition animation between tabs
+				// @ts-ignore: 'animation' is a valid option in v7
+				animation: 'shift',
 				// @ts-ignore: sceneStyle is added in v7 to style the background of the screen container
 				sceneStyle: { backgroundColor: colors.background },
 				tabBarStyle: {
-					backgroundColor: colors.background,
-					height: 60 + Math.max(insets.bottom, 12),
-					paddingBottom: Math.max(insets.bottom, 12),
+					position: 'absolute',
+					bottom: insets.bottom > 0 ? insets.bottom + 8 : 16,
+					left: 24,
+					right: 24,
+					paddingHorizontal: 8,
+					backgroundColor: colorScheme === 'dark' ? 'rgba(0, 15, 36, 0.85)' : 'rgba(235, 244, 255, 0.85)',
+					height: 64,
+					borderRadius: 24,
+					paddingBottom: 0,
 					paddingTop: 8,
-					elevation: 0,
-					shadowColor: '#000',
-					shadowOffset: { width: 0, height: -2 },
-					shadowOpacity: colorScheme === 'dark' ? 0.15 : 0.03,
-					shadowRadius: 8,
-					borderTopWidth: 1,
-					borderTopColor: colorScheme === 'dark' ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.05)',
+					borderWidth: 1,
+					borderColor: colorScheme === 'dark' ? 'rgba(255, 255, 255, 0.08)' : 'rgba(68, 78, 187, 0.1)',
+					shadowColor: colors.primary,
+					shadowOffset: { width: 0, height: 8 },
+					shadowOpacity: colorScheme === 'dark' ? 0.3 : 0.08,
+					shadowRadius: 16,
+					elevation: 8,
 				},
 				tabBarLabelStyle: {
-					fontSize: 11,
+					fontSize: 10,
 					fontWeight: '600',
-					marginTop: 4,
+					marginTop: 2,
+					marginBottom: 4,
 				},
 			}}>
 			<Tab.Screen
@@ -112,6 +134,44 @@ function MainTabNavigator() {
 								color={color}
 							/>
 						</TabIconContainer>
+					),
+				}}
+			/>
+
+			{/* Floating Central Plus Action Button */}
+			<Tab.Screen
+				name="SubmitTab"
+				component={View}
+				listeners={({ navigation }) => ({
+					tabPress: (e) => {
+						e.preventDefault();
+						// Navigate nested SubmitDocument within DocumentsTab stack
+						navigation.navigate('DocumentsTab', {
+							screen: 'SubmitDocument',
+							params: {}
+						});
+					},
+				})}
+				options={{
+					tabBarLabel: () => null,
+					tabBarIcon: () => (
+						<View
+							className="items-center justify-center rounded-full bg-primary"
+							style={{
+								width: 50,
+								height: 50,
+								marginTop: -20,
+								shadowColor: activeColor,
+								shadowOffset: { width: 0, height: 6 },
+								shadowOpacity: 0.3,
+								shadowRadius: 10,
+								elevation: 6,
+							}}>
+							<PlusIcon
+								size={28}
+								color="#FFFFFF"
+							/>
+						</View>
 					),
 				}}
 			/>
