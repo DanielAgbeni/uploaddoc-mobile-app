@@ -15,6 +15,7 @@ interface OtpVerificationFormProps {
 	onBack: () => void;
 	isLoading: boolean;
 	canResend: boolean;
+	timer?: number;
 }
 
 const OtpVerificationForm = ({
@@ -24,6 +25,7 @@ const OtpVerificationForm = ({
 	onBack,
 	isLoading,
 	canResend,
+	timer = 0,
 }: OtpVerificationFormProps) => {
 	const {
 		control,
@@ -68,7 +70,7 @@ const OtpVerificationForm = ({
 					disabled={!canResend || isLoading}
 					className={`py-2 px-4 rounded-lg ${!canResend ? 'opacity-50' : ''}`}>
 					<Text className="text-primary font-semibold">
-						{canResend ? 'Resend Code' : 'Resend Code (Wait)'}
+						{canResend ? 'Resend Code' : `Resend Code (${timer}s)`}
 					</Text>
 				</Pressable>
 
@@ -81,8 +83,8 @@ const OtpVerificationForm = ({
 
 			<Pressable
 				onPress={onBack}
-				className="mt-8 items-center">
-				<Text className="text-muted-foreground">Back to Registration</Text>
+				className="mt-8 items-center py-2 active:opacity-75">
+				<Text className="text-muted-foreground font-medium">Back to Registration</Text>
 			</Pressable>
 		</View>
 	);

@@ -17,6 +17,7 @@ import { showMessage } from 'react-native-flash-message';
 import RequestOtpForm from '../../components/auth/forgot-password/RequestOtpForm';
 import ResetPasswordForm from '../../components/auth/forgot-password/ResetPasswordForm';
 import { CustomImage } from 'src/components';
+import { getErrorMessage } from '../../utils/error-handling';
 
 type Props = NativeStackScreenProps<AuthStackParamList, 'ForgotPassword'>;
 
@@ -46,10 +47,7 @@ function ForgotPasswordScreen({ navigation }: Props) {
 				});
 			}
 		} catch (error: any) {
-			const errorMessage =
-				error.response?.data?.message ||
-				error.message ||
-				'An unexpected error occurred.';
+			const errorMessage = getErrorMessage(error);
 			showMessage({
 				message: 'Request failed',
 				description: errorMessage,
@@ -87,10 +85,7 @@ function ForgotPasswordScreen({ navigation }: Props) {
 					});
 				}
 			} catch (error: any) {
-				const errorMessage =
-					error.response?.data?.message ||
-					error.message ||
-					'An unexpected error occurred.';
+				const errorMessage = getErrorMessage(error);
 				showMessage({
 					message: 'Reset failed',
 					description: errorMessage,
@@ -111,14 +106,20 @@ function ForgotPasswordScreen({ navigation }: Props) {
 		<KeyboardAvoidingView
 			behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
 			className="flex-1 bg-background">
-			{/* Background Gradient */}
+			{/* Enhanced Background Gradient */}
 			<LinearGradient
 				colors={
 					colorScheme === 'dark'
-						? ['rgba(68, 78, 187, 0.15)', 'transparent']
-						: ['rgba(68, 78, 187, 0.08)', 'transparent']
+						? [
+								'rgba(68, 78, 187, 0.15)',
+								'rgba(0, 9, 20, 0)',
+							]
+						: [
+								'rgba(68, 78, 187, 0.08)',
+								'rgba(235, 244, 255, 0)',
+							]
 				}
-				className="absolute top-0 left-0 right-0 h-96"
+				className="absolute top-0 left-0 right-0 h-[400px]"
 			/>
 
 			<ScrollView
@@ -128,46 +129,48 @@ function ForgotPasswordScreen({ navigation }: Props) {
 				keyboardShouldPersistTaps="handled">
 				<MainContainer
 					scrollable={false}
-					className="flex-1 px-6 pt-16 pb-8 justify-center">
+					className="flex-1 px-6 pt-16 pb-8">
+					
 					{/* Hero Section */}
-					<View className="mb-10">
+					<View className="mb-10 mt-4">
 						<View className="mb-6">
-							<View className="mb-8">
-								<CustomImage
-									source={require('../../assets/app-images/icon.png')}
-									className="w-20 h-20 rounded-3xl shadow-lg"
-									contentFit="cover"
-								/>
-							</View>
+							<CustomImage
+								source={require('../../assets/app-images/icon.png')}
+								className="w-16 h-16 rounded-[20px] shadow-md border border-border"
+								contentFit="cover"
+							/>
 						</View>
-						<Text className="text-4xl font-bold text-foreground mb-3">
+						<Text className="text-4xl font-extrabold text-foreground mb-2 leading-tight tracking-tight">
 							{step === 1 ? 'Forgot Password?' : 'Reset Password'}
 						</Text>
-						<Text className="text-lg text-muted-foreground leading-6">
+						<Text className="text-base text-muted-foreground leading-relaxed">
 							{step === 1
 								? "No worries! Enter your email and we'll send you reset instructions."
 								: `Enter the OTP sent to ${email} and your new password.`}
 						</Text>
 					</View>
 
-					{step === 1 ? (
-						<RequestOtpForm
-							onSubmit={onRequestOtp}
-							isLoading={isLoading}
-						/>
-					) : (
-						<ResetPasswordForm
-							onSubmit={onResetPassword}
-							isLoading={isLoading}
-						/>
-					)}
+					{/* Form Container */}
+					<View className="flex-1">
+						{step === 1 ? (
+							<RequestOtpForm
+								onSubmit={onRequestOtp}
+								isLoading={isLoading}
+							/>
+						) : (
+							<ResetPasswordForm
+								onSubmit={onResetPassword}
+								isLoading={isLoading}
+							/>
+						)}
+					</View>
 
 					{/* Back to Sign In */}
 					<Pressable
 						onPress={handleBackToSignIn}
-						className="items-center py-4 active:opacity-70">
+						className="items-center py-4 active:opacity-75">
 						<View className="flex-row items-center">
-							<Text className="text-primary font-semibold text-base">
+							<Text className="text-primary font-bold text-base">
 								Back to Sign In
 							</Text>
 						</View>

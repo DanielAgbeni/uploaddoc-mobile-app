@@ -1,4 +1,4 @@
-import React, { useState, useCallback, memo } from 'react';
+import React, { useState, useCallback, useEffect, memo } from 'react';
 import {
 	View,
 	Text,
@@ -25,6 +25,7 @@ import CustomModal from '../../components/ui/CustomModal';
 // Components
 import RegistrationForm from '../../components/auth/sign-up/RegistrationForm';
 import OtpVerificationForm from '../../components/auth/sign-up/OtpVerificationForm';
+import { getErrorMessage } from '../../utils/error-handling';
 
 type Props = NativeStackScreenProps<AuthStackParamList, 'SignUp'>;
 
@@ -47,12 +48,32 @@ function SignUpScreen({ navigation }: Props) {
 	const [email, setEmail] = useState('');
 	const [isLoading, setIsLoading] = useState(false);
 	const [canResend, setCanResend] = useState(true);
+	const [timer, setTimer] = useState(0);
 	const [isHelpModalOpen, setIsHelpModalOpen] = useState(false);
+
+	useEffect(() => {
+		let interval: NodeJS.Timeout | undefined;
+
+		if (!canResend && timer > 0) {
+			interval = setInterval(() => {
+				setTimer((prev) => prev - 1);
+			}, 1000);
+		} else if (timer === 0 && !canResend) {
+			setCanResend(true);
+		}
+
+		return () => {
+			if (interval) {
+				clearInterval(interval);
+			}
+		};
+	}, [canResend, timer]);
 
 	const onRegister = useCallback(async (data: SignUpFormData) => {
 		setIsLoading(true);
 		try {
 			const { confirmPassword, ...registerData } = data;
+			void confirmPassword;
 			const response = await registerUser(registerData);
 
 			if (response.data.success) {
@@ -63,6 +84,7 @@ function SignUpScreen({ navigation }: Props) {
 				});
 				setEmail(response.data.data.email);
 				setCanResend(response.data.data.canResend);
+				setTimer(60);
 				setView('otp');
 			} else {
 				if (
@@ -75,6 +97,8 @@ function SignUpScreen({ navigation }: Props) {
 						type: 'info',
 					});
 					setEmail(data.email);
+					setCanResend(false);
+					setTimer(60);
 					setView('otp');
 				} else {
 					showMessage({
@@ -85,8 +109,7 @@ function SignUpScreen({ navigation }: Props) {
 				}
 			}
 		} catch (error: any) {
-			const errorMessage =
-				error?.response?.data?.message || 'An unexpected error occurred';
+			const errorMessage = getErrorMessage(error);
 
 			if (
 				errorMessage ===
@@ -98,6 +121,8 @@ function SignUpScreen({ navigation }: Props) {
 					type: 'info',
 				});
 				setEmail(data.email);
+				setCanResend(false);
+				setTimer(60);
 				setView('otp');
 			} else {
 				showMessage({
@@ -131,7 +156,7 @@ function SignUpScreen({ navigation }: Props) {
 					});
 				}
 			} catch (error: any) {
-				const errorMessage = error?.response?.data?.message || 'Invalid OTP';
+				const errorMessage = getErrorMessage(error);
 				showMessage({
 					message: 'Error',
 					description: errorMessage,
@@ -155,6 +180,7 @@ function SignUpScreen({ navigation }: Props) {
 					type: 'success',
 				});
 				setCanResend(false);
+				setTimer(60);
 			} else {
 				showMessage({
 					message: 'Failed',
@@ -165,7 +191,7 @@ function SignUpScreen({ navigation }: Props) {
 		} catch (error: any) {
 			showMessage({
 				message: 'Error',
-				description: error?.response?.data?.message || 'Failed to resend code',
+				description: getErrorMessage(error),
 				type: 'danger',
 			});
 		} finally {
@@ -194,17 +220,15 @@ function SignUpScreen({ navigation }: Props) {
 				colors={
 					colorScheme === 'dark'
 						? [
-								'rgba(68, 78, 187, 0.2)',
-								'rgba(68, 78, 187, 0.05)',
-								'transparent',
+								'rgba(68, 78, 187, 0.15)',
+								'rgba(0, 9, 20, 0)',
 							]
 						: [
-								'rgba(68, 78, 187, 0.12)',
-								'rgba(68, 78, 187, 0.04)',
-								'transparent',
+								'rgba(68, 78, 187, 0.08)',
+								'rgba(235, 244, 255, 0)',
 							]
 				}
-				className="absolute top-0 left-0 right-0 h-[500px]"
+				className="absolute top-0 left-0 right-0 h-[400px]"
 			/>
 
 			<ScrollView
@@ -214,22 +238,23 @@ function SignUpScreen({ navigation }: Props) {
 				keyboardShouldPersistTaps="handled">
 				<MainContainer
 					scrollable={false}
-					className="flex-1 px-6 pt-20 pb-8">
-					{/* Hero Section with Enhanced Spacing */}
-					<View className="mb-10">
-						<View className="mb-8">
+					className="flex-1 px-6 pt-16 pb-8">
+					
+					{/* Hero Section */}
+					<View className="mb-10 mt-4">
+						<View className="mb-6">
 							<CustomImage
 								source={require('../../assets/app-images/icon.png')}
-								className="w-20 h-20 rounded-3xl shadow-lg"
+								className="w-16 h-16 rounded-[20px] shadow-md border border-border"
 								contentFit="cover"
 							/>
 						</View>
-						<Text className="text-[40px] font-bold text-foreground mb-2 leading-tight">
+						<Text className="text-4xl font-extrabold text-foreground mb-2 leading-tight tracking-tight">
 							{view === 'register' ? 'Create Account' : 'Verify Email'}
 						</Text>
 						<Text className="text-base text-muted-foreground leading-relaxed">
 							{view === 'register'
-								? 'Start your journey with UploadDoc'
+								? 'Start your journey with UploadDoc.'
 								: `Enter the code sent to ${email}`}
 						</Text>
 					</View>
@@ -249,6 +274,7 @@ function SignUpScreen({ navigation }: Props) {
 								onBack={handleGoBackToRegister}
 								isLoading={isLoading}
 								canResend={canResend}
+								timer={timer}
 							/>
 						)}
 					</View>
@@ -281,4 +307,5 @@ function SignUpScreen({ navigation }: Props) {
 		</KeyboardAvoidingView>
 	);
 }
+
 export default memo(SignUpScreen);

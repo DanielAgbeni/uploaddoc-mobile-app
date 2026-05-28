@@ -1,4 +1,4 @@
-import React, { memo, useCallback } from 'react';
+import React, { memo, useCallback, useEffect, useState } from 'react';
 import {
 	View,
 	Text,
@@ -6,6 +6,7 @@ import {
 	ScrollView,
 	KeyboardAvoidingView,
 	Platform,
+	ActivityIndicator,
 } from 'react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { AuthStackParamList } from '../../types/navigation.types';
@@ -20,6 +21,14 @@ import AuthButton from '../../components/auth/AuthButton';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useTheme } from '../../providers/ThemeProvider';
 import GoogleIcon from 'src/assets/icons/google.icon';
+import {
+	GoogleSignin,
+	isErrorWithCode,
+	statusCodes,
+} from '@react-native-google-signin/google-signin';
+import { googleLogin } from '../../api/auth';
+import { useUserStore } from '../../shared/user-store/useUserStore';
+import { getErrorMessage } from '../../utils/error-handling';
 
 type Props = NativeStackScreenProps<AuthStackParamList, 'SignIn'>;
 
@@ -30,7 +39,16 @@ type SignInFormData = {
 
 function SignInScreen({ navigation }: Props) {
 	const loginMutation = useLoginMutation();
-	const { colorScheme } = useTheme();
+	const setLoginData = useUserStore((state) => state.setLoginData);
+	const { colorScheme, colors } = useTheme();
+	const [isGoogleLoading, setIsGoogleLoading] = useState(false);
+
+	useEffect(() => {
+		GoogleSignin.configure({
+			webClientId:
+				'711385990812-5r58ssnajdajr8ot33ncpnn131kqj5q4.apps.googleusercontent.com',
+		});
+	}, []);
 
 	const {
 		control,
@@ -43,37 +61,105 @@ function SignInScreen({ navigation }: Props) {
 		},
 	});
 
-	const onSubmit = useCallback((data: SignInFormData) => {
-		loginMutation.mutate(
-			{ email: data.email.trim(), password: data.password.trim() },
-			{
-				onSuccess: (response) => {
-					showMessage({
-						message: 'Login Successful',
-						description: `Welcome back, ${response.data.data.user.name}!`,
-						type: 'success',
-						duration: 3000,
-						icon: 'success',
-					});
-				},
-				onError: (error: AxiosError<ErrorResponseType>) => {
-					const errorMessage =
-						error.response?.data?.message ||
-						error.response?.data?.errors?.email ||
-						error.response?.data?.errors?.password ||
-						'Failed to sign in. Please try again.';
+	const onSubmit = useCallback(
+		(data: SignInFormData) => {
+			loginMutation.mutate(
+				{ email: data.email.trim(), password: data.password.trim() },
+				{
+					onSuccess: (response) => {
+						showMessage({
+							message: 'Login Successful',
+							description: `Welcome back, ${response.data.data.user.name}!`,
+							type: 'success',
+							duration: 3000,
+							icon: 'success',
+						});
+					},
+					onError: (error: AxiosError<ErrorResponseType>) => {
+						const errorMessage = getErrorMessage(error);
 
-					showMessage({
-						message: 'Login Failed',
-						description: errorMessage,
-						type: 'danger',
-						duration: 4000,
-						icon: 'danger',
-					});
+						showMessage({
+							message: 'Login Failed',
+							description: errorMessage,
+							type: 'danger',
+							duration: 4000,
+							icon: 'danger',
+						});
+					},
 				},
-			},
-		);
-	}, [loginMutation]);
+			);
+		},
+		[loginMutation],
+	);
+
+	const handleGoogleSignIn = useCallback(async () => {
+		setIsGoogleLoading(true);
+		try {
+			await GoogleSignin.hasPlayServices();
+			await GoogleSignin.signOut().catch(() => undefined);
+			const result = await GoogleSignin.signIn();
+			const userInfo = (
+				result as { data?: { idToken?: string }; idToken?: string }
+			).data
+				? (result as { data: { idToken?: string } }).data
+				: (result as { idToken?: string });
+			const isCancelled = (result as { type?: string }).type === 'cancelled';
+
+			if (isCancelled) {
+				return;
+			}
+
+			const idToken = userInfo?.idToken;
+
+			if (!idToken) {
+				throw new Error('No ID Token obtained from Google');
+			}
+
+			const response = await googleLogin(idToken);
+
+			if (!response.data.success) {
+				throw new Error(response.data.message || 'Google Login Failed');
+			}
+
+			showMessage({
+				message: 'Login Successful',
+				description: 'Welcome back!',
+				type: 'success',
+			});
+			setLoginData(response.data.data);
+		} catch (error: unknown) {
+			let errorMessage = 'Google login failed';
+			let cancelled = false;
+
+			if (isErrorWithCode(error)) {
+				switch (error.code) {
+					case statusCodes.SIGN_IN_CANCELLED:
+						cancelled = true;
+						break;
+					case statusCodes.IN_PROGRESS:
+						errorMessage = 'Sign in in progress';
+						break;
+					case statusCodes.PLAY_SERVICES_NOT_AVAILABLE:
+						errorMessage = 'Play services not available';
+						break;
+					default:
+						errorMessage = error.message || 'Something went wrong';
+				}
+			} else {
+				errorMessage = getErrorMessage(error);
+			}
+
+			if (!cancelled) {
+				showMessage({
+					message: 'Login Failed',
+					description: errorMessage,
+					type: 'danger',
+				});
+			}
+		} finally {
+			setIsGoogleLoading(false);
+		}
+	}, [setLoginData]);
 
 	const handleNavigateToForgotPassword = useCallback(() => {
 		navigation.navigate('ForgotPassword');
@@ -82,6 +168,8 @@ function SignInScreen({ navigation }: Props) {
 	const handleNavigateToSignUp = useCallback(() => {
 		navigation.navigate('SignUp');
 	}, [navigation]);
+
+	const isInteractionDisabled = loginMutation.isPending || isGoogleLoading;
 
 	return (
 		<KeyboardAvoidingView
@@ -92,17 +180,15 @@ function SignInScreen({ navigation }: Props) {
 				colors={
 					colorScheme === 'dark'
 						? [
-								'rgba(68, 78, 187, 0.2)',
-								'rgba(68, 78, 187, 0.05)',
-								'transparent',
+								'rgba(68, 78, 187, 0.15)',
+								'rgba(0, 9, 20, 0)',
 							]
 						: [
-								'rgba(68, 78, 187, 0.12)',
-								'rgba(68, 78, 187, 0.04)',
-								'transparent',
+								'rgba(68, 78, 187, 0.08)',
+								'rgba(235, 244, 255, 0)',
 							]
 				}
-				className="absolute top-0 left-0 right-0 h-[500px]"
+				className="absolute top-0 left-0 right-0 h-[400px]"
 			/>
 
 			<ScrollView
@@ -110,41 +196,51 @@ function SignInScreen({ navigation }: Props) {
 				contentContainerClassName="flex-grow"
 				showsVerticalScrollIndicator={false}
 				keyboardShouldPersistTaps="handled">
-				<MainContainer className="flex-1 px-6 pt-20 pb-8">
-					{/* Hero Section with Enhanced Spacing */}
-					<View className="mb-12">
-						<View className="mb-8">
+				<MainContainer className="flex-1 px-6 pt-16 pb-8">
+					
+					{/* Hero Section */}
+					<View className="mb-10 mt-4">
+						<View className="mb-6">
 							<CustomImage
 								source={require('../../assets/app-images/icon.png')}
-								className="w-20 h-20 rounded-3xl shadow-lg"
+								className="w-16 h-16 rounded-[20px] shadow-md border border-border"
 								contentFit="cover"
 							/>
 						</View>
-						<Text className="text-[40px] font-bold text-foreground mb-2 leading-tight">
+						<Text className="text-4xl font-extrabold text-foreground mb-2 leading-tight tracking-tight">
 							Welcome Back
 						</Text>
 						<Text className="text-base text-muted-foreground leading-relaxed">
-							Sign in to continue your journey
+							Sign in to continue your document workflow.
 						</Text>
 					</View>
 
 					{/* Form Card */}
 					<View className="flex-1">
-						{/* Social Login Section - Moved to Top */}
+						
+						{/* Social Login Button */}
 						<Pressable
-							className="flex-row items-center justify-center border-2 border-border rounded-2xl py-4 mb-8 bg-card active:bg-muted"
+							onPress={handleGoogleSignIn}
+							className="flex-row items-center justify-center border border-border rounded-2xl py-4 mb-6 bg-card active:opacity-90 shadow-sm"
 							style={({ pressed }) => ({
-								transform: [{ scale: pressed ? 0.98 : 1 }],
+								transform: [{ scale: pressed && !isInteractionDisabled ? 0.98 : 1 }],
 							})}
-							disabled={loginMutation.isPending}>
-							<GoogleIcon />
+							disabled={isInteractionDisabled}>
+							{isGoogleLoading ? (
+								<ActivityIndicator
+									size="small"
+									color={colors.primary}
+								/>
+							) : (
+								<GoogleIcon />
+							)}
 							<Text className="text-foreground font-semibold ml-3 text-base">
 								Continue with Google
 							</Text>
 						</Pressable>
 
 						{/* Divider */}
-						<View className="flex-row items-center mb-8">
+						<View className="flex-row items-center mb-6">
 							<View className="flex-1 h-px bg-border" />
 							<Text className="px-4 text-muted-foreground text-sm font-medium">
 								Or sign in with email
@@ -163,6 +259,7 @@ function SignInScreen({ navigation }: Props) {
 							autoCapitalize="none"
 							autoComplete="email"
 							error={errors.email?.message}
+							editable={!isInteractionDisabled}
 							rules={{
 								required: 'Email is required',
 								pattern: {
@@ -173,15 +270,15 @@ function SignInScreen({ navigation }: Props) {
 						/>
 
 						{/* Password Field */}
-						<View className="mb-6">
+						<View className="mb-8">
 							<View className="flex-row justify-between items-center mb-2">
 								<Text className="text-foreground font-semibold text-base">
 									Password
 								</Text>
 								<Pressable
 									onPress={handleNavigateToForgotPassword}
-									disabled={loginMutation.isPending}
-									className="active:opacity-70 py-1">
+									disabled={isInteractionDisabled}
+									className="active:opacity-75 py-1">
 									<Text className="text-primary font-semibold text-sm">
 										Forgot Password?
 									</Text>
@@ -196,6 +293,7 @@ function SignInScreen({ navigation }: Props) {
 								secureTextEntry
 								autoComplete="password"
 								error={errors.password?.message}
+								editable={!isInteractionDisabled}
 								rules={{
 									required: 'Password is required',
 									minLength: {
@@ -212,19 +310,20 @@ function SignInScreen({ navigation }: Props) {
 							title="Sign In"
 							onPress={handleSubmit(onSubmit)}
 							loading={loginMutation.isPending}
+							disabled={isInteractionDisabled}
 							className="mb-8"
 						/>
 
-						{/* Sign Up Section - Enhanced */}
-						<View className="items-center pt-4 pb-4">
-							<View className="flex-row items-center mb-4">
+						{/* Sign Up Navigation */}
+						<View className="items-center pt-2 pb-4">
+							<View className="flex-row items-center">
 								<Text className="text-muted-foreground text-base mr-2">
 									Don't have an account?
 								</Text>
 								<Pressable
 									onPress={handleNavigateToSignUp}
-									disabled={loginMutation.isPending}
-									className="active:opacity-70 py-1">
+									disabled={isInteractionDisabled}
+									className="active:opacity-75 py-1">
 									<Text className="text-primary font-bold text-base">
 										Sign Up
 									</Text>
