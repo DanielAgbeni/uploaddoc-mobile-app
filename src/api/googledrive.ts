@@ -14,6 +14,8 @@ export interface DriveStatusResponse {
     canAutoSync: boolean;
     dailySyncLimit: number;
     dailySyncsUsed?: number;
+    syncsToday?: number;
+    remainingSyncs?: number | 'Unlimited';
   };
 }
 
@@ -69,7 +71,7 @@ export const getDriveStatus = async () => {
  * Returns authUrl to redirect user to
  */
 export const connectDrive = async () => {
-  const response = await api.get<DriveConnectResponse>('/api/googledrive/connect');
+  const response = await api.get<DriveConnectResponse>('/api/googledrive/connect?mobile=true');
   return response.data;
 };
 

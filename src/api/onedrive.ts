@@ -13,6 +13,8 @@ export interface OneDriveStatusResponse {
 		canAutoSync: boolean;
 		dailySyncLimit: number;
 		dailySyncsUsed?: number;
+		syncsToday?: number;
+		remainingSyncs?: number | 'Unlimited';
 	};
 }
 
@@ -57,7 +59,7 @@ export const getOneDriveStatus = async () => {
  */
 export const connectOneDrive = async () => {
 	const response = await api.get<OneDriveConnectResponse>(
-		'/api/onedrive/connect',
+		'/api/onedrive/connect?mobile=true',
 	);
 	return response.data;
 };

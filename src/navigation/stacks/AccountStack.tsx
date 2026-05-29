@@ -7,6 +7,7 @@ import ProfileScreen from '../../screens/account/ProfileScreen';
 import EditProfileScreen from '../../screens/account/EditProfileScreen';
 import TransactionHistoryScreen from '../../screens/account/TransactionHistoryScreen';
 import SettingsScreen from '../../screens/account/SettingsScreen';
+import CloudSyncScreen from '../../screens/account/CloudSyncScreen';
 
 const Stack = createNativeStackNavigator<AccountStackParamList>();
 
@@ -33,6 +34,10 @@ function AccountStack() {
 			<Stack.Screen
 				name="Settings"
 				component={SettingsScreen}
+			/>
+			<Stack.Screen
+				name="CloudSync"
+				component={CloudSyncScreen}
 			/>
 		</Stack.Navigator>
 	);

@@ -42,6 +42,7 @@ export const linkingConfig: LinkingOptions<RootStackParamList> = {
               EditProfile: 'account/edit',
               TransactionHistory: 'account/transactions',
               Settings: 'account/settings',
+              CloudSync: 'account/cloud-sync',
             },
           },
         },

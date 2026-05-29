@@ -107,6 +107,12 @@ export type AccountStackParamList = {
 	EditProfile: undefined; // Vendor-only
 	TransactionHistory: undefined; // Vendor-only
 	Settings: undefined;
+	CloudSync: {
+		drive?: 'success' | 'error';
+		type?: 'google' | 'dropbox' | 'onedrive';
+		email?: string;
+		message?: string;
+	} | undefined;
 };
 
 // Navigation prop types for convenience

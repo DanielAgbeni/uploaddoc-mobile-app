@@ -59,6 +59,23 @@ type FormValues = {
 	files: SelectedFile[];
 };
 
+const MAX_SELECTED_FILES = 10;
+const UPLOAD_CACHE_FOLDER = 'direct-upload-cache';
+
+const sanitizeCacheFileName = (name: string) =>
+	name.replace(/[^a-zA-Z0-9._-]/g, '_') || 'upload';
+
+const getFileTitle = (name: string) => name.trim() || 'document';
+
+const getUriScheme = (uri?: string) => {
+	const match = uri?.match(/^([a-zA-Z][a-zA-Z0-9+.-]*):/);
+	return match?.[1] || 'unknown';
+};
+
+const logUploadDebug = (step: string, details?: Record<string, unknown>) => {
+	console.log(`[SubmitDocument] ${step}`, details || {});
+};
+
 const SectionHeading = memo(function SectionHeading({
 	label,
 	required = false,
@@ -216,6 +233,11 @@ function SubmitDocumentScreen({
 
 	const handleSelectFile = useCallback(async () => {
 		try {
+			logUploadDebug('picker:open', {
+				currentFileCount: files.length,
+				maxFiles: MAX_SELECTED_FILES,
+			});
+
 			const result = await DocumentPicker.getDocumentAsync({
 				type: [
 					'application/pdf',
@@ -223,19 +245,54 @@ function SubmitDocumentScreen({
 					'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
 					'image/*',
 				],
-				copyToCacheDirectory: true,
-				multiple: true,
+				copyToCacheDirectory: false,
+				multiple: false,
+				base64: false,
+			});
+
+			logUploadDebug('picker:result', {
+				canceled: result.canceled,
+				assetCount: result.assets?.length || 0,
 			});
 
 			if (result.canceled || !result.assets) {
+				logUploadDebug('picker:cancelled');
+				return;
+			}
+
+			const remainingSlots = MAX_SELECTED_FILES - files.length;
+
+			if (remainingSlots <= 0) {
+				onError('Upload limit reached', `You can upload up to ${MAX_SELECTED_FILES} files at a time.`);
 				return;
 			}
 
 			const newFiles: SelectedFile[] = [];
 
-			for (const file of result.assets) {
+			for (const [index, file] of result.assets.entries()) {
+				logUploadDebug('picker:asset', {
+					index,
+					name: file.name,
+					mimeType: file.mimeType,
+					size: file.size,
+					uriScheme: getUriScheme(file.uri),
+					uriLength: file.uri.length,
+				});
+
 				if (files.some((existingFile) => existingFile.uri === file.uri)) {
+					logUploadDebug('picker:asset-skipped-duplicate', {
+						index,
+						name: file.name,
+					});
 					continue;
+				}
+
+				if (newFiles.length >= remainingSlots) {
+					logUploadDebug('picker:asset-skipped-limit', {
+						index,
+						name: file.name,
+					});
+					break;
 				}
 
 				const nextFile: SelectedFile = {
@@ -252,6 +309,11 @@ function SubmitDocumentScreen({
 				}
 
 				newFiles.push(nextFile);
+				logUploadDebug('picker:asset-added', {
+					index,
+					name: nextFile.name,
+					newFileCount: newFiles.length,
+				});
 			}
 
 			const currentTitle = watch('title');
@@ -264,11 +326,85 @@ function SubmitDocumentScreen({
 			}
 
 			setValue('files', [...files, ...newFiles]);
+			logUploadDebug('picker:state-updated', {
+				previousFileCount: files.length,
+				addedFileCount: newFiles.length,
+				totalFileCount: files.length + newFiles.length,
+			});
+
+			const skippedCount = result.assets.length - newFiles.length;
+			if (skippedCount > 0 && files.length + newFiles.length >= MAX_SELECTED_FILES) {
+				onError('Upload limit reached', `Only the first ${MAX_SELECTED_FILES} files were selected.`);
+			}
 		} catch (error) {
-			console.error('File picker error:', error);
+			console.error('[SubmitDocument] picker:error', error);
 			onError('Error', 'Failed to select file');
 		}
 	}, [files, getPdfPageCount, setValue, watch]);
+
+	const prepareFileForUpload = useCallback(
+		async (file: SelectedFile, index: number) => {
+			logUploadDebug('prepare:start', {
+				index,
+				name: file.name,
+				mimeType: file.mimeType,
+				size: file.size,
+				uriScheme: getUriScheme(file.uri),
+				uriLength: file.uri.length,
+			});
+
+			if (file.uri.startsWith('file://')) {
+				logUploadDebug('prepare:already-file-uri', {
+					index,
+					name: file.name,
+				});
+
+				return {
+					uri: file.uri,
+					shouldCleanup: false,
+				};
+			}
+
+			if (!FileSystem.cacheDirectory) {
+				throw new Error(`Unable to prepare ${file.name} for upload.`);
+			}
+
+			const uploadCacheDirectory = `${FileSystem.cacheDirectory}${UPLOAD_CACHE_FOLDER}/`;
+			logUploadDebug('prepare:ensure-cache-directory', {
+				index,
+				cacheDirectory: uploadCacheDirectory,
+			});
+
+			await FileSystem.makeDirectoryAsync(uploadCacheDirectory, {
+				intermediates: true,
+			});
+
+			const destination = `${uploadCacheDirectory}${Date.now()}-${index}-${sanitizeCacheFileName(file.name)}`;
+			logUploadDebug('prepare:copy-start', {
+				index,
+				name: file.name,
+				fromScheme: getUriScheme(file.uri),
+				toScheme: getUriScheme(destination),
+			});
+
+			await FileSystem.copyAsync({
+				from: file.uri,
+				to: destination,
+			});
+
+			logUploadDebug('prepare:copy-complete', {
+				index,
+				name: file.name,
+				destinationScheme: getUriScheme(destination),
+			});
+
+			return {
+				uri: destination,
+				shouldCleanup: true,
+			};
+		},
+		[],
+	);
 
 	const handleRemoveFile = useCallback(
 		(index: number) => {
@@ -379,17 +515,27 @@ function SubmitDocumentScreen({
 
 	const onSubmit = useCallback(
 		async (data: FormValues) => {
+			logUploadDebug('submit:start', {
+				fileCount: data.files.length,
+				hasVendor: Boolean(data.vendor),
+				hasUser: Boolean(user),
+				titleLength: data.title.trim().length,
+			});
+
 			if (!user) {
+				logUploadDebug('submit:blocked-no-user');
 				onError('Error', 'You must be logged in to submit documents');
 				return;
 			}
 
 			if (!data.vendor) {
+				logUploadDebug('submit:blocked-no-vendor');
 				onError('Validation Error', 'Please select a vendor');
 				return;
 			}
 
 			if (data.files.length === 0) {
+				logUploadDebug('submit:blocked-no-files');
 				onError('Validation Error', 'Please select at least one file');
 				return;
 			}
@@ -406,7 +552,23 @@ function SubmitDocumentScreen({
 					size: file.size || 0,
 				}));
 
+				logUploadDebug('upload:initiate:start', {
+					fileCount: fileMetadata.length,
+					files: fileMetadata.map((file, index) => ({
+						index,
+						name: file.originalName,
+						mimeType: file.mimeType,
+						size: file.size,
+					})),
+				});
+
 				const initiateRes = await initiateDirectUpload(fileMetadata);
+				logUploadDebug('upload:initiate:response', {
+					success: initiateRes.data.success,
+					uploadCount: initiateRes.data.data?.uploads?.length || 0,
+					message: initiateRes.data.message,
+				});
+
 				if (!initiateRes.data.success) {
 					throw new Error(initiateRes.data.message || 'Failed to initiate upload');
 				}
@@ -425,25 +587,66 @@ function SubmitDocumentScreen({
 					const uploadInfo = uploads[i];
 
 					if (!uploadInfo) {
+						logUploadDebug('upload:file-missing-info', {
+							index: i,
+							name: file.name,
+						});
 						throw new Error(`Upload info missing for file: ${file.name}`);
 					}
 
 					setUploadStatus(`Uploading ${file.name}...`);
+					logUploadDebug('upload:file:start', {
+						index: i,
+						name: file.name,
+						mimeType: file.mimeType,
+						size: file.size,
+						uriScheme: getUriScheme(file.uri),
+						hasHeaders: Boolean(uploadInfo.headers),
+					});
 
 					const headers = {
 						'Content-Type': file.mimeType || 'application/octet-stream',
 						...(uploadInfo.headers || {}),
 					};
 
-					const uploadTask = await FileSystem.uploadAsync(
-						uploadInfo.uploadUrl,
-						file.uri,
-						{
-							httpMethod: 'PUT',
-							headers,
-							uploadType: FileSystem.FileSystemUploadType.BINARY_CONTENT,
-						},
-					);
+					const preparedFile = await prepareFileForUpload(file, i);
+					let uploadTask: FileSystem.FileSystemUploadResult;
+
+					try {
+						uploadTask = await FileSystem.uploadAsync(
+							uploadInfo.uploadUrl,
+							preparedFile.uri,
+							{
+								httpMethod: 'PUT',
+								headers,
+								uploadType: FileSystem.FileSystemUploadType.BINARY_CONTENT,
+							},
+						);
+					} finally {
+						if (preparedFile.shouldCleanup) {
+							logUploadDebug('prepare:cleanup-start', {
+								index: i,
+								name: file.name,
+							});
+
+							await FileSystem.deleteAsync(preparedFile.uri, {
+								idempotent: true,
+							}).catch((cleanupError) => {
+								console.warn('Failed to delete temporary upload file:', cleanupError);
+							});
+
+							logUploadDebug('prepare:cleanup-complete', {
+								index: i,
+								name: file.name,
+							});
+						}
+					}
+
+					logUploadDebug('upload:file:response', {
+						index: i,
+						name: file.name,
+						status: uploadTask.status,
+					});
 
 					if (uploadTask.status < 200 || uploadTask.status >= 300) {
 						console.error('R2 Direct Upload PUT failed:', uploadTask);
@@ -452,6 +655,11 @@ function SubmitDocumentScreen({
 
 					const nextProgress = Math.round(((i + 1) / data.files.length) * 100);
 					setUploadProgress(nextProgress);
+					logUploadDebug('upload:file:progress', {
+						index: i,
+						name: file.name,
+						progress: nextProgress,
+					});
 
 					uploadedFiles.push({
 						key: uploadInfo.key,
@@ -468,27 +676,84 @@ function SubmitDocumentScreen({
 					return count + (file.pageCount || 0);
 				}, 0);
 
-				const completePayload = {
-					title: data.title.trim(),
-					assignedAdmin: data.vendor._id,
-					description: data.description.trim() || undefined,
-					pageCount: totalPageCount,
-					files: uploadedFiles,
-				};
+				if (uploadedFiles.length > 1) {
+					for (let i = 0; i < uploadedFiles.length; i += 1) {
+						const uploadedFile = uploadedFiles[i];
+						const sourceFile = data.files[i];
+						const completePayload = {
+							title: getFileTitle(uploadedFile.originalName),
+							assignedAdmin: data.vendor._id,
+							description: data.description.trim() || undefined,
+							pageCount: sourceFile?.pageCount || 1,
+							files: [uploadedFile],
+						};
 
-				const completeRes = await completeDirectUpload(completePayload);
-				if (!completeRes.data.success) {
-					throw new Error(completeRes.data.message || 'Failed to finalize upload');
+						logUploadDebug('upload:complete:file:start', {
+							index: i,
+							title: completePayload.title,
+							fileName: uploadedFile.originalName,
+							pageCount: completePayload.pageCount,
+							hasDescription: Boolean(completePayload.description),
+						});
+
+						const completeRes = await completeDirectUpload(completePayload);
+						logUploadDebug('upload:complete:file:response', {
+							index: i,
+							success: completeRes.data.success,
+							message: completeRes.data.message,
+						});
+
+						if (!completeRes.data.success) {
+							throw new Error(
+								completeRes.data.message ||
+									`Failed to finalize ${uploadedFile.originalName}`,
+							);
+						}
+					}
+				} else {
+					const completePayload = {
+						title: data.title.trim() || getFileTitle(uploadedFiles[0]?.originalName),
+						assignedAdmin: data.vendor._id,
+						description: data.description.trim() || undefined,
+						pageCount: totalPageCount,
+						files: uploadedFiles,
+					};
+
+					logUploadDebug('upload:complete:start', {
+						fileCount: uploadedFiles.length,
+						title: completePayload.title,
+						pageCount: totalPageCount,
+						hasDescription: Boolean(completePayload.description),
+					});
+
+					const completeRes = await completeDirectUpload(completePayload);
+					logUploadDebug('upload:complete:response', {
+						success: completeRes.data.success,
+						message: completeRes.data.message,
+					});
+
+					if (!completeRes.data.success) {
+						throw new Error(completeRes.data.message || 'Failed to finalize upload');
+					}
 				}
 
 				// 4. Send notification
 				try {
-					const docName = data.title.trim() || data.files[0]?.name || 'document';
+					const docName =
+						data.files.length > 1
+							? `${data.files.length} documents`
+							: data.title.trim() || data.files[0]?.name || 'document';
+					logUploadDebug('notification:start', {
+						vendorId: data.vendor._id,
+						docName,
+					});
+
 					await sendNotification(
 						data.vendor._id,
 						user.name,
 						`has submitted a document "${docName}"`,
 					);
+					logUploadDebug('notification:success');
 				} catch (notificationError) {
 					console.error('Failed to send notification:', notificationError);
 				}
@@ -503,17 +768,18 @@ function SubmitDocumentScreen({
 				queryClient.invalidateQueries({ queryKey: ['studentProjects'] });
 				navigation.goBack();
 			} catch (error: any) {
-				console.error('Submit error:', error);
+				console.error('[SubmitDocument] submit:error', error);
 				const message =
 					error?.response?.data?.message ||
 					error?.message ||
 					'Failed to submit document';
 				onError('Error', message);
 			} finally {
+				logUploadDebug('submit:finished');
 				setLoading(false);
 			}
 		},
-		[navigation, queryClient, user],
+		[navigation, prepareFileForUpload, queryClient, user],
 	);
 
 	return (
@@ -753,7 +1019,7 @@ function SubmitDocumentScreen({
 									<TextComponent 
 										className="mt-1 text-center text-xs leading-5 text-foreground font-semibold"
 										style={{ opacity: 0.5 }}>
-										PDF, Word, or image files. Max 10 files.
+										PDF, Word, or image files. Add up to {MAX_SELECTED_FILES} files.
 									</TextComponent>
 								</Pressable>
 							) : (

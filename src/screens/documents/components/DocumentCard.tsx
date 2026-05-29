@@ -186,7 +186,7 @@ const DocumentCard = memo(function DocumentCard({
 
 					{/* Glassmorphic Action Buttons */}
 					<View className="flex-row gap-2">
-						{project.status === 'accepted' ? (
+						
 							<Pressable
 								onPress={handleChatPress}
 								className="h-9 w-9 items-center justify-center rounded-full active:opacity-85 border border-primary/20 bg-primary/10"
@@ -198,7 +198,7 @@ const DocumentCard = memo(function DocumentCard({
 									color={colors.primary}
 								/>
 							</Pressable>
-						) : null}
+						
 
 						{project.fileUrl ? (
 							<Pressable

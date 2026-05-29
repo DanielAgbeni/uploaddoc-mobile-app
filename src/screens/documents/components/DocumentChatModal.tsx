@@ -367,9 +367,12 @@ const DocumentChatModal = memo(function DocumentChatModal({
 
 			setOptimisticMessages((current) => current.filter((om) => om.id !== tempId));
 
-			if (project.assignedAdmin) {
+			const currentUserId = currentUser.id || currentUser._id;
+			const recipientId = currentUserId === project.studentId ? project.assignedAdmin : project.studentId;
+
+			if (recipientId) {
 				await sendNotification(
-					project.assignedAdmin,
+					recipientId,
 					currentUser.name,
 					`sent a chat message on "${project.title}"`,
 				);

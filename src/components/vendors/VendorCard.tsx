@@ -180,7 +180,7 @@ const VendorCard: React.FC<VendorCardProps> = ({ admin, onSelect }) => {
 
 				{/* Compact select button visual feedback */}
 				<View className="h-8 rounded-full bg-primary/10 border border-primary/20 px-3.5 items-center justify-center">
-					<TextComponent className="text-xs font-bold text-primary">
+					<TextComponent className="text-xs font-bold text-white">
 						Select
 					</TextComponent>
 				</View>

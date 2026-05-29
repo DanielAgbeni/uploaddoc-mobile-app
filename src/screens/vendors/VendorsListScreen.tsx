@@ -21,8 +21,8 @@ import {
 } from '../../types/navigation.types';
 import { fetchAdmins } from '../../api/admins';
 import { useTheme } from '../../providers/ThemeProvider';
-import { TextComponent } from 'src/components';
-import { SearchIcon, StacksIcon } from 'src/assets/icons';
+import { CustomImage, TextComponent } from 'src/components';
+import { icon, SearchIcon, StacksIcon } from 'src/assets/icons';
 import VendorCard from 'src/components/vendors/VendorCard';
 import VendorCardSkeleton from 'src/components/vendors/VendorCardSkeleton';
 
@@ -168,11 +168,12 @@ export default function VendorsListScreen({ navigation }: Props) {
 				<View className="flex-row items-center justify-between mb-5">
 					<View className="flex-row items-center">
 						<View className="h-8 w-8 items-center justify-center rounded-xl bg-primary/10 border border-primary/20 mr-2.5">
-							<StacksIcon
-								size={16}
-								color={colors.primary}
-							/>
-						</View>
+												<CustomImage
+													source={icon}
+													className="h-5 w-5 rounded-full"
+													contentFit="cover"
+												/>
+											</View>
 						<TextComponent className="text-xl font-extrabold tracking-tight text-foreground">
 							UploadDoc
 						</TextComponent>

@@ -288,7 +288,7 @@ function VendorDetailsScreen({ navigation, route }: Props) {
 								<TextComponent 
 									className="text-[9px] font-bold uppercase tracking-[0.5px] text-foreground mb-1.5"
 									style={{ opacity: 0.45 }}>
-									About Print Provider
+									About Vendor
 								</TextComponent>
 								<TextComponent 
 									className="text-xs leading-5 text-foreground font-medium"

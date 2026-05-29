@@ -18,6 +18,7 @@ import {
 	HistoryIcon,
 } from 'src/assets/icons';
 import { CustomImage, TextComponent } from 'src/components';
+import CloudIcon from '../../assets/icons/cloud.icon';
 import { registerForPushNotificationsAsync } from '../../services/NotificationService';
 import {
 	subscribeToPushNotifications,
@@ -182,6 +183,10 @@ function ProfileScreen({ navigation }: Props) {
 
 	const handleNavigateToTransactionHistory = useCallback(() => {
 		navigation.navigate('TransactionHistory');
+	}, [navigation]);
+
+	const handleNavigateToCloudSync = useCallback(() => {
+		navigation.navigate('CloudSync');
 	}, [navigation]);
 
 	const handleOpenPrivacyPolicy = useCallback(() => {
@@ -407,6 +412,18 @@ function ProfileScreen({ navigation }: Props) {
 								</Pressable>
 							</View>
 						</View>
+						<Separator />
+						<SettingRow
+							icon={
+								<CloudIcon
+									size={20}
+									color={colors.primary}
+								/>
+							}
+							title="Cloud Storage"
+							subtitle="Sync documents to Drive, OneDrive, or Dropbox"
+							onPress={handleNavigateToCloudSync}
+						/>
 					</View>
 				</View>
 
@@ -465,7 +482,7 @@ function ProfileScreen({ navigation }: Props) {
 
 				{/* App Version */}
 				<TextComponent className="text-center text-muted-foreground text-xs mt-4">
-					UploadDoc v2.0.11
+					UploadDoc v2.1.0
 				</TextComponent>
 			</View>
 		</ScrollView>

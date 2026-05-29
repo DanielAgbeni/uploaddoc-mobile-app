@@ -13,6 +13,8 @@ export interface DropboxStatusResponse {
 		canAutoSync: boolean;
 		dailySyncLimit: number;
 		dailySyncsUsed?: number;
+		syncsToday?: number;
+		remainingSyncs?: number | 'Unlimited';
 	};
 }
 
@@ -54,7 +56,7 @@ export const getDropboxStatus = async () => {
  */
 export const connectDropbox = async () => {
 	const response = await api.get<DropboxConnectResponse>(
-		'/api/dropbox/connect',
+		'/api/dropbox/connect?mobile=true',
 	);
 	return response.data;
 };

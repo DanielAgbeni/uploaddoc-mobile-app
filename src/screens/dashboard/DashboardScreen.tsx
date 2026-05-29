@@ -1,11 +1,11 @@
 import React, { useState, useMemo, useCallback } from 'react';
 import {
 	View,
-	Text,
 	ActivityIndicator,
 	RefreshControl,
 	StatusBar,
 	TextInput,
+	Pressable,
 } from 'react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { MainTabParamList } from '../../types/navigation.types';
@@ -26,27 +26,32 @@ import ProjectCardSkeleton from './components/ProjectCardSkeleton';
 import { FlashList } from '@shopify/flash-list';
 import { showMessage } from 'react-native-flash-message';
 import AlertModal from '../../components/ui/AlertModal';
-import {
-	downloadDocument,
-	getDownloadFolderPath,
-} from '../../utils/fileDownload';
+import { downloadDocument } from '../../utils/fileDownload';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { LinearGradient } from 'expo-linear-gradient';
 import { useTheme } from '../../providers/ThemeProvider';
 import { useDebounce } from 'use-debounce';
-import DashboardIcon from '../../assets/icons/dashboard.icon';
-import { SearchIcon } from '../../assets/icons'; // Assuming index.ts exports it
-import { TextComponent } from 'src/components';
+import { SearchIcon, icon } from '../../assets/icons';
+import { TextComponent, CustomImage } from 'src/components';
 import CloseCircleIcon from '../../assets/icons/close-circle.icon';
+import { useUserStore } from '../../shared/user-store/useUserStore';
+import DocumentChatModal from '../documents/components/DocumentChatModal';
 
 type Props = NativeStackScreenProps<MainTabParamList, 'DashboardTab'>;
 
 function DashboardScreen({ navigation }: Props) {
 	const insets = useSafeAreaInsets();
-	const { colors } = useTheme();
+	const { colors, colorScheme } = useTheme();
+	const { user } = useUserStore();
 	const [deleteModalVisible, setDeleteModalVisible] = useState(false);
 	const [projectToDelete, setProjectToDelete] = useState<string | null>(null);
+	const [chatProject, setChatProject] = useState<Project | null>(null);
+	const [chatModalVisible, setChatModalVisible] = useState(false);
 	const queryClient = useQueryClient();
+
+	const firstName = useMemo(
+		() => user?.name?.split(' ')[0] || 'User',
+		[user?.name],
+	);
 
 	// Search State
 	const [searchQuery, setSearchQuery] = useState('');
@@ -157,6 +162,16 @@ function DashboardScreen({ navigation }: Props) {
 		setDeleteModalVisible(false);
 	}, []);
 
+	const handleOpenChat = useCallback((project: Project) => {
+		setChatProject(project);
+		setChatModalVisible(true);
+	}, []);
+
+	const handleCloseChatModal = useCallback(() => {
+		setChatModalVisible(false);
+		setChatProject(null);
+	}, []);
+
 	const handleEndReached = useCallback(() => {
 		if (hasNextPage && !isFetchingNextPage) {
 			fetchNextPage();
@@ -217,10 +232,11 @@ function DashboardScreen({ navigation }: Props) {
 				onAccept={handleAccept}
 				onDelete={handleDelete}
 				onDownload={handleDownload}
+				onChat={handleOpenChat}
 				isAccepting={acceptMutation.isPending}
 			/>
 		),
-		[handleAccept, handleDelete, handleDownload, acceptMutation.isPending],
+		[handleAccept, handleDelete, handleDownload, handleOpenChat, acceptMutation.isPending],
 	);
 
 	const renderFooter = useCallback(() => {
@@ -261,36 +277,58 @@ function DashboardScreen({ navigation }: Props) {
 	return (
 		<View className="flex-1 bg-background">
 			<StatusBar
-				barStyle="light-content"
+				barStyle={colorScheme === 'dark' ? 'light-content' : 'dark-content'}
 				backgroundColor="transparent"
 				translucent
 			/>
 
-			{/* Gradient Header */}
-			<LinearGradient
-				colors={[colors.primary, colors.accent || '#4F46E5']}
-				start={{ x: 0, y: 0 }}
-				end={{ x: 1, y: 1 }}
-				className="pt-14 pb-12 px-6 rounded-b-3xl">
-				<View className="items-center">
-					<View className="w-16 h-16 bg-white/20 rounded-2xl items-center justify-center mb-4">
-						<DashboardIcon
-							size={32}
-							color="#fff"
+			{/* Clean Neutral Header */}
+			<View
+				className="px-5 pb-5 border-b border-border/50 bg-background"
+				style={{ paddingTop: insets.top + 16 }}>
+				
+				{/* Top row: Brand & Profile Avatar */}
+				<View className="flex-row items-center justify-between mb-5">
+					{/* Logo Mark + Brand Title */}
+					<View className="flex-row items-center">
+						<View className="h-8 w-8 items-center justify-center rounded-xl bg-primary/10 border border-primary/20 mr-2.5">
+							<CustomImage
+								source={icon}
+								className="h-5 w-5 rounded-full"
+								contentFit="cover"
+							/>
+						</View>
+						<TextComponent className="text-xl font-extrabold tracking-tight text-foreground">
+							UploadDoc
+						</TextComponent>
+					</View>
+
+					{/* User Avatar Circle */}
+					<View className="h-9 w-9 overflow-hidden rounded-full border border-border bg-card shadow-sm">
+						<CustomImage
+							source={
+								user?.profilePicture
+									? { uri: user.profilePicture }
+									: icon
+							}
+							className="h-full w-full rounded-full"
+							contentFit="cover"
 						/>
 					</View>
-					<TextComponent className="text-white font-bold text-2xl mb-1">
-						Dashboard
-					</TextComponent>
-					<TextComponent className="text-white/80 text-base text-center">
-						Manage your assigned documents
+				</View>
+
+				{/* Welcome Message Label */}
+				<View>
+					
+					<TextComponent className="text-4xl font-black text-foreground mt-0.5 leading-9">
+						Vendor Dashboard
 					</TextComponent>
 				</View>
-			</LinearGradient>
+			</View>
 
-			{/* Search Bar */}
-			<View className="px-5 -mt-6 mb-2">
-				<View className="bg-card border border-border rounded-xl flex-row items-center px-4 shadow-sm h-12">
+			{/* Sleek Search Capsule */}
+			<View className="px-5 pt-4 pb-2">
+				<View className="flex-row items-center rounded-2xl border border-border bg-card px-4 shadow-sm h-12">
 					<SearchIcon
 						size={18}
 						color={colors.mutedForeground}
@@ -303,12 +341,14 @@ function DashboardScreen({ navigation }: Props) {
 						onChangeText={handleSearchChange}
 					/>
 					{searchQuery.length > 0 && (
-						<View onTouchEnd={handleClearSearch}>
+						<Pressable
+							onPress={handleClearSearch}
+							className="p-1">
 							<CloseCircleIcon
 								size={18}
 								color={colors.mutedForeground}
 							/>
-						</View>
+						</Pressable>
 					)}
 				</View>
 			</View>
@@ -344,6 +384,13 @@ function DashboardScreen({ navigation }: Props) {
 				onConfirm={confirmDelete}
 				confirmText={deleteMutation.isPending ? 'Deleting...' : 'Delete'}
 				cancelText="Cancel"
+			/>
+
+			<DocumentChatModal
+				isVisible={chatModalVisible}
+				onClose={handleCloseChatModal}
+				project={chatProject}
+				currentUser={user ?? null}
 			/>
 		</View>
 	);
