@@ -5,6 +5,7 @@ import { DocumentsStackParamList } from '../../types/navigation.types';
 // Screens
 import DocumentsListScreen from '../../screens/documents/DocumentsListScreen';
 import SubmitDocumentScreen from '../../screens/documents/SubmitDocumentScreen';
+import NotificationsScreen from '../../screens/notifications/NotificationsScreen';
 
 const Stack = createNativeStackNavigator<DocumentsStackParamList>();
 
@@ -25,6 +26,13 @@ function DocumentsStack() {
 				component={SubmitDocumentScreen}
 				options={{
 					presentation: 'modal',
+				}}
+			/>
+			<Stack.Screen
+				name="Notifications"
+				component={NotificationsScreen}
+				options={{
+					animation: 'slide_from_right',
 				}}
 			/>
 		</Stack.Navigator>

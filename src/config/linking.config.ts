@@ -27,6 +27,7 @@ export const linkingConfig: LinkingOptions<RootStackParamList> = {
             screens: {
               DocumentsList: 'documents',
               SubmitDocument: 'documents/submit',
+              Notifications: 'documents/notifications',
             },
           },
           VendorsTab: {
@@ -35,7 +36,12 @@ export const linkingConfig: LinkingOptions<RootStackParamList> = {
               VendorDetails: 'vendors/:vendorId',
             },
           },
-          DashboardTab: 'dashboard',
+          DashboardTab: {
+            screens: {
+              Dashboard: 'dashboard',
+              Notifications: 'dashboard/notifications',
+            },
+          },
           AccountTab: {
             screens: {
               Profile: 'account',

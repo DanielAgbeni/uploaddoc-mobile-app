@@ -3,12 +3,14 @@ import { View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { FileText, Clock, CheckCircle } from 'lucide-react-native';
 import CustomImage from '../../../components/common/CustomImage';
+import NotificationBell from '../../../components/common/NotificationBell';
 import TextComponent from '../../../components/ui/TextComponent';
 import { useTheme } from '../../../providers/ThemeProvider';
 
 interface DocumentsHeaderProps {
 	acceptedCount: number;
 	firstName: string;
+	onNotificationPress: () => void;
 	pendingCount: number;
 	profilePicture: string | null | undefined;
 	totalCount: number;
@@ -17,6 +19,7 @@ interface DocumentsHeaderProps {
 const DocumentsHeader = memo(function DocumentsHeader({
 	acceptedCount,
 	firstName,
+	onNotificationPress,
 	pendingCount,
 	profilePicture,
 	totalCount,
@@ -45,17 +48,21 @@ const DocumentsHeader = memo(function DocumentsHeader({
 					</TextComponent>
 				</View>
 
-				{/* User Avatar Circle */}
-				<View className="h-9 w-9 overflow-hidden rounded-full border border-border bg-card shadow-sm">
-					<CustomImage
-						source={
-							profilePicture
-								? { uri: profilePicture }
-								: require('../../../assets/app-images/icon.png')
-						}
-						className="h-full w-full rounded-full"
-						contentFit="cover"
-					/>
+				{/* Bell + Avatar */}
+				<View className="flex-row items-center gap-2.5">
+					<NotificationBell onPress={onNotificationPress} />
+
+					<View className="h-9 w-9 overflow-hidden rounded-full border border-border bg-card shadow-sm">
+						<CustomImage
+							source={
+								profilePicture
+									? { uri: profilePicture }
+									: require('../../../assets/app-images/icon.png')
+							}
+							className="h-full w-full rounded-full"
+							contentFit="cover"
+						/>
+					</View>
 				</View>
 			</View>
 

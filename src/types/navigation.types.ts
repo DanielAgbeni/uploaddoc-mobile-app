@@ -72,7 +72,7 @@ export type MainTabParamList = {
 	DocumentsTab: NavigatorScreenParams<DocumentsStackParamList>;
 	VendorsTab: NavigatorScreenParams<VendorsStackParamList>;
 	SubmitTab: undefined; // Floating Plus Tab
-	DashboardTab: undefined; // Only visible for vendors
+	DashboardTab: NavigatorScreenParams<DashboardStackParamList>; // Only visible for vendors
 	AccountTab: NavigatorScreenParams<AccountStackParamList>;
 };
 
@@ -90,6 +90,7 @@ export type SubmitDocumentParams = {
 export type DocumentsStackParamList = {
 	DocumentsList: undefined;
 	SubmitDocument: SubmitDocumentParams;
+	Notifications: undefined;
 };
 
 // Vendors Stack (nested in Find Vendors Tab)
@@ -99,6 +100,12 @@ export type VendorsStackParamList = {
 		vendorId: string;
 	};
 	SubmitDocument: SubmitDocumentParams;
+};
+
+// Dashboard Stack (nested in Dashboard Tab, vendor-only)
+export type DashboardStackParamList = {
+	Dashboard: undefined;
+	Notifications: undefined;
 };
 
 // Account Stack (nested in Account Tab)
@@ -135,6 +142,12 @@ export type DocumentsStackNavigationProp = CompositeNavigationProp<
 // Vendors Stack Navigator
 export type VendorsStackNavigationProp = CompositeNavigationProp<
 	NativeStackNavigationProp<VendorsStackParamList>,
+	BottomTabNavigationProp<MainTabParamList>
+>;
+
+// Dashboard Stack Navigator
+export type DashboardStackNavigationProp = CompositeNavigationProp<
+	NativeStackNavigationProp<DashboardStackParamList>,
 	BottomTabNavigationProp<MainTabParamList>
 >;
 

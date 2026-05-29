@@ -8,7 +8,8 @@ import {
 	Pressable,
 } from 'react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { MainTabParamList } from '../../types/navigation.types';
+import { DashboardStackParamList } from '../../types/navigation.types';
+import NotificationBell from '../../components/common/NotificationBell';
 import {
 	useInfiniteQuery,
 	useMutation,
@@ -36,7 +37,7 @@ import CloseCircleIcon from '../../assets/icons/close-circle.icon';
 import { useUserStore } from '../../shared/user-store/useUserStore';
 import DocumentChatModal from '../documents/components/DocumentChatModal';
 
-type Props = NativeStackScreenProps<MainTabParamList, 'DashboardTab'>;
+type Props = NativeStackScreenProps<DashboardStackParamList, 'Dashboard'>;
 
 function DashboardScreen({ navigation }: Props) {
 	const insets = useSafeAreaInsets();
@@ -85,6 +86,10 @@ function DashboardScreen({ navigation }: Props) {
 		queryClient.invalidateQueries({ queryKey: ['userStatus'] });
 		queryClient.invalidateQueries({ queryKey: ['allCloudStatus'] });
 	}, [refetch, queryClient]);
+
+	const handleNotificationPress = useCallback(() => {
+		navigation.navigate('Notifications');
+	}, [navigation]);
 
 	// Mutations
 	const acceptMutation = useMutation({
@@ -303,17 +308,21 @@ function DashboardScreen({ navigation }: Props) {
 						</TextComponent>
 					</View>
 
-					{/* User Avatar Circle */}
-					<View className="h-9 w-9 overflow-hidden rounded-full border border-border bg-card shadow-sm">
-						<CustomImage
-							source={
-								user?.profilePicture
-									? { uri: user.profilePicture }
-									: icon
-							}
-							className="h-full w-full rounded-full"
-							contentFit="cover"
-						/>
+					{/* Bell + Avatar */}
+					<View className="flex-row items-center gap-2.5">
+						<NotificationBell onPress={handleNotificationPress} />
+
+						<View className="h-9 w-9 overflow-hidden rounded-full border border-border bg-card shadow-sm">
+							<CustomImage
+								source={
+									user?.profilePicture
+										? { uri: user.profilePicture }
+										: icon
+								}
+								className="h-full w-full rounded-full"
+								contentFit="cover"
+							/>
+						</View>
 					</View>
 				</View>
 

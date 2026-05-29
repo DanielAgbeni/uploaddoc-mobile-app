@@ -251,6 +251,10 @@ function DocumentsListScreen({ navigation }: Props) {
 		setStatusFilter(value);
 	}, []);
 
+	const handleNotificationPress = useCallback(() => {
+		navigation.navigate('Notifications');
+	}, [navigation]);
+
 	const handleCreateDocument = useCallback(() => {
 		navigation.navigate('SubmitDocument', {});
 	}, [navigation]);
@@ -424,6 +428,7 @@ function DocumentsListScreen({ navigation }: Props) {
 		<View className="flex-1 bg-background">
 			<DocumentsHeader
 				firstName={firstName}
+				onNotificationPress={handleNotificationPress}
 				profilePicture={user?.profilePicture}
 				totalCount={totalCount}
 				pendingCount={counts.pending}

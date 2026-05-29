@@ -1,5 +1,5 @@
 import React, { memo } from 'react';
-import { NavigationContainer, DefaultTheme, DarkTheme } from '@react-navigation/native';
+import { NavigationContainer, NavigationContainerRef, DefaultTheme, DarkTheme } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../types/navigation.types';
 import { linkingConfig } from '../config/linking.config';
@@ -13,7 +13,11 @@ import MainTabNavigator from './MainTabNavigator';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
-function RootNavigator() {
+interface RootNavigatorProps {
+	navigationRef: React.RefObject<NavigationContainerRef<RootStackParamList> | null>;
+}
+
+function RootNavigator({ navigationRef }: RootNavigatorProps) {
 	const isAuthenticated = useUserStore((state) => state.isAuthenticated);
 	const hasHydrated = useUserStore((state) => state.hasHydrated);
 	const { colors, colorScheme } = useTheme();
@@ -41,7 +45,7 @@ function RootNavigator() {
 	};
 
 	return (
-		<NavigationContainer linking={linkingConfig} theme={navigationTheme}>
+		<NavigationContainer ref={navigationRef} linking={linkingConfig} theme={navigationTheme}>
 			{!hasHydrated ? (
 				<View className="flex-1 bg-background items-center justify-center">
 					<ActivityIndicator

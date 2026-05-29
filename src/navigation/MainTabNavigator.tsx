@@ -17,7 +17,7 @@ import PlusIcon from '../assets/icons/add.icon';
 import DocumentsStack from './stacks/DocumentsStack';
 import VendorsStack from './stacks/VendorsStack';
 import AccountStack from './stacks/AccountStack';
-import DashboardScreen from '../screens/dashboard/DashboardScreen';
+import DashboardStack from './stacks/DashboardStack';
 import { useUserStore } from '../shared/user-store/useUserStore';
 
 interface TabIconContainerProps {
@@ -179,7 +179,7 @@ function MainTabNavigator() {
 			{isVendor && (
 				<Tab.Screen
 					name="DashboardTab"
-					component={DashboardScreen}
+					component={DashboardStack}
 					options={{
 						tabBarLabel: 'Dashboard',
 						tabBarIcon: ({ color, focused }) => (
