@@ -6,7 +6,8 @@ import { showMessage } from 'react-native-flash-message';
 import { NavigationContainerRef } from '@react-navigation/native';
 
 import { registerForPushNotificationsAsync } from '../services/NotificationService';
-import { connectSocket, disconnectSocket } from '../services/socketService';
+import { ref, onValue } from 'firebase/database';
+import { firebaseDatabase } from '../services/firebase';
 import {
 	subscribeToPushNotifications,
 	unsubscribeFromPushNotifications,
@@ -42,6 +43,7 @@ function NotificationProviderInner({
 	const appStateRef = useRef<AppStateStatus>(AppState.currentState);
 	const pushTokenRef = useRef<string | null>(null);
 	const notificationResponseSub = useRef<Notifications.EventSubscription | null>(null);
+	const unsubscribeFirebaseRef = useRef<(() => void) | null>(null);
 
 	// ── Dynamic foreground/background notification handler ──
 	const updateNotificationHandler = useCallback((isForeground: boolean) => {
@@ -103,14 +105,73 @@ function NotificationProviderInner({
 		[incrementUnreadCount, queryClient],
 	);
 
-	// ── Connect Socket.IO ──
-	const connectSocketIO = useCallback(async () => {
-		const { userToken } = await getAppNeededDetails();
-		if (!userToken) return;
+	// ── Connect Firebase Trigger ──
+	const connectFirebaseTrigger = useCallback(() => {
+		if (!user?._id) return;
 
-		const socket = connectSocket(userToken);
-		socket.on('new_notification', handleNewNotification);
-	}, [handleNewNotification]);
+		// Clean up existing listener if any
+		if (unsubscribeFirebaseRef.current) {
+			unsubscribeFirebaseRef.current();
+			unsubscribeFirebaseRef.current = null;
+		}
+
+		console.log('[NotificationProvider] Listening to Firebase RTDB triggers for user:', user._id);
+		const triggerRef = ref(firebaseDatabase, `notifications/${user._id}/trigger`);
+
+		const unsubscribe = onValue(
+			triggerRef,
+			(snapshot) => {
+				const data = snapshot.val();
+				console.log('[NotificationProvider] Firebase trigger event received:', JSON.stringify(data));
+				
+				if (!data) {
+					console.log('[NotificationProvider] Firebase trigger data is null');
+					return;
+				}
+				
+				if (!data.timestamp) {
+					console.log('[NotificationProvider] Firebase trigger missing timestamp');
+					return;
+				}
+
+				const ageMs = Date.now() - data.timestamp;
+				console.log(`[NotificationProvider] Trigger age: ${ageMs}ms`);
+
+				// Trigger on recent updates (within 10 seconds)
+				const isRecent = ageMs < 10000;
+				if (isRecent) {
+					console.log('[NotificationProvider] Trigger is recent! Showing toast for:', data.title);
+					const mockNotification: InAppNotification = {
+						_id: data.notificationId || '',
+						recipient: user._id,
+						type: data.type || 'document_status',
+						title: data.title || 'New Update',
+						message: data.message || '',
+						documentId: data.documentId || undefined,
+						isRead: false,
+						createdAt: new Date().toISOString(),
+					};
+					handleNewNotification(mockNotification);
+				} else {
+					console.log('[NotificationProvider] Trigger is older than 10s. Invaliding queries only.');
+					queryClient.invalidateQueries({ queryKey: ['inAppNotifications'] });
+				}
+			},
+			(error) => {
+				console.error('[NotificationProvider] Firebase trigger listener error:', error);
+			}
+		);
+
+		unsubscribeFirebaseRef.current = unsubscribe;
+	}, [user?._id, handleNewNotification, queryClient]);
+
+	const disconnectFirebaseTrigger = useCallback(() => {
+		if (unsubscribeFirebaseRef.current) {
+			unsubscribeFirebaseRef.current();
+			unsubscribeFirebaseRef.current = null;
+			console.log('[NotificationProvider] Disconnected Firebase trigger listener');
+		}
+	}, []);
 
 	// ── Handle notification tap (from OS notification tray) ──
 	const handleNotificationResponse = useCallback(
@@ -179,13 +240,13 @@ function NotificationProviderInner({
 				if (wasBg && isNowFg) {
 					// App came to foreground
 					updateNotificationHandler(true);
-					connectSocketIO();
+					connectFirebaseTrigger();
 					// Refresh notification data
 					queryClient.invalidateQueries({ queryKey: ['inAppNotifications'] });
 				} else if (isNowBg) {
 					// App went to background
 					updateNotificationHandler(false);
-					disconnectSocket();
+					disconnectFirebaseTrigger();
 				}
 
 				appStateRef.current = nextAppState;
@@ -195,7 +256,7 @@ function NotificationProviderInner({
 		return () => {
 			subscription.remove();
 		};
-	}, [isAuthenticated, updateNotificationHandler, connectSocketIO, queryClient]);
+	}, [isAuthenticated, updateNotificationHandler, connectFirebaseTrigger, disconnectFirebaseTrigger, queryClient]);
 
 	// ── Initial setup on authentication ──
 	useEffect(() => {
@@ -207,8 +268,8 @@ function NotificationProviderInner({
 		// Register push token
 		registerPushToken();
 
-		// Connect Socket.IO
-		connectSocketIO();
+		// Connect Firebase Trigger
+		connectFirebaseTrigger();
 
 		// Listen for notification taps
 		notificationResponseSub.current =
@@ -218,13 +279,15 @@ function NotificationProviderInner({
 
 		return () => {
 			notificationResponseSub.current?.remove();
+			disconnectFirebaseTrigger();
 		};
 	}, [
 		isAuthenticated,
 		user?._id,
 		updateNotificationHandler,
 		registerPushToken,
-		connectSocketIO,
+		connectFirebaseTrigger,
+		disconnectFirebaseTrigger,
 		handleNotificationResponse,
 	]);
 
@@ -241,9 +304,9 @@ function NotificationProviderInner({
 		}
 
 		pushTokenRef.current = null;
-		disconnectSocket();
+		disconnectFirebaseTrigger();
 		resetUnreadCount();
-	}, [isAuthenticated, user?._id, unregisterPushToken, resetUnreadCount]);
+	}, [isAuthenticated, user?._id, unregisterPushToken, disconnectFirebaseTrigger, resetUnreadCount]);
 
 	return <>{children}</>;
 }

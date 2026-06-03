@@ -78,7 +78,7 @@ function TransactionHistoryScreen({ navigation }: Props) {
 
 	const renderEmpty = useCallback(() => {
 		return (
-			<View className="bg-card rounded-2xl p-8 items-center justify-center border border-border/50 mt-4">
+			<View className="bg-card rounded-2xl p-8 items-center justify-center border border-border mt-4">
 				<View className="bg-muted/30 p-4 rounded-full mb-4">
 					<TextComponent className="text-3xl">💸</TextComponent>
 				</View>

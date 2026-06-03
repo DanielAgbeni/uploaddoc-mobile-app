@@ -148,10 +148,10 @@ function VendorDetailsScreen({ navigation, route }: Props) {
 					{vendor.profilePicture ? (
 						<Image
 							source={{ uri: vendor.profilePicture }}
-							className="h-24 w-24 rounded-full border-2 border-primary/20 mb-4"
+							className="h-24 w-24 rounded-full border-2 border mb-4"
 						/>
 					) : (
-						<View className="h-24 w-24 rounded-full bg-primary/10 items-center justify-center border-2 border-primary/20 mb-4">
+						<View className="h-24 w-24 rounded-full bg-primary/10 items-center justify-center border-2 border mb-4">
 							<TextComponent className="text-3xl font-black text-primary">
 								{vendor.name.charAt(0).toUpperCase()}
 							</TextComponent>
@@ -231,7 +231,7 @@ function VendorDetailsScreen({ navigation, route }: Props) {
 
 						{vendor.printingLocation ? (
 							<View className="flex-row items-center mb-4">
-								<View className="mr-3 h-8 w-8 items-center justify-center rounded-full bg-primary/10 border border-primary/20">
+								<View className="mr-3 h-8 w-8 items-center justify-center rounded-full bg-primary/10 border border">
 									<MapPinIcon size={14} color={colors.primary} />
 								</View>
 								<View className="flex-1">
@@ -249,7 +249,7 @@ function VendorDetailsScreen({ navigation, route }: Props) {
 
 						{vendor.openingHours ? (
 							<View className="flex-row items-center mb-4">
-								<View className="mr-3 h-8 w-8 items-center justify-center rounded-full bg-primary/10 border border-primary/20">
+								<View className="mr-3 h-8 w-8 items-center justify-center rounded-full bg-primary/10 border border">
 									<ClockIcon size={14} color={colors.primary} />
 								</View>
 								<View className="flex-1">
@@ -267,7 +267,7 @@ function VendorDetailsScreen({ navigation, route }: Props) {
 
 						{vendor.supportContact ? (
 							<View className="flex-row items-center">
-								<View className="mr-3 h-8 w-8 items-center justify-center rounded-full bg-primary/10 border border-primary/20">
+								<View className="mr-3 h-8 w-8 items-center justify-center rounded-full bg-primary/10 border border">
 									<PhoneIcon size={14} color={colors.primary} />
 								</View>
 								<View className="flex-1">
@@ -284,7 +284,7 @@ function VendorDetailsScreen({ navigation, route }: Props) {
 						) : null}
 
 						{vendor.additionalInfo ? (
-							<View className="mt-4 pt-4 border-t border-border/60">
+							<View className="mt-4 pt-4 border-t border-border">
 								<TextComponent 
 									className="text-[9px] font-bold uppercase tracking-[0.5px] text-foreground mb-1.5"
 									style={{ opacity: 0.45 }}>
@@ -315,7 +315,7 @@ function VendorDetailsScreen({ navigation, route }: Props) {
 							{vendor.discountRates.map((rate) => (
 								<View
 									key={rate._id}
-									className="flex-row items-center justify-between py-3 border-b border-border/40 last:border-b-0">
+									className="flex-row items-center justify-between py-3 border-b border-border last:border-b-0">
 									<TextComponent className="text-sm font-bold text-foreground">
 										{rate.maxPages
 											? `${rate.minPages} - ${rate.maxPages} pages`
@@ -337,7 +337,7 @@ function VendorDetailsScreen({ navigation, route }: Props) {
 
 			{/* Floating / Sticky bottom button capsule */}
 			<View 
-				className="absolute bottom-0 left-0 right-0 bg-background border-t border-border/40 px-5 pt-4"
+				className="absolute bottom-0 left-0 right-0 bg-background border-t border-border px-5 pt-4"
 				style={{ paddingBottom: bottomSpacer }}>
 				<Pressable
 					className="min-h-[52px] flex-row items-center justify-center rounded-2xl bg-primary active:opacity-90 shadow-lg px-4"

@@ -192,8 +192,8 @@ const ProviderCard = memo(function ProviderCard({
 		<View 
 			className={`mb-3 rounded-[24px] border overflow-hidden relative shadow-sm ${
 				isConnected 
-					? 'border-primary/20 shadow-md' 
-					: 'bg-card/40 border-border/40'
+					? 'border shadow-md' 
+					: 'bg-card/40 border-border'
 			} ${isDisabled ? 'opacity-40' : ''}`}
 		>
 			{isConnected ? (
@@ -253,7 +253,7 @@ const ProviderCard = memo(function ProviderCard({
 						</ScalePressable>
 					</View>
 
-					<View className="mt-4 pt-4 border-t border-border/30">
+					<View className="mt-4 pt-4 border-t border-border">
 						<View className="flex-row items-center justify-between">
 							<View className="flex-row items-center flex-1 mr-2">
 								<FolderSync size={16} color={colors.primary} />
@@ -301,7 +301,7 @@ const ProviderCard = memo(function ProviderCard({
 			) : (
 				<View className="p-5 flex-row items-center justify-between">
 					<View className="flex-row items-center flex-1 mr-3">
-						<View className="w-12 h-12 rounded-2xl items-center justify-center bg-background/50 border border-border/30">
+						<View className="w-12 h-12 rounded-2xl items-center justify-center bg-background/50 border border-border">
 							{logoComponent}
 						</View>
 						<View className="ml-3 flex-1">
@@ -367,7 +367,7 @@ const UsageCard = memo(function UsageCard({ colors, colorScheme, statusPayload }
 			colors={colorScheme === 'dark' ? ['#0a1424', '#020710'] : ['#ddeaff', '#ebf4ff']}
 			start={{ x: 0, y: 0 }}
 			end={{ x: 1, y: 1 }}
-			className="border border-border/50 rounded-[28px] p-5 shadow-md relative overflow-hidden"
+			className="border border-border rounded-[28px] p-5 shadow-md relative overflow-hidden"
 		>
 			{/* Glowing Ambient Dot inside Card */}
 			<View className="absolute -top-12 -right-12 w-32 h-32 rounded-full bg-primary/10 blur-xl" />
@@ -388,7 +388,7 @@ const UsageCard = memo(function UsageCard({ colors, colorScheme, statusPayload }
 				</View>
 			</View>
 
-			<View className="h-px bg-border/20 mb-4" />
+			<View className="h-px bg-border mb-4" />
 
 			<View className="space-y-2">
 				<View className="flex-row justify-between items-center text-sm mb-2">
@@ -414,7 +414,7 @@ const UsageCard = memo(function UsageCard({ colors, colorScheme, statusPayload }
 				{!isUnlimited ? (
 					<View className="pt-1">
 						{/* Progress Bar Track */}
-						<View className="h-2.5 w-full bg-border/20 rounded-full overflow-hidden mb-3">
+						<View className="h-2.5 w-full bg-border rounded-full overflow-hidden mb-3">
 							<LinearGradient 
 								colors={
 									isDepleted 
@@ -438,7 +438,7 @@ const UsageCard = memo(function UsageCard({ colors, colorScheme, statusPayload }
 									{isDepleted ? 'No syncs remaining today' : `${remainingSyncs} syncs remaining`}
 								</TextComponent>
 							</View>
-							<View className="bg-muted/10 px-2 py-0.5 rounded-full border border-border/20">
+							<View className="bg-muted/10 px-2 py-0.5 rounded-full border border-border">
 								<TextComponent className="text-[9px] text-muted-foreground font-black uppercase tracking-wider">
 									Resets daily
 								</TextComponent>
@@ -775,7 +775,7 @@ function CloudSyncScreen({ route, navigation }: Props) {
 				<View className="px-6 pb-6">
 					<ScalePressable 
 						onPress={handleGoBack}
-						className="w-10 h-10 rounded-full items-center justify-center border border-border/40 bg-card/50 mb-6">
+						className="w-10 h-10 rounded-full items-center justify-center border border-border bg-card/50 mb-6">
 						<ChevronLeft size={20} color={colors.foreground} />
 					</ScalePressable>
 					
@@ -820,7 +820,7 @@ function CloudSyncScreen({ route, navigation }: Props) {
 				<View className="px-6 pb-6">
 					<ScalePressable 
 						onPress={handleGoBack}
-						className="w-10 h-10 rounded-full items-center justify-center border border-border/40 bg-card/50 mb-6">
+						className="w-10 h-10 rounded-full items-center justify-center border border-border bg-card/50 mb-6">
 						<ChevronLeft size={20} color={colors.foreground} />
 					</ScalePressable>
 					
@@ -828,7 +828,7 @@ function CloudSyncScreen({ route, navigation }: Props) {
 						colors={['#1e1b4b', '#311042']} // Deep indigo/purple gradient
 						start={{ x: 0, y: 0 }}
 						end={{ x: 1, y: 1 }}
-						className="border border-border/30 rounded-[32px] p-6 py-10 shadow-lg relative overflow-hidden items-center">
+						className="border border-border rounded-[32px] p-6 py-10 shadow-lg relative overflow-hidden items-center">
 						
 						{/* Ambient Glows */}
 						<View className="absolute -top-16 -left-16 w-36 h-36 rounded-full bg-primary/25 blur-xl" />
@@ -910,7 +910,7 @@ function CloudSyncScreen({ route, navigation }: Props) {
 					<View className="flex-row items-center justify-between mb-6">
 						<ScalePressable 
 							onPress={handleGoBack}
-							className="w-10 h-10 rounded-full items-center justify-center border border-border/40 bg-card/50">
+							className="w-10 h-10 rounded-full items-center justify-center border border-border bg-card/50">
 							<ChevronLeft size={20} color={colors.foreground} />
 						</ScalePressable>
 						{anyConnected ? (

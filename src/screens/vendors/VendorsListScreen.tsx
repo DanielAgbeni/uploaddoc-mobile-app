@@ -161,13 +161,13 @@ export default function VendorsListScreen({ navigation }: Props) {
 
 			{/* Clean Neutral Header */}
 			<View
-				className="px-5 pb-4 border-b border-border/50 bg-background"
+				className="px-5 pb-4 border-b border-border bg-background"
 				style={{ paddingTop: insets.top + 16 }}>
 				
 				{/* Top row: Brand */}
 				<View className="flex-row items-center justify-between mb-5">
 					<View className="flex-row items-center">
-						<View className="h-8 w-8 items-center justify-center rounded-xl bg-primary/10 border border-primary/20 mr-2.5">
+						<View className="h-8 w-8 items-center justify-center rounded-xl bg-primary/10 border border-border mr-2.5">
 												<CustomImage
 													source={icon}
 													className="h-5 w-5 rounded-full"

@@ -60,7 +60,7 @@ const logChatEvent = (message: string, details?: unknown) => {
 const DateDivider = memo(function DateDivider({ dateString }: { dateString: string }) {
 	return (
 		<View className="my-5 items-center justify-center">
-			<View className="rounded-full bg-muted/40 px-3.5 py-1.5 border border-border/10">
+			<View className="rounded-full bg-muted/40 px-3.5 py-1.5 border border-border">
 				<TextComponent className="text-[11px] font-semibold text-muted-foreground">
 					{dateString}
 				</TextComponent>
@@ -91,7 +91,7 @@ const MessageBubble = memo(function MessageBubble({
 					className={`px-4 py-2.5 max-w-[280px] shadow-sm ${
 						isCurrentUser
 							? 'bg-primary rounded-[20px] rounded-br-[4px]'
-							: 'bg-card border border-border/60 rounded-[20px] rounded-bl-[4px]'
+							: 'bg-card border border-border rounded-[20px] rounded-bl-[4px]'
 					}`}
 					style={{
 						opacity: isSending ? 0.6 : 1,

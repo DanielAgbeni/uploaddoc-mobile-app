@@ -29,14 +29,14 @@ const DocumentsHeader = memo(function DocumentsHeader({
 
 	return (
 		<View 
-			className="px-5 pb-5 border-b border-border/50 bg-background"
+			className="px-5 pb-5 border-b border-border bg-background"
 			style={{ paddingTop: insets.top + 16 }}>
 			
 			{/* Top row: Brand & Profile Avatar */}
 			<View className="flex-row items-center justify-between mb-5">
 				{/* Logo Mark + Brand Title */}
 				<View className="flex-row items-center">
-					<View className="h-8 w-8 items-center justify-center rounded-xl bg-primary/10 border border-primary/20 mr-2.5">
+					<View className="h-8 w-8 items-center justify-center rounded-xl bg-primary/10 border border-border mr-2.5">
 						<CustomImage
 							source={require('../../../assets/app-images/icon.png')}
 							className="h-5 w-5 rounded-full"

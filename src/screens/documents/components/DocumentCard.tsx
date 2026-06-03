@@ -165,7 +165,7 @@ const DocumentCard = memo(function DocumentCard({
 					{/* Assigned Receiver */}
 					<View className="flex-row items-center flex-1 pr-3">
 						<View
-							className="h-8 w-8 items-center justify-center rounded-full bg-primary/10 border border-primary/20 mr-2.5">
+							className="h-8 w-8 items-center justify-center rounded-full bg-primary/10 border border mr-2.5">
 							<TextComponent className="text-[11px] font-black text-primary">
 								{getInitials(project.assignedAdminName)}
 							</TextComponent>
@@ -189,7 +189,7 @@ const DocumentCard = memo(function DocumentCard({
 						
 							<Pressable
 								onPress={handleChatPress}
-								className="h-9 w-9 items-center justify-center rounded-full active:opacity-85 border border-primary/20 bg-primary/10"
+								className="h-9 w-9 items-center justify-center rounded-full active:opacity-85 border border bg-primary/10"
 								style={({ pressed }) => ({
 									transform: [{ scale: pressed ? 0.95 : 1 }],
 								})}>

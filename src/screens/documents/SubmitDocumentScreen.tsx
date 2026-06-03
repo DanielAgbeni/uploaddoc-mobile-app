@@ -792,11 +792,11 @@ function SubmitDocumentScreen({
 
 			{/* Clean Neutral Header */}
 			<View 
-				className="px-5 pb-5 border-b border-border/50 bg-background"
+				className="px-5 pb-5 border-b border-border bg-background"
 				style={{ paddingTop: insets.top + 16 }}>
 				<View className="flex-row items-center justify-between">
 					<View className="flex-row items-center">
-						<View className="mr-3 rounded-lg bg-primary/10 border border-primary/20 p-2">
+						<View className="mr-3 rounded-lg bg-primary/10 border border p-2">
 							<UploadIcon
 								size={18}
 								color={colors.primary}
@@ -869,7 +869,7 @@ function SubmitDocumentScreen({
 								<View className="relative">
 									<View
 										className={`flex-row items-center rounded-xl border bg-background px-4 ${
-											errors.vendor ? 'border-destructive' : 'border-border/60'
+											errors.vendor ? 'border-destructive' : 'border-border'
 										}`}>
 										<SearchIcon
 											size={18}
@@ -949,7 +949,7 @@ function SubmitDocumentScreen({
 								render={({ field: { onChange, onBlur, value } }) => (
 									<TextInput
 										className={`rounded-xl border bg-background px-4 py-3.5 text-base text-foreground ${
-											errors.title ? 'border-destructive' : 'border-border/60'
+											errors.title ? 'border-destructive' : 'border-border'
 										}`}
 										placeholder="e.g. Final Year Thesis"
 										placeholderTextColor={colors.mutedForeground}
@@ -976,7 +976,7 @@ function SubmitDocumentScreen({
 								name="description"
 								render={({ field: { onChange, onBlur, value } }) => (
 									<TextInput
-										className="min-h-[100px] rounded-xl border border-border/60 bg-background px-4 py-3.5 text-base text-foreground"
+										className="min-h-[100px] rounded-xl border border-border bg-background px-4 py-3.5 text-base text-foreground"
 										placeholder="Any specific descriptions..."
 										placeholderTextColor={colors.mutedForeground}
 										onBlur={onBlur}
@@ -999,7 +999,7 @@ function SubmitDocumentScreen({
 							{files.length === 0 ? (
 								<Pressable
 									className={`items-center rounded-xl border-2 border-dashed px-5 py-8 active:opacity-95 ${
-										errors.files ? 'border-destructive' : 'border-border/60'
+										errors.files ? 'border-destructive' : 'border-border'
 									}`}
 									style={({ pressed }) => ({
 										backgroundColor: colorScheme === 'dark' ? 'rgba(255,255,255,0.02)' : 'rgba(68, 78, 187, 0.05)',
@@ -1007,7 +1007,7 @@ function SubmitDocumentScreen({
 									})}
 									onPress={handleSelectFile}>
 									<View
-										className="mb-3 h-12 w-12 items-center justify-center rounded-xl bg-primary/10 border border-primary/20">
+										className="mb-3 h-12 w-12 items-center justify-center rounded-xl bg-primary/10 border border">
 										<UploadIcon
 											size={22}
 											color={colors.primary}

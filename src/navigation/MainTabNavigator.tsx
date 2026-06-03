@@ -1,10 +1,12 @@
 import React, { memo, useEffect } from 'react';
 import { View } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import { getFocusedRouteNameFromRoute } from '@react-navigation/native';
 import { MainTabParamList } from '../types/navigation.types';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../providers/ThemeProvider';
 import Animated, { useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
+
 
 // Icons
 import AccountIcon from '../assets/icons/account.icon';
@@ -67,40 +69,62 @@ function MainTabNavigator() {
 
 	return (
 		<Tab.Navigator
-			screenOptions={{
-				headerShown: false,
-				tabBarActiveTintColor: activeColor,
-				tabBarInactiveTintColor: inactiveColor,
-				tabBarShowLabel: true,
-				// @ts-ignore: 'animation' is a valid option in v7
-				animation: 'shift',
-				// @ts-ignore: sceneStyle is added in v7 to style the background of the screen container
-				sceneStyle: { backgroundColor: colors.background },
-				tabBarStyle: {
-					position: 'absolute',
-					bottom: insets.bottom > 0 ? insets.bottom + 8 : 16,
-					left: 24,
-					right: 24,
-					paddingHorizontal: 8,
-					backgroundColor: colorScheme === 'dark' ? 'rgba(0, 15, 36, 0.85)' : 'rgba(235, 244, 255, 0.85)',
-					height: 64,
-					borderRadius: 24,
-					paddingBottom: 0,
-					paddingTop: 8,
-					borderWidth: 1,
-					borderColor: colorScheme === 'dark' ? 'rgba(255, 255, 255, 0.08)' : 'rgba(68, 78, 187, 0.1)',
-					shadowColor: colors.primary,
-					shadowOffset: { width: 0, height: 8 },
-					shadowOpacity: colorScheme === 'dark' ? 0.3 : 0.08,
-					shadowRadius: 16,
-					elevation: 8,
-				},
-				tabBarLabelStyle: {
-					fontSize: 10,
-					fontWeight: '600',
-					marginTop: 2,
-					marginBottom: 4,
-				},
+			screenOptions={({ route }) => {
+				const routeName = getFocusedRouteNameFromRoute(route);
+				const hideTabBarScreens = [
+					'EditProfile',
+					'TransactionHistory',
+					'Settings',
+					'CloudSync',
+					'VendorDetails',
+					'SubmitDocument',
+					'Notifications',
+				];
+				const shouldHideTabBar = routeName && hideTabBarScreens.includes(routeName);
+
+				return {
+					headerShown: false,
+					tabBarActiveTintColor: activeColor,
+					tabBarInactiveTintColor: inactiveColor,
+					tabBarShowLabel: true,
+					// @ts-ignore: 'animation' is a valid option in v7
+					animation: 'shift',
+					// @ts-ignore: sceneStyle is added in v7 to style the background of the screen container
+					sceneStyle: { backgroundColor: colors.background },
+					tabBarStyle: shouldHideTabBar
+						? { display: 'none' }
+						: {
+								position: 'absolute',
+								bottom: insets.bottom > 0 ? insets.bottom + 8 : 16,
+								left: 24,
+								right: 24,
+								paddingHorizontal: 8,
+								backgroundColor:
+									colorScheme === 'dark'
+										? 'rgba(0, 15, 36, 0.85)'
+										: 'rgba(235, 244, 255, 0.85)',
+								height: 64,
+								borderRadius: 24,
+								paddingBottom: 0,
+								paddingTop: 8,
+								borderWidth: 1,
+								borderColor:
+									colorScheme === 'dark'
+										? 'rgba(255, 255, 255, 0.08)'
+										: 'rgba(68, 78, 187, 0.1)',
+								shadowColor: colors.primary,
+								shadowOffset: { width: 0, height: 8 },
+								shadowOpacity: colorScheme === 'dark' ? 0.3 : 0.08,
+								shadowRadius: 16,
+								elevation: 8,
+						  },
+					tabBarLabelStyle: {
+						fontSize: 10,
+						fontWeight: '600',
+						marginTop: 2,
+						marginBottom: 4,
+					},
+				};
 			}}>
 			<Tab.Screen
 				name="DocumentsTab"

@@ -4,7 +4,7 @@ import { Skeleton } from '../../../components/ui/Skeleton';
 
 const NotificationItemSkeleton = memo(function NotificationItemSkeleton() {
 	return (
-		<View className="flex-row items-start px-5 py-4 gap-3 border-b border-border/30">
+		<View className="flex-row items-start px-5 py-4 gap-3 border-b border-border">
 			{/* Icon circle */}
 			<Skeleton className="h-10 w-10 rounded-full" />
 

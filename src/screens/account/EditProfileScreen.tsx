@@ -31,7 +31,7 @@ import {
 	XCircle,
 } from 'lucide-react-native';
 import { TextComponent } from 'src/components';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import clsx from 'clsx';
 
 type Props = NativeStackScreenProps<AccountStackParamList, 'EditProfile'>;
@@ -92,6 +92,7 @@ const SectionTitle = memo(function SectionTitle({ title, icon: Icon }: { title: 
 
 function EditProfileScreen({ navigation }: Props) {
 	const { colors } = useTheme();
+	const insets = useSafeAreaInsets();
 	const { showAlert } = useModal();
 	const { user, setUserDetails } = useUserStore();
 	const [isSubmitting, setIsSubmitting] = useState(false);
@@ -591,7 +592,9 @@ function EditProfileScreen({ navigation }: Props) {
 				</ScrollView>
 
 				{/* Fixed Bottom Action Bar */}
-				<View className="p-4 bg-background border-t border-border shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
+				<View
+					style={{ paddingBottom: Math.max(insets.bottom, 16) }}
+					className="p-4 bg-background border-t border-border shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
 					<Pressable
 						className={`w-full bg-primary p-4 rounded-2xl items-center shadow-lg active:scale-[0.98] transition-transform ${
 							isSubmitting ? 'opacity-80' : ''

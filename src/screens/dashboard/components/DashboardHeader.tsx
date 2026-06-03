@@ -261,7 +261,7 @@ const DashboardHeader = () => {
 
 					{user.slug ? (
 						<View>
-							<View className="flex-row items-center gap-1.5 bg-muted/40 dark:bg-muted/20 border border-border/50 rounded-lg p-1.5 mb-1 justify-between">
+							<View className="flex-row items-center gap-1.5 bg-muted/40 dark:bg-muted/20 border border-border rounded-lg p-1.5 mb-1 justify-between">
 								<TextComponent
 									className="text-[10px] font-mono text-foreground truncate flex-1"
 									numberOfLines={1}>
@@ -269,7 +269,7 @@ const DashboardHeader = () => {
 								</TextComponent>
 								<Pressable
 									onPress={() => copyToClipboard(user.slug!)}
-									className="p-1 bg-card rounded-md shadow-sm border border-border/40 active:scale-90 items-center justify-center">
+									className="p-1 bg-card rounded-md shadow-sm border border-border active:scale-90 items-center justify-center">
 									{copied ? (
 										<CheckmarkCircleIcon
 											size={10}

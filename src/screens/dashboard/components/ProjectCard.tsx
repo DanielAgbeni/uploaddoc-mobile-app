@@ -176,10 +176,10 @@ const ProjectCard = ({
 	const statusInfo = useMemo(() => getStatusConfig(project.status), [project.status]);
 
 	return (
-		<View className="bg-card border border-border/60 rounded-[24px] overflow-hidden shadow-sm mb-4 mx-4">
+		<View className="bg-card border border-border rounded-[24px] overflow-hidden shadow-sm mb-4 mx-4">
 			<View className="p-4 flex-row gap-4">
 				{/* Thumbnail */}
-				<View className="h-14 w-14 rounded-2xl bg-primary/5 dark:bg-primary/10 border border-border/80 flex items-center justify-center shrink-0 overflow-hidden shadow-sm">
+				<View className="h-14 w-14 rounded-2xl bg-primary/5 dark:bg-primary/10 border border-border flex items-center justify-center shrink-0 overflow-hidden shadow-sm">
 					{project.filePreview ? (
 						<Image
 							source={{ uri: project.filePreview }}
@@ -224,8 +224,8 @@ const ProjectCard = ({
 					</View>
 
 					<View className="flex-row items-center gap-2 mt-1.5 flex-wrap">
-						<View className="bg-primary/5 dark:bg-primary/10 border border-primary/10 px-2 py-0.5 rounded-md">
-							<TextComponent className="text-[10px] font-bold uppercase tracking-[0.3px] text-primary">
+						<View className="bg-primary/5 dark:bg-primary/10 border border-border px-2 py-0.5 rounded-md">
+							<TextComponent className="text-sm font-bold uppercase tracking-[0.3px] text-primary">
 								{project.fileCategory}
 							</TextComponent>
 						</View>
@@ -245,7 +245,7 @@ const ProjectCard = ({
 			</View>
 
 			{/* Footer / Actions */}
-			<View className="px-4 py-3 bg-muted/10 border-t border-border/40 flex-row items-center justify-between">
+			<View className="px-4 py-3 bg-muted/10 border-t border-border flex-row items-center justify-between">
 				{/* Cloud Sync Status */}
 				<View className="flex-1 mr-4">
 					{project.status === 'accepted' ? (
@@ -291,7 +291,7 @@ const ProjectCard = ({
 				<View className="flex-row items-center gap-2">
 					<Pressable
 						onPress={handleChatPress}
-						className="h-10 w-10 rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center active:scale-90">
+						className="h-10 w-10 rounded-full bg-primary/10 border border-border flex items-center justify-center active:scale-90">
 						<MailIcon
 							size={18}
 							color={colors.primary}
@@ -324,7 +324,7 @@ const ProjectCard = ({
 								<Pressable
 									onPress={handleSync}
 									disabled={isSyncing}
-									className="h-10 w-10 rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center active:scale-90">
+									className="h-10 w-10 rounded-full bg-primary/10 border border-border flex items-center justify-center active:scale-90">
 									{isSyncing ? (
 										<ActivityIndicator
 											size="small"
@@ -342,7 +342,7 @@ const ProjectCard = ({
 							{project.fileUrl ? (
 								<Pressable
 									onPress={handleDownloadPress}
-									className="h-10 w-10 rounded-full bg-muted border border-border/80 flex items-center justify-center active:scale-90">
+									className="h-10 w-10 rounded-full bg-muted border border-border flex items-center justify-center active:scale-90">
 									<Download
 										size={18}
 										color={colors.foreground}

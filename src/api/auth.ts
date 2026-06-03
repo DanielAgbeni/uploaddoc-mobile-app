@@ -1,6 +1,6 @@
 import { postData, getData } from '.';
 
-const EMAIL_API_BASE_URL = 'https://api.uploaddoc.app';
+const EMAIL_API_BASE_URL = 'https://apiprod.uploaddoc.app';
 
 export const registerUser = async (data: RegisterPayloadType) => {
 	return postData<RegisterPayloadType, RegisterResponseType>(

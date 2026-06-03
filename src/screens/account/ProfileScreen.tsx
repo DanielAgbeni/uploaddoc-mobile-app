@@ -347,7 +347,7 @@ function ProfileScreen({ navigation }: Props) {
 							</View>
 
 							{/* Theme Toggle Buttons */}
-							<View className="flex-row bg-background rounded-xl p-1 border border-border/50">
+							<View className="flex-row bg-background rounded-xl p-1 border border-border">
 								<Pressable
 									onPress={handleSetThemeLight}
 									className={`flex-1 flex-row items-center justify-center py-2.5 px-2 rounded-lg ${

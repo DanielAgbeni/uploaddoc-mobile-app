@@ -88,7 +88,7 @@ const NotificationItem = memo(function NotificationItem({
 	return (
 		<Pressable
 			onPress={handlePress}
-			className={`flex-row items-start px-5 py-4 gap-3 border-b border-border/30 ${
+			className={`flex-row items-start px-5 py-4 gap-3 border-b border-border ${
 				notification.isRead ? '' : 'bg-primary/5'
 			}`}
 			style={({ pressed }) => ({

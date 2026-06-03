@@ -4,7 +4,7 @@ import { Skeleton } from '../../../components/ui/Skeleton';
 
 const ProjectCardSkeleton = () => {
 	return (
-		<View className="bg-card border border-border/60 rounded-[24px] overflow-hidden shadow-sm mb-4 mx-4">
+		<View className="bg-card border border-border rounded-[24px] overflow-hidden shadow-sm mb-4 mx-4">
 			<View className="p-4 flex-row gap-4">
 				{/* Thumbnail */}
 				<Skeleton className="h-14 w-14 rounded-2xl" />
@@ -35,7 +35,7 @@ const ProjectCardSkeleton = () => {
 			</View>
 
 			{/* Footer / Actions */}
-			<View className="px-4 py-3 bg-muted/10 border-t border-border/40 flex-row items-center justify-between">
+			<View className="px-4 py-3 bg-muted/10 border-t border-border flex-row items-center justify-between">
 				{/* Cloud Sync Status */}
 				<View className="flex-1 mr-4">
 					<View className="flex-row items-center gap-1.5">

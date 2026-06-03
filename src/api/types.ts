@@ -242,6 +242,7 @@ declare global {
 	export type InitializePaymentPayload = {
 		userId: string;
 		package: number; // 1-4
+		promoCode?: string;
 	};
 
 	export type InitializePaymentResponse = {

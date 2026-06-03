@@ -194,7 +194,7 @@ function NotificationsScreen({ navigation }: Props) {
 		<View className="flex-1 bg-background">
 			{/* Header */}
 			<View
-				className="px-5 pb-4 border-b border-border/50 bg-background"
+				className="px-5 pb-4 border-b border-border bg-background"
 				style={{ paddingTop: insets.top + 12 }}>
 				<View className="flex-row items-center justify-between">
 					{/* Back Button + Title */}
@@ -225,7 +225,7 @@ function NotificationsScreen({ navigation }: Props) {
 						<Pressable
 							onPress={handleMarkAllRead}
 							disabled={markAllReadMutation.isPending}
-							className="flex-row items-center gap-1.5 px-3 py-2 rounded-xl bg-primary/10 border border-primary/20"
+							className="flex-row items-center gap-1.5 px-3 py-2 rounded-xl bg-primary/10 border border-border"
 							style={({ pressed }) => ({
 								opacity: pressed ? 0.7 : 1,
 							})}>
