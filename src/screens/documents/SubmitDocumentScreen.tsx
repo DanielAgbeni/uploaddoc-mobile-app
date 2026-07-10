@@ -117,6 +117,10 @@ function SubmitDocumentScreen({
 		vendorPrintingCost,
 		vendorRating,
 		isVendorLocked,
+		// Shared file from the OS share sheet / intent
+		sharedFileUri,
+		sharedFileName,
+		sharedFileMimeType,
 	} = route.params || {};
 
 	const { colors, colorScheme } = useTheme();
@@ -230,6 +234,34 @@ function SubmitDocumentScreen({
 		vendorRating,
 		setValue,
 	]);
+
+	// Pre-populate the file list when the screen is opened via the OS share sheet.
+	// Runs once on mount — sharedFileUri won't change for the lifetime of this screen.
+	useEffect(() => {
+		if (!sharedFileUri) return;
+
+		const name = sharedFileName ?? sharedFileUri.split('/').pop() ?? 'shared_file';
+		const mimeType = sharedFileMimeType ?? 'application/octet-stream';
+
+		const sharedFile: SelectedFile = {
+			uri: sharedFileUri,
+			name,
+			mimeType,
+			pageCount: 1,
+		};
+
+		setValue('files', [sharedFile]);
+
+		// Auto-fill the title from the file name (strip extension)
+		const titleFromFile =
+			name.includes('.')
+				? name.substring(0, name.lastIndexOf('.'))
+				: name;
+		setValue('title', titleFromFile);
+
+		logUploadDebug('shared-file:pre-populated', { uri: sharedFileUri, name, mimeType });
+	// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, []);
 
 	const handleSelectFile = useCallback(async () => {
 		try {
@@ -796,17 +828,14 @@ function SubmitDocumentScreen({
 				style={{ paddingTop: insets.top + 16 }}>
 				<View className="flex-row items-center justify-between">
 					<View className="flex-row items-center">
-						<View className="mr-3 rounded-lg bg-primary/10 border border p-2">
+						<View className="mr-3 rounded-lg bg-primary/10 border p-2">
 							<UploadIcon
 								size={18}
 								color={colors.primary}
 							/>
 						</View>
 						<View>
-							<TextComponent className="text-[10px] font-bold uppercase tracking-[0.8px] text-muted-foreground">
-								Document intake
-							</TextComponent>
-							<TextComponent className="text-xl font-extrabold tracking-tight text-foreground leading-6">
+							<TextComponent className="text-2xl font-extrabold tracking-tight text-foreground leading-6">
 								Submit Documents
 							</TextComponent>
 						</View>

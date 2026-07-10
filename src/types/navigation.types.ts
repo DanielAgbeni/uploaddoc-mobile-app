@@ -84,6 +84,10 @@ export type SubmitDocumentParams = {
 	vendorPrintingCost?: number;
 	vendorRating?: number;
 	isVendorLocked?: boolean; // True when navigating from Find Vendors or deep link
+	// Shared file pre-fill — populated by the share extension / intent handler
+	sharedFileUri?: string;
+	sharedFileName?: string;
+	sharedFileMimeType?: string;
 };
 
 // Documents Stack (nested in Documents Tab)

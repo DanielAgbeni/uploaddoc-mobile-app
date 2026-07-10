@@ -26,7 +26,18 @@ export const linkingConfig: LinkingOptions<RootStackParamList> = {
           DocumentsTab: {
             screens: {
               DocumentsList: 'documents',
-              SubmitDocument: 'documents/submit',
+              // Primary submit route — also handles /submit shortcut
+              SubmitDocument: {
+                path: 'documents/submit',
+                parse: {
+                  vendorId: (id: string) => id,
+                  vendorName: (name: string) => decodeURIComponent(name),
+                  isVendorLocked: (v: string) => v === 'true',
+                  sharedFileUri: (uri: string) => decodeURIComponent(uri),
+                  sharedFileName: (name: string) => decodeURIComponent(name),
+                  sharedFileMimeType: (type: string) => decodeURIComponent(type),
+                },
+              },
               Notifications: 'documents/notifications',
             },
           },
@@ -34,6 +45,15 @@ export const linkingConfig: LinkingOptions<RootStackParamList> = {
             screens: {
               VendorsList: 'vendors',
               VendorDetails: 'vendors/:vendorId',
+              // So vendor-scoped deep links also resolve to SubmitDocument
+              SubmitDocument: {
+                path: 'vendors/submit',
+                parse: {
+                  vendorId: (id: string) => id,
+                  vendorName: (name: string) => decodeURIComponent(name),
+                  isVendorLocked: (v: string) => v === 'true',
+                },
+              },
             },
           },
           DashboardTab: {
@@ -56,3 +76,4 @@ export const linkingConfig: LinkingOptions<RootStackParamList> = {
     },
   },
 };
+

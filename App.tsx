@@ -13,10 +13,14 @@ import { NotificationProvider } from './src/providers/NotificationProvider';
 import CustomToastMessageComponent from './src/components/ui/CustomToast';
 import FlashMessage from 'react-native-flash-message';
 import type { RootStackParamList } from './src/types/navigation.types';
+import { useShareIntent } from './src/hooks/useShareIntent';
 
 function AppContent() {
 	const { colorScheme } = useTheme();
 	const navigationRef = useRef<NavigationContainerRef<RootStackParamList>>(null);
+
+	// Handle incoming file shares from other apps — navigates to SubmitDocumentScreen
+	useShareIntent(navigationRef);
 
 	return (
 		<View className={`flex-1 ${colorScheme === 'dark' ? 'dark' : ''}`}>

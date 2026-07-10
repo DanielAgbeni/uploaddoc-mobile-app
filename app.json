@@ -19,7 +19,10 @@
 				}
 			},
 			"entitlements": {
-				"aps-environment": "production"
+				"aps-environment": "production",
+				"com.apple.developer.associated-domains": [
+					"applinks:uploaddoc.app"
+				]
 			}
 		},
 		"android": {
@@ -31,7 +34,54 @@
 			"supportsTablet": true,
 			"predictiveBackGestureEnabled": false,
 			"package": "com.uploaddoc.app",
-			"googleServicesFile": "./google-services.json"
+			"googleServicesFile": "./google-services.json",
+			"intentFilters": [
+				{
+					"action": "VIEW",
+					"autoVerify": true,
+					"data": [
+						{
+							"scheme": "https",
+							"host": "uploaddoc.app",
+							"pathPrefix": "/"
+						}
+					],
+					"category": ["BROWSABLE", "DEFAULT"]
+				},
+				{
+					"action": "VIEW",
+					"data": [
+						{
+							"scheme": "uploaddoc"
+						}
+					],
+					"category": ["BROWSABLE", "DEFAULT"]
+				},
+				{
+					"action": "SEND",
+					"data": [
+						{ "mimeType": "application/pdf" },
+						{ "mimeType": "application/msword" },
+						{
+							"mimeType": "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+						},
+						{ "mimeType": "image/*" }
+					],
+					"category": ["DEFAULT"]
+				},
+				{
+					"action": "SEND_MULTIPLE",
+					"data": [
+						{ "mimeType": "application/pdf" },
+						{ "mimeType": "application/msword" },
+						{
+							"mimeType": "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+						},
+						{ "mimeType": "image/*" }
+					],
+					"category": ["DEFAULT"]
+				}
+			]
 		},
 		"web": {
 			"favicon": "./src/assets/app-images/favicon.png"
@@ -56,6 +106,17 @@
 					"icon": "./src/assets/app-images/icon.png",
 					"color": "#000914"
 				}
+			],
+			[
+				"react-native-receive-sharing-intent",
+				{
+					"sharedMimeTypes": [
+						"application/pdf",
+						"application/msword",
+						"application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+						"image/*"
+					]
+				}
 			]
 		],
 		"scheme": "uploaddoc",
@@ -69,3 +130,4 @@
 		}
 	}
 }
+
