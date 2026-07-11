@@ -2,7 +2,7 @@
 	"expo": {
 		"name": "UploadDoc",
 		"slug": "uploaddoc-mobile-app",
-		"version": "2.1.0",
+		"version": "2.1.1",
 		"orientation": "portrait",
 		"icon": "./src/assets/app-images/adaptive_icon.png",
 		"userInterfaceStyle": "automatic",
@@ -105,17 +105,6 @@
 				{
 					"icon": "./src/assets/app-images/icon.png",
 					"color": "#000914"
-				}
-			],
-			[
-				"react-native-receive-sharing-intent",
-				{
-					"sharedMimeTypes": [
-						"application/pdf",
-						"application/msword",
-						"application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-						"image/*"
-					]
 				}
 			]
 		],

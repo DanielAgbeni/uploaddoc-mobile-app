@@ -14,9 +14,13 @@ const config = (() => {
     ...resolver,
     assetExts: resolver.assetExts.filter((ext) => ext !== "svg"),
     sourceExts: [...resolver.sourceExts, "svg"],
+    // Force Metro to use the CommonJS build of packages that ship
+    // untranspiled ESM, which causes "Unexpected token" parse errors.
+    unstable_enablePackageExports: false,
   };
 
   return config;
 })();
 
 module.exports = withNativeWind(config, { input: "./src/styles/global.css" });
+
