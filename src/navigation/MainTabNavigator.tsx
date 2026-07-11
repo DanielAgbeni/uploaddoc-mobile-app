@@ -1,17 +1,15 @@
 ﻿import React, { memo, useCallback, useEffect } from 'react';
-import { View, StyleSheet } from 'react-native';
+import { Pressable, View, StyleSheet } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { getFocusedRouteNameFromRoute, useNavigation } from '@react-navigation/native';
 import { MainTabParamList } from '../types/navigation.types';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../providers/ThemeProvider';
 import Animated, {
-	runOnJS,
 	useAnimatedStyle,
 	useSharedValue,
 	withSpring,
 } from 'react-native-reanimated';
-import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 
 // Icons
 import AccountIcon from '../assets/icons/account.icon';
@@ -71,48 +69,52 @@ const SubmitFAB = memo(function SubmitFAB({
 	bottomOffset: number;
 	primaryColor: string;
 }) {
+	// SubmitFAB is outside Tab.Navigator, so useNavigation() returns the Root
+	// Stack navigation (screens: Auth | Main). We navigate to 'Main' with
+	// nested params; React Navigation delegates into Tab then Stack navigators.
 	const navigation = useNavigation<any>();
 	const scale = useSharedValue(1);
 
-	const handlePress = useCallback(() => {
-		navigation.navigate('DocumentsTab', {
-			screen: 'SubmitDocument',
-			params: {},
-		});
-	}, [navigation]);
+	const handlePressIn = useCallback(() => {
+		scale.value = withSpring(0.88, { damping: 12, stiffness: 300 });
+	}, [scale]);
 
-	// onBegin / onFinalize run on the UI thread (worklet) for smooth animation.
-	// runOnJS bridges the tap end to the JS thread for React Navigation.
-	const gesture = Gesture.Tap()
-		.onBegin(() => {
-			scale.value = withSpring(0.88, { damping: 12, stiffness: 300 });
-		})
-		.onFinalize(() => {
-			scale.value = withSpring(1, { damping: 12, stiffness: 300 });
-		})
-		.onEnd(() => {
-			runOnJS(handlePress)();
-		});
+	const handlePressOut = useCallback(() => {
+		scale.value = withSpring(1, { damping: 12, stiffness: 300 });
+	}, [scale]);
+
+	const handlePress = useCallback(() => {
+		navigation.navigate('Main', {
+			screen: 'DocumentsTab',
+			params: {
+				screen: 'SubmitDocument',
+				params: {},
+			},
+		} as any);
+	}, [navigation]);
 
 	const fabStyle = useAnimatedStyle(() => ({
 		transform: [{ scale: scale.value }],
 	}));
 
 	return (
-		<GestureDetector gesture={gesture}>
+		<Pressable
+			onPress={handlePress}
+			onPressIn={handlePressIn}
+			onPressOut={handlePressOut}
+			style={[styles.fabContainer, { bottom: bottomOffset }]}>
 			<Animated.View
 				style={[
 					styles.fab,
 					fabStyle,
 					{
-						bottom: bottomOffset,
 						backgroundColor: primaryColor,
 						shadowColor: primaryColor,
 					},
 				]}>
 				<PlusIcon size={26} color="#FFFFFF" />
 			</Animated.View>
-		</GestureDetector>
+		</Pressable>
 	);
 });
 
@@ -129,7 +131,7 @@ function MainTabNavigator() {
 	const activeColor = colors.primary;
 	const inactiveColor = colorScheme === 'dark' ? '#94a3b8' : '#64748b';
 
-	// FAB sits 12 pt above the top of the tab bar
+	// FAB sits 12 pt above the tab bar
 	const tabBarBottom = insets.bottom > 0 ? insets.bottom + 8 : 16;
 	const fabBottom = tabBarBottom + 64 + 12;
 
@@ -249,7 +251,7 @@ function MainTabNavigator() {
 				/>
 			</Tab.Navigator>
 
-			{/* Detached FAB — rendered as a sibling to Tab.Navigator, no slot reserved */}
+			{/* Detached FAB — sibling to Tab.Navigator, no reserved slot */}
 			<SubmitFAB bottomOffset={fabBottom} primaryColor={activeColor} />
 		</View>
 	);
@@ -259,9 +261,17 @@ const styles = StyleSheet.create({
 	container: {
 		flex: 1,
 	},
-	fab: {
+	// Pressable owns the absolute position + hit area
+	fabContainer: {
 		position: 'absolute',
 		right: 24,
+		width: 56,
+		height: 56,
+		zIndex: 999,
+		elevation: 10,
+	},
+	// Animated.View owns the visual shape + shadow
+	fab: {
 		width: 56,
 		height: 56,
 		borderRadius: 28,
