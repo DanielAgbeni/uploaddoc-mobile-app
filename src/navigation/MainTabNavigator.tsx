@@ -1,4 +1,4 @@
-﻿import React, { memo, useCallback, useEffect } from 'react';
+﻿import React, { memo, useCallback, useEffect, useRef, useState } from 'react';
 import { Pressable, View, StyleSheet } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { getFocusedRouteNameFromRoute, useNavigation } from '@react-navigation/native';
@@ -9,6 +9,7 @@ import Animated, {
 	useAnimatedStyle,
 	useSharedValue,
 	withSpring,
+	withTiming,
 } from 'react-native-reanimated';
 
 // Icons
@@ -24,6 +25,17 @@ import VendorsStack from './stacks/VendorsStack';
 import AccountStack from './stacks/AccountStack';
 import DashboardStack from './stacks/DashboardStack';
 import { useUserStore } from '../shared/user-store/useUserStore';
+
+// Screens that hide the tab bar — also drives FAB visibility
+const HIDE_SCREENS = [
+	'EditProfile',
+	'TransactionHistory',
+	'Settings',
+	'CloudSync',
+	'VendorDetails',
+	'SubmitDocument',
+	'Notifications',
+];
 
 // --- Tab Icon Container -------------------------------------------------
 
@@ -62,16 +74,24 @@ const TabIconContainer = memo(function TabIconContainer({
 
 // --- Floating Submit FAB ------------------------------------------------
 
+interface SubmitFABProps {
+	bottomOffset: number;
+	primaryColor: string;
+	/** Shared value (0-1) that drives the fade animation. */
+	opacity: Animated.SharedValue<number>;
+	/** When false the Pressable blocks touches even while fading. */
+	interactive: boolean;
+}
+
 const SubmitFAB = memo(function SubmitFAB({
 	bottomOffset,
 	primaryColor,
-}: {
-	bottomOffset: number;
-	primaryColor: string;
-}) {
-	// SubmitFAB is outside Tab.Navigator, so useNavigation() returns the Root
-	// Stack navigation (screens: Auth | Main). We navigate to 'Main' with
-	// nested params; React Navigation delegates into Tab then Stack navigators.
+	opacity,
+	interactive,
+}: SubmitFABProps) {
+	// SubmitFAB is outside Tab.Navigator so useNavigation() returns the Root
+	// Stack context (screens: Auth | Main). Navigate to 'Main' with nested
+	// params — React Navigation delegates into the Tab → Stack navigators.
 	const navigation = useNavigation<any>();
 	const scale = useSharedValue(1);
 
@@ -95,13 +115,17 @@ const SubmitFAB = memo(function SubmitFAB({
 
 	const fabStyle = useAnimatedStyle(() => ({
 		transform: [{ scale: scale.value }],
+		opacity: opacity.value,
 	}));
 
 	return (
+		// pointerEvents blocks touches immediately; opacity animates smoothly.
+		// This keeps the fade-out animation playing while preventing ghost taps.
 		<Pressable
 			onPress={handlePress}
 			onPressIn={handlePressIn}
 			onPressOut={handlePressOut}
+			pointerEvents={interactive ? 'auto' : 'none'}
 			style={[styles.fabContainer, { bottom: bottomOffset }]}>
 			<Animated.View
 				style={[
@@ -135,22 +159,59 @@ function MainTabNavigator() {
 	const tabBarBottom = insets.bottom > 0 ? insets.bottom + 8 : 16;
 	const fabBottom = tabBarBottom + 64 + 12;
 
+	// Track the currently focused tab via a ref (no re-renders, no stale closures).
+	// 'state' events fire for ALL tab screen listeners on every navigation change,
+	// so we guard against other tabs incorrectly triggering FAB visibility updates.
+	const activeTabRef = useRef<string>('DocumentsTab');
+	const [fabInteractive, setFabInteractive] = useState(true);
+	const fabOpacity = useSharedValue(1);
+
+	const setFABVisible = useCallback(
+		(visible: boolean) => {
+			setFabInteractive(visible);
+			fabOpacity.value = withTiming(visible ? 1 : 0, { duration: 180 });
+		},
+		[fabOpacity],
+	);
+
+	const handleTabFocus = useCallback(
+		(routeName: string, route: any) => {
+			activeTabRef.current = routeName;
+			if (routeName !== 'DocumentsTab') {
+				setFABVisible(false);
+				return;
+			}
+			// On DocumentsTab focus, also check if we're inside a sub-screen
+			const nestedName = getFocusedRouteNameFromRoute(route);
+			setFABVisible(!nestedName || !HIDE_SCREENS.includes(nestedName));
+		},
+		[setFABVisible],
+	);
+
+	const handleTabState = useCallback(
+		(routeName: string, route: any) => {
+			// Guard: only react when the state change belongs to the active tab
+			if (routeName !== activeTabRef.current) return;
+			if (routeName !== 'DocumentsTab') return;
+
+			const nestedName = getFocusedRouteNameFromRoute(route);
+			setFABVisible(!nestedName || !HIDE_SCREENS.includes(nestedName));
+		},
+		[setFABVisible],
+	);
+
 	return (
 		<View style={styles.container}>
 			<Tab.Navigator
+				screenListeners={({ route }) => ({
+					// Fires when the user switches to this tab
+					focus: () => handleTabFocus(route.name, route),
+					// Fires when nested navigation state changes within this tab's stack
+					state: () => handleTabState(route.name, route),
+				})}
 				screenOptions={({ route }) => {
 					const routeName = getFocusedRouteNameFromRoute(route);
-					const hideTabBarScreens = [
-						'EditProfile',
-						'TransactionHistory',
-						'Settings',
-						'CloudSync',
-						'VendorDetails',
-						'SubmitDocument',
-						'Notifications',
-					];
-					const shouldHideTabBar =
-						routeName && hideTabBarScreens.includes(routeName);
+					const shouldHideTabBar = routeName && HIDE_SCREENS.includes(routeName);
 
 					return {
 						headerShown: false,
@@ -251,8 +312,13 @@ function MainTabNavigator() {
 				/>
 			</Tab.Navigator>
 
-			{/* Detached FAB — sibling to Tab.Navigator, no reserved slot */}
-			<SubmitFAB bottomOffset={fabBottom} primaryColor={activeColor} />
+			{/* Always rendered — opacity + pointerEvents control visibility/touch */}
+			<SubmitFAB
+				bottomOffset={fabBottom}
+				primaryColor={activeColor}
+				opacity={fabOpacity}
+				interactive={fabInteractive}
+			/>
 		</View>
 	);
 }

@@ -22,26 +22,11 @@ interface SharedFile {
 export function useShareIntent(
   navigationRef: React.RefObject<NavigationContainerRef<RootStackParamList> | null>
 ) {
-  const handleSharedFiles = useCallback(
-    (files: SharedFile[]) => {
-      if (!files || files.length === 0) return;
-
+  const navigateToSubmit = useCallback(
+    (uri: string, name: string, mimeType: string) => {
       const nav = navigationRef.current;
-      if (!nav?.isReady()) return;
+      if (!nav) return;
 
-      const first = files[0];
-      // Prefer contentUri (Android) over filePath, fall back gracefully
-      const uri = first.contentUri ?? first.filePath;
-      if (!uri) return;
-
-      const name =
-        first.fileName ?? uri.split("/").pop() ?? "shared_file";
-      const mimeType = first.mimeType ?? "application/octet-stream";
-
-      // Clear the intent so it does not re-trigger on the next app resume
-      ReceiveSharingIntent.clearReceivedFiles();
-
-      // Navigate to SubmitDocument inside DocumentsTab
       nav.navigate("Main", {
         screen: "DocumentsTab",
         params: {
@@ -55,6 +40,57 @@ export function useShareIntent(
       } as any);
     },
     [navigationRef]
+  );
+
+  /**
+   * Tries to navigate immediately. If the navigator isn't ready yet (cold
+   * start), polls every 100 ms for up to 3 seconds before giving up.
+   */
+  const navigateWhenReady = useCallback(
+    (uri: string, name: string, mimeType: string) => {
+      const nav = navigationRef.current;
+      if (nav?.isReady()) {
+        navigateToSubmit(uri, name, mimeType);
+        return;
+      }
+
+      const MAX_ATTEMPTS = 30; // 30 × 100 ms = 3 s
+      let attempts = 0;
+
+      const intervalId = setInterval(() => {
+        attempts += 1;
+        if (navigationRef.current?.isReady()) {
+          clearInterval(intervalId);
+          navigateToSubmit(uri, name, mimeType);
+        } else if (attempts >= MAX_ATTEMPTS) {
+          clearInterval(intervalId);
+          console.warn("[useShareIntent] Navigation never became ready; dropping share intent.");
+        }
+      }, 100);
+    },
+    [navigationRef, navigateToSubmit]
+  );
+
+  const handleSharedFiles = useCallback(
+    (files: SharedFile[]) => {
+      if (!files || files.length === 0) return;
+
+      const first = files[0];
+      // Prefer contentUri (Android) over filePath, fall back gracefully
+      const uri = first.contentUri ?? first.filePath;
+      if (!uri) return;
+
+      const name =
+        first.fileName ?? uri.split("/").pop() ?? "shared_file";
+      const mimeType = first.mimeType ?? "application/octet-stream";
+
+      // Clear the intent AFTER we've captured the data we need, so
+      // a synchronous throw can't clear it before we've used it.
+      ReceiveSharingIntent.clearReceivedFiles();
+
+      navigateWhenReady(uri, name, mimeType);
+    },
+    [navigateWhenReady]
   );
 
   useEffect(() => {
@@ -75,3 +111,4 @@ export function useShareIntent(
     };
   }, [handleSharedFiles]);
 }
+

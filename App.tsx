@@ -3,6 +3,7 @@ import React, { useRef } from 'react';
 import { StatusBar } from 'expo-status-bar';
 import { View } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { NavigationContainerRef } from '@react-navigation/native';
 import { queryClient } from './src/config/queryClient';
@@ -39,14 +40,16 @@ function AppContent() {
 
 export default function App() {
 	return (
-		<SafeAreaProvider>
-			<ThemeProvider>
-				<QueryClientProvider client={queryClient}>
-					<ModalProvider>
-						<AppContent />
-					</ModalProvider>
-				</QueryClientProvider>
-			</ThemeProvider>
-		</SafeAreaProvider>
+		<GestureHandlerRootView style={{ flex: 1 }}>
+			<SafeAreaProvider>
+				<ThemeProvider>
+					<QueryClientProvider client={queryClient}>
+						<ModalProvider>
+							<AppContent />
+						</ModalProvider>
+					</QueryClientProvider>
+				</ThemeProvider>
+			</SafeAreaProvider>
+		</GestureHandlerRootView>
 	);
 }
