@@ -2,7 +2,7 @@
 	"expo": {
 		"name": "UploadDoc",
 		"slug": "uploaddoc-mobile-app",
-		"version": "2.1.1",
+		"version": "2.1.2",
 		"orientation": "portrait",
 		"icon": "./src/assets/app-images/adaptive_icon.png",
 		"userInterfaceStyle": "automatic",
